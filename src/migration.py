@@ -1,0 +1,13 @@
+from helpers import *
+
+makeRequest('''CREATE TABLE "Servers" (
+	"Id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	"ServerObj"	TEXT NOT NULL,
+	"DataObj"	TEXT NOT NULL,
+	"LastOnline"	INTEGER NOT NULL,
+	"OfflineTrys"	INTEGER NOT NULL,
+	"IP"	TEXT NOT NULL
+);''')
+
+makeRequest('CREATE TABLE "Users" ("Id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"Name"	TEXT NOT NULL,"DiscordId"	TEXT NOT NULL)')
+
