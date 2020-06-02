@@ -2,8 +2,10 @@ import a2s
 import arrow
 import json
 import jsonpickle
+import requests
 
 class JSON: #base class
+    """Base class for all classes to easly JSON encode and decode"""
     def __init__(self):
         pass
 
@@ -15,14 +17,20 @@ class JSON: #base class
         return self
 
 class ARKServer(JSON):
-    # Class representing ARK server
+    """Represents ARK server"""
     def __init__(self,ip):
+        """Inititialisation of this class
+        ip = ip:port
+        """
         self.ip = ip
         self.address , self.port = ip.split(':') # split adress to ip and port
         self.port = int(self.port) # convert port to int
         pass
     
     def GetInfo(self):
+        """Function to get info about server
+        (To get players list see Playerslist class)
+        """
         server = a2s.info((self.address,self.port)) # get server data
         #players = a2s.players(address) #this is list of players I will implement it in another class
         data = a2s.rules((self.address,self.port)) # custom ARK data
@@ -56,9 +64,15 @@ class ARKServer(JSON):
         self.characterDownload = bool(data['ALLOWDOWNLOADCHARS_i']) # Can you download characters to this ARK ?
         self.hours = data['DayTime_s'][:2] # current in-game time
         self.minutes = data['DayTime_s'][2:]
+        self.ping = int(server.ping * 1000)
+        self.newestVersion = requests.get('http://arkdedicated.com/version').text
         return self
     
 class Player(JSON):
+    """Internal Player class
+    time - arrow library object
+    name - string
+    """
     def __init__(self,name,time):
         basetime= arrow.get(0)
         time = arrow.get(int(time)) #convert to int because of decimal digits later 
@@ -68,13 +82,21 @@ class Player(JSON):
         pass  
 
 class PlayersList(JSON):
+    """Players list class
+    self.list - is a list of Player class instaces
+    """
     def __init__(self,ip):
+        """Init of this class
+        ip - ip:port
+        """
         self.ip = ip
         self.address , self.port = ip.split(':') # split adress to ip and port
         self.port = int(self.port) # convert port to int
+        self.list = []
         pass
 
     def getPlayersList(self):
+        """Gets all needed data"""
         players = a2s.players((self.address,self.port)) # get raw data
         result = [] 
         for player in players: # for each player in data

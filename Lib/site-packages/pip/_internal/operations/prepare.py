@@ -8,7 +8,6 @@ import logging
 import mimetypes
 import os
 import shutil
-import sys
 
 from pip._vendor import requests
 from pip._vendor.six import PY2
@@ -28,10 +27,7 @@ from pip._internal.exceptions import (
 from pip._internal.utils.filesystem import copy2_fixed
 from pip._internal.utils.hashes import MissingHashes
 from pip._internal.utils.logging import indent_log
-from pip._internal.utils.marker_files import write_delete_marker_file
 from pip._internal.utils.misc import (
-    ask_path_exists,
-    backup_dir,
     display_path,
     hide_url,
     path_to_display,
@@ -103,45 +99,20 @@ def unpack_vcs_link(link, location):
     vcs_backend.unpack(location, url=hide_url(link.url))
 
 
-def _copy_file(filename, location, link):
-    # type: (str, str, Link) -> None
-    copy = True
-    download_location = os.path.join(location, link.filename)
-    if os.path.exists(download_location):
-        response = ask_path_exists(
-            'The file {} exists. (i)gnore, (w)ipe, (b)ackup, (a)abort'.format(
-                display_path(download_location)
-            ),
-            ('i', 'w', 'b', 'a'),
-        )
-        if response == 'i':
-            copy = False
-        elif response == 'w':
-            logger.warning('Deleting %s', display_path(download_location))
-            os.remove(download_location)
-        elif response == 'b':
-            dest_file = backup_dir(download_location)
-            logger.warning(
-                'Backing up %s to %s',
-                display_path(download_location),
-                display_path(dest_file),
-            )
-            shutil.move(download_location, dest_file)
-        elif response == 'a':
-            sys.exit(-1)
-    if copy:
-        shutil.copy(filename, download_location)
-        logger.info('Saved %s', display_path(download_location))
+class File(object):
+    def __init__(self, path, content_type):
+        # type: (str, str) -> None
+        self.path = path
+        self.content_type = content_type
 
 
-def unpack_http_url(
+def get_http_url(
     link,  # type: Link
-    location,  # type: str
     downloader,  # type: Downloader
     download_dir=None,  # type: Optional[str]
     hashes=None,  # type: Optional[Hashes]
 ):
-    # type: (...) -> str
+    # type: (...) -> File
     temp_dir = TempDirectory(kind="unpack", globally_managed=True)
     # If a download dir is specified, is the file already downloaded there?
     already_downloaded_path = None
@@ -159,11 +130,7 @@ def unpack_http_url(
             link, downloader, temp_dir.path, hashes
         )
 
-    # unpack the archive to the build dir location. even when only
-    # downloading archives, they have to be unpacked to parse dependencies
-    unpack_file(from_path, location, content_type)
-
-    return from_path
+    return File(from_path, content_type)
 
 
 def _copy2_ignoring_special_files(src, dest):
@@ -189,13 +156,25 @@ def _copy2_ignoring_special_files(src, dest):
 
 def _copy_source_tree(source, target):
     # type: (str, str) -> None
+    target_abspath = os.path.abspath(target)
+    target_basename = os.path.basename(target_abspath)
+    target_dirname = os.path.dirname(target_abspath)
+
     def ignore(d, names):
         # type: (str, List[str]) -> List[str]
-        # Pulling in those directories can potentially be very slow,
-        # exclude the following directories if they appear in the top
-        # level dir (and only it).
-        # See discussion at https://github.com/pypa/pip/pull/6770
-        return ['.tox', '.nox'] if d == source else []
+        skipped = []  # type: List[str]
+        if d == source:
+            # Pulling in those directories can potentially be very slow,
+            # exclude the following directories if they appear in the top
+            # level dir (and only it).
+            # See discussion at https://github.com/pypa/pip/pull/6770
+            skipped += ['.tox', '.nox']
+        if os.path.abspath(d) == target_dirname:
+            # Prevent an infinite recursion if the target is in source.
+            # This can happen when TMPDIR is set to ${PWD}/...
+            # and we copy PWD to TMPDIR.
+            skipped += [target_basename]
+        return skipped
 
     kwargs = dict(ignore=ignore, symlinks=True)  # type: CopytreeKwargs
 
@@ -207,23 +186,14 @@ def _copy_source_tree(source, target):
     shutil.copytree(source, target, **kwargs)
 
 
-def unpack_file_url(
+def get_file_url(
     link,  # type: Link
-    location,  # type: str
     download_dir=None,  # type: Optional[str]
     hashes=None  # type: Optional[Hashes]
 ):
-    # type: (...) -> Optional[str]
-    """Unpack link into location.
+    # type: (...) -> File
+    """Get file and optionally check its hash.
     """
-    link_path = link.file_path
-    # If it's a url to a local directory
-    if link.is_existing_dir():
-        if os.path.isdir(location):
-            rmtree(location)
-        _copy_source_tree(link_path, location)
-        return None
-
     # If a download dir is specified, is the file already there and valid?
     already_downloaded_path = None
     if download_dir:
@@ -234,7 +204,7 @@ def unpack_file_url(
     if already_downloaded_path:
         from_path = already_downloaded_path
     else:
-        from_path = link_path
+        from_path = link.file_path
 
     # If --require-hashes is off, `hashes` is either empty, the
     # link's embedded hash, or MissingHashes; it is required to
@@ -246,11 +216,7 @@ def unpack_file_url(
 
     content_type = mimetypes.guess_type(from_path)[0]
 
-    # unpack the archive to the build dir location. even when only downloading
-    # archives, they have to be unpacked to parse dependencies
-    unpack_file(from_path, location, content_type)
-
-    return from_path
+    return File(from_path, content_type)
 
 
 def unpack_url(
@@ -260,7 +226,7 @@ def unpack_url(
     download_dir=None,  # type: Optional[str]
     hashes=None,  # type: Optional[Hashes]
 ):
-    # type: (...) -> Optional[str]
+    # type: (...) -> Optional[File]
     """Unpack link into location, downloading if required.
 
     :param hashes: A Hashes object, one of whose embedded hashes must match,
@@ -273,19 +239,31 @@ def unpack_url(
         unpack_vcs_link(link, location)
         return None
 
+    # If it's a url to a local directory
+    if link.is_existing_dir():
+        if os.path.isdir(location):
+            rmtree(location)
+        _copy_source_tree(link.file_path, location)
+        return None
+
     # file urls
-    elif link.is_file:
-        return unpack_file_url(link, location, download_dir, hashes=hashes)
+    if link.is_file:
+        file = get_file_url(link, download_dir, hashes=hashes)
 
     # http urls
     else:
-        return unpack_http_url(
+        file = get_http_url(
             link,
-            location,
             downloader,
             download_dir,
             hashes=hashes,
         )
+
+    # unpack the archive to the build dir location. even when only downloading
+    # archives, they have to be unpacked to parse dependencies
+    unpack_file(file.path, location, file.content_type)
+
+    return file
 
 
 def _download_http_url(
@@ -415,14 +393,29 @@ class RequirementPreparer(object):
         else:
             logger.info('Collecting %s', req.req or req)
 
+        download_dir = self.download_dir
+        if link.is_wheel and self.wheel_download_dir:
+            # when doing 'pip wheel` we download wheels to a
+            # dedicated dir.
+            download_dir = self.wheel_download_dir
+
+        if link.is_wheel:
+            if download_dir:
+                # When downloading, we only unpack wheels to get
+                # metadata.
+                autodelete_unpacked = True
+            else:
+                # When installing a wheel, we use the unpacked
+                # wheel.
+                autodelete_unpacked = False
+        else:
+            # We always delete unpacked sdists after pip runs.
+            autodelete_unpacked = True
+
         with indent_log():
-            # @@ if filesystem packages are not marked
-            # editable in a req, a non deterministic error
-            # occurs when the script attempts to unpack the
-            # build directory
             # Since source_dir is only set for editable requirements.
             assert req.source_dir is None
-            req.ensure_has_source_dir(self.build_dir)
+            req.ensure_has_source_dir(self.build_dir, autodelete_unpacked)
             # If a checkout exists, it's unwise to keep going.  version
             # inconsistencies are logged later, but do not fail the
             # installation.
@@ -470,14 +463,8 @@ class RequirementPreparer(object):
                 # showing the user what the hash should be.
                 hashes = MissingHashes()
 
-            download_dir = self.download_dir
-            if link.is_wheel and self.wheel_download_dir:
-                # when doing 'pip wheel` we download wheels to a
-                # dedicated dir.
-                download_dir = self.wheel_download_dir
-
             try:
-                local_path = unpack_url(
+                local_file = unpack_url(
                     link, req.source_dir, self.downloader, download_dir,
                     hashes=hashes,
                 )
@@ -494,23 +481,8 @@ class RequirementPreparer(object):
 
             # For use in later processing, preserve the file path on the
             # requirement.
-            if local_path:
-                req.local_file_path = local_path
-
-            if link.is_wheel:
-                if download_dir:
-                    # When downloading, we only unpack wheels to get
-                    # metadata.
-                    autodelete_unpacked = True
-                else:
-                    # When installing a wheel, we use the unpacked
-                    # wheel.
-                    autodelete_unpacked = False
-            else:
-                # We always delete unpacked sdists after pip runs.
-                autodelete_unpacked = True
-            if autodelete_unpacked:
-                write_delete_marker_file(req.source_dir)
+            if local_file:
+                req.local_file_path = local_file.path
 
             abstract_dist = _get_prepared_distribution(
                 req, self.req_tracker, self.finder, self.build_isolation,
@@ -519,10 +491,15 @@ class RequirementPreparer(object):
             if download_dir:
                 if link.is_existing_dir():
                     logger.info('Link is a directory, ignoring download_dir')
-                elif local_path and not os.path.exists(
-                    os.path.join(download_dir, link.filename)
-                ):
-                    _copy_file(local_path, download_dir, link)
+                elif local_file:
+                    download_location = os.path.join(
+                        download_dir, link.filename
+                    )
+                    if not os.path.exists(download_location):
+                        shutil.copy(local_file.path, download_location)
+                        logger.info(
+                            'Saved %s', display_path(download_location)
+                        )
 
             if self._download_should_save:
                 # Make a .zip of the source_dir we already created.

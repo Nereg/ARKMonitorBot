@@ -7,7 +7,6 @@ import json
 import logging
 
 from pip._vendor import six
-from pip._vendor.six.moves import zip_longest
 
 from pip._internal.cli import cmdoptions
 from pip._internal.cli.req_command import IndexGroupCommand
@@ -18,6 +17,7 @@ from pip._internal.self_outdated_check import make_link_collector
 from pip._internal.utils.misc import (
     dist_is_editable,
     get_installed_distributions,
+    tabulate,
     write_output,
 )
 from pip._internal.utils.packaging import get_installer
@@ -183,7 +183,7 @@ class ListCommand(IndexGroupCommand):
         with self._build_session(options) as session:
             finder = self._build_package_finder(options, session)
 
-            for dist in packages:
+            def latest_info(dist):
                 typ = 'unknown'
                 all_candidates = finder.find_all_candidates(dist.key)
                 if not options.pre:
@@ -196,7 +196,7 @@ class ListCommand(IndexGroupCommand):
                 )
                 best_candidate = evaluator.sort_best_candidate(all_candidates)
                 if best_candidate is None:
-                    continue
+                    return None
 
                 remote_version = best_candidate.version
                 if best_candidate.link.is_wheel:
@@ -206,7 +206,11 @@ class ListCommand(IndexGroupCommand):
                 # This is dirty but makes the rest of the code much cleaner
                 dist.latest_version = remote_version
                 dist.latest_filetype = typ
-                yield dist
+                return dist
+
+            for dist in map(latest_info, packages):
+                if dist is not None:
+                    yield dist
 
     def output_package_listing(self, packages, options):
         packages = sorted(
@@ -239,24 +243,6 @@ class ListCommand(IndexGroupCommand):
 
         for val in pkg_strings:
             write_output(val)
-
-
-def tabulate(vals):
-    # From pfmoore on GitHub:
-    # https://github.com/pypa/pip/issues/3651#issuecomment-216932564
-    assert len(vals) > 0
-
-    sizes = [0] * max(len(x) for x in vals)
-    for row in vals:
-        sizes = [max(s, len(str(c))) for s, c in zip_longest(sizes, row)]
-
-    result = []
-    for row in vals:
-        display = " ".join([str(c).ljust(s) if c is not None else ''
-                            for s, c in zip_longest(sizes, row)])
-        result.append(display)
-
-    return result, sizes
 
 
 def format_for_columns(pkgs, options):

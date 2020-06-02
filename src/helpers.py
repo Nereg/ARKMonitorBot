@@ -4,6 +4,7 @@ import logging
 import discord
 import sys
 import ipaddress
+import classes as c
 
 def makeRequest(SQL,params=[]): # wow universal !
     conf = Config() # load config
@@ -48,3 +49,24 @@ def IpCheck(Ip):
     except:
         return False # if any error retunr false
 
+
+async def AddServer(ip,ctx):
+    debug = Debuger('AddServer')
+    if (IpCheck(ip) != True): # check IP address (see helpers.py)
+        debug.debug(f'Wrong IP : {ip}') # debug
+        await ctx.send('Something is wrong with **IP**!') # and reply to user
+        return # if ip is correct
+    try: 
+        server = c.ARKServer(ip) # construct our classes
+        playersList = c.PlayersList(ip)
+        playersList.getPlayersList() # and get data
+        server.GetInfo()
+        debug.debug(f"Server {ip} is up!") # and debug
+    except Exception as e: # if any exception
+        debug.debug(e)
+        await ctx.send(f'Server {ip} is offline!')
+        return
+    makeRequest('INSERT INTO Servers(Ip,ServerObj,DataObj,LastOnline) VALUES (?,?,?,?)',[ip,server.toJSON(),playersList.toJSON(),1])  # insert it into DB 
+    debug.debug(f'added server : {ip} !') # debug
+    await ctx.send('Done!') # and reply
+    return ip
