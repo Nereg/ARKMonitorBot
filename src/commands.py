@@ -10,7 +10,7 @@ async def list_servers(ctx): # /list entrypoint
     i = 1 # i (yeah classic)
     for result in data: # fro each record in DB
         server = c.ARKServer.fromJSON(result[1]) # construct our class
-        online = bool(data[0][3]) # exstarct last online state 
+        online = bool(result[3]) # exstarct last online state 
         emoji = ':green_circle:' if online else ':red_circle:' # if last online is tru green circle else (if offline) red
         servers += f'{i}. {server.name}  {emoji}  ||{server.ip}|| \n' # construct line and add it to all strings
         i += 1 

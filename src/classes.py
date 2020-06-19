@@ -3,6 +3,8 @@ import arrow
 import json
 import jsonpickle
 import requests
+import os
+from os import path
 
 class JSON: #base class
     """Base class for all classes to easly JSON encode and decode"""
@@ -103,3 +105,39 @@ class PlayersList(JSON):
             result.append(Player(player.name,player.duration)) # construct player class and append it to our results
         self.list = result 
         return self
+
+class GuildSettings(JSON):
+    """Class for guild settingslike prefix and anything in future"""
+    def __init__(self,prefix='!',data={}):
+        """Just init"""
+        self.prefix=prefix
+        self.data=data
+        pass
+
+    def addToData(self,key,value,override=False):
+        if (key in self.data and override == False):
+            raise Exception(f'{key} is in data array and override is false!')
+        else:
+            self.data[key] = value
+            return self.data
+
+class Translation():
+    def load_file(self,lang,name='translations'):
+        try:
+            file_object  = open('./{}/{}.json'.format(name,lang), "r")
+        except FileNotFoundError:
+            raise Exception('Tarnslation file `{}` not found in `{}`!'.format(lang,path))
+        content = file_object.read()
+        file_object.close()
+        self.json = content 
+        self.l = json.loads(self.json)
+
+    def __init__(self,lang='EN'):
+        self.lang = lang
+        self.load_file(lang)
+        pass
+
+    def change_lang(self,lang):
+        self.lang = lang
+        self.load_file(lang)
+        pass

@@ -1,6 +1,6 @@
 from helpers import *
 import classes as c
-import menus as m
+from menus import *
 import discord # main discord libary
 from discord.ext import commands # import commands extension
 
@@ -40,7 +40,7 @@ Ping : {server.ping} ms
     @commands.command()
     async def server(self,ctx, mode, *args): # /server command handler
         debug = Debuger('Server_command') # create debugger
-    
+        lang = c.Translation()
         debug.debug(args)
         if(mode == 'add'): # if /server add 
             debug.debug('Entered ADD mode!') # debug
@@ -53,7 +53,10 @@ Ping : {server.ping} ms
         elif (mode == 'info'): # if /server info 
             debug.debug('Entered INFO mode!') # debug
             if (args == ()):
-                server = await m.SelectServerMenu(self.bot).prompt(ctx)
+                selector = Selector(ctx,self.bot,lang)
+                server = await selector.select()
+                if server == '':
+                    return
                 ip = server.ip
             if (IpCheck(ip) != True): # IP check
                 debug.debug(f'Wrong IP : {ip}') # debug
@@ -79,7 +82,7 @@ Ping : {server.ping} ms
                 await ctx.send(self.serverInfo(server,playersList,online)) # send info
                 data = makeRequest('SELECT * FROM Servers WHERE IP = ?',[ip]) # select data from DB
                 if (data.__len__() > 0): # if we already have record 
-                    makeRequest('UPDATE Servers SET ServerObj=?, DataObj=? WHERE IP=?',[server.toJSON(),playersList.toJSON(),ip]) # update it
+                    makeRequest('UPDATE Servers SET ServerObj=?, DataObj=?,LastOnline=1,OfflineTrys=0  WHERE IP=?',[server.toJSON(),playersList.toJSON(),ip]) # update it
                     debug.debug(f'Updated DB record for {ip} server!') # debug
                 else: # if we doesn`t have record
                     debug.debug(f'Created DB record for {ip} server!') # debug

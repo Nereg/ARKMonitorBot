@@ -5,6 +5,7 @@ import discord
 import sys
 import ipaddress
 import classes as c
+from inspect import currentframe
 
 def makeRequest(SQL,params=[]): # wow universal !
     conf = Config() # load config
@@ -70,3 +71,13 @@ async def AddServer(ip,ctx):
     debug.debug(f'added server : {ip} !') # debug
     await ctx.send('Done!') # and reply
     return ip
+
+def get_prefix(bot,message):
+    conf = Config()
+    guildId = message.guild.id
+    data = makeRequest('SELECT * FROM settings WHERE GuildId=?',[str(guildId)])
+    if (data.__len__() <= 0):
+        return conf.defaultPrefix
+    else:
+        return data[0][3]
+    

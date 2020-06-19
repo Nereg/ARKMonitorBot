@@ -1,69 +1,73 @@
 from discord.ext import menus
 from helpers import * # all our helpers
 import classes as c
-class SelectServerMenu(menus.Menu):
-
-    async def button_action(self, payload):
-        debug = Debuger('buttons')
-        debug.debug(payload)
-        selected_number = int(payload.emoji.__str__()[:1])
-        debug.debug(self.servers)
-        self.stop()
-        self.result = self.servers[selected_number]
-        
-    async def addButtonhandler(self,payload):
-        debug = Debuger('AddButtonHandler')
-        await self.message.edit(content="Enter IP and port like that: `1.1.1.1:1234`")
-        debug.debug('Entered ADD button handler!')
-        @self.bot.on_message
-        async def on_message(message):
-            debug.debug('Entered on message handler!')
-            if message.author != self.user:
-                debug.debug()
-                result = await AddServer(message.content,self.ctx)
-                self.bot.remove_listener(on_message)
-                debug.debug(result)
-                return result
-
-                    
-    def create_button(self, number): # create button with some number emoji
-        button = menus.Button(f'{number}\u20e3', self.__class__.button_action) 
-        self.add_button(button)
-    
-    async def stop_bot(self,test):
-        self.result = ''
-        self.stop()
-
-    def makeButtons(self): # called in init because needed ) 
-        data = makeRequest('SELECT * FROM Servers') # select all servers from DB
-        count = data.__len__() # how much we have ?
-        for i in range(1,count+1): # for each of them 
-            self.create_button(i) # we create button with number TODO : if more than 10 of server added we need pages  
-        button = menus.Button('\u274E', self.__class__.stop_bot) # create stop button after ALL buttons will be placed
-        self.add_button(button) # and add it
-        button = menus.Button('\u2795', self.__class__.addButtonhandler) # create add button to easly add servers
-        self.add_button(button) # and add it
-
-    def __init__(self,bot): #init of this class
-        super().__init__(timeout=30.0, delete_message_after=True) # set settings 
-        self.bot = bot
-        self.makeButtons() # see function
-        self.servers = [''] # 0 element won't be used 
-
-    async def send_initial_message(self, ctx, channel):
-        servers = '' # string with list of servers
-        data = makeRequest('SELECT * FROM Servers') # select all servers from DB
-        i = 1 # i (yeah classic)
-        for result in data: # fro each record in DB
-            server = c.ARKServer.fromJSON(result[1]) # construct our class
-            self.servers.append(server) # append our server class in right order to use later
-            online = bool(1) # exstarct last online state 
-            emoji = ':green_circle:' if online else ':red_circle:' # if last online is tru green circle else (if offline) red
-            servers += f'{i}. {server.name}  {emoji}  ||{server.ip}|| \n' # construct line and add it to all strings
-            i += 1 
+import asyncio
+class Selector():
+    def __init__(self,ctx,bot,lang):
         self.ctx = ctx
-        return await channel.send(f'Выбери сервер: \n {servers}')
-    
-    async def prompt(self, ctx): #Entrypoint
-        await self.start(ctx, wait=True) # start menu
-        return self.result # return result
+        self.bot = bot
+        self.l = lang # classes.Translation 
+        pass
+
+    def createEmbed(self, data,number):
+        server = c.ARKServer.fromJSON(data[number][1])
+        online = bool(data[number][3])
+        embed = discord.Embed(title=f'{number+1}. {server.name}')
+        status = ':green_circle: '+ self.l.l['online'] if online else ':red_circle: ' + self.l.l['offline']
+        pve = self.l.l['yes'] if server.PVE else self.l.l['no']
+        embed.add_field(name='IP',value=server.ip)
+        embed.add_field(name=self.l.l['status'],value=status)
+        embed.add_field(name=self.l.l['version'],value=f'{server.version}')
+        embed.add_field(name='PVE?',value=pve)
+        embed.add_field(name=self.l.l['players_count'],value=f'{server.online}/{server.maxPlayers}')
+        return embed
+
+    async def select(self):
+        reactions = ['⏮️','\u2B05','\u2705','\u27A1','⏭️','\u23F9']
+        data = makeRequest('SELECT * FROM Servers')
+        self.msg = await self.ctx.send(self.l.l['server_select'],embed=self.createEmbed(data,0))
+        for reaction in reactions:
+            await self.msg.add_reaction(reaction)
+        flag = 0
+        counter = 0
+        selected = False
+        while flag == 0:
+            try:
+                reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
+            except asyncio.TimeoutError:
+                flag = 1
+                await self.msg.delete()
+            else :
+                if (str(reaction.emoji) == reactions[0]):
+                    await reaction.remove(self.ctx.author)
+                    counter = 0
+                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                if (str(reaction.emoji) == reactions[1]):
+                    await reaction.remove(self.ctx.author)
+                    if (counter > 0):
+                        counter -= 1
+                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                elif (str(reaction.emoji) == reactions[2]):
+                    await reaction.remove(self.ctx.author)
+                    await self.msg.delete()
+                    selected = True
+                    flag = 1
+                elif (str(reaction.emoji) == reactions[3]):
+                    await reaction.remove(self.ctx.author)
+                    if (counter < data.__len__() - 1):
+                        counter += 1
+                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                elif (str(reaction.emoji) == reactions[4]):
+                    await reaction.remove(self.ctx.author)
+                    counter = data.__len__() - 1 
+                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                elif (str(reaction.emoji) == reactions[5]):
+                    await reaction.remove(self.ctx.author)
+                    await self.msg.delete()
+                    flag = 1
+        if selected == True:
+            return c.ARKServer.fromJSON(data[counter][1])
+        else:
+            return ''
+
+        

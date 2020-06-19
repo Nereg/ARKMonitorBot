@@ -1,0 +1,19 @@
+{
+
+    "help": "*Help message*\n`{prefix}prefix` - change or view current server's prefix\n`{prefix}server add` - add ARK server to bot's list\n`{prefix}server info` - view info about server\n`{prefix}watch`- select and watch if sever goes online or offline (will send notification in this channel)\n`{prefix}share` - write this if you want to share this bot (uWu THX!)",
+    "ping" : "Pong! Ping is: {} ms !",
+    "curr_prefix" : "Current prefix is : `{}` !",
+    "cant_change_prefix" : "You can`t change prefix in DM.",
+    "done" : "Done !",
+    "share_msg" : "Here is link {} to invite me to our server! Also you can DM me !",
+
+    "online" : "Online",
+    "offline" : "Offline",
+    "yes": "Yes",
+    "no" : "No",
+    "status" : "Status",
+    "version" : "Version",
+    "players_count" : "Players count",
+    "server_select" : "Select server:"
+    
+}
