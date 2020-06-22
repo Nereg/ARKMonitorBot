@@ -2,6 +2,7 @@ from discord.ext import menus
 from helpers import * # all our helpers
 import classes as c
 import asyncio
+import json
 class Selector():
     def __init__(self,ctx,bot,lang):
         self.ctx = ctx
@@ -10,8 +11,8 @@ class Selector():
         pass
 
     def createEmbed(self, data,number):
-        server = c.ARKServer.fromJSON(data[number][1])
-        online = bool(data[number][3])
+        server = c.ARKServer.fromJSON(data[number][4])
+        online = bool(data[number][6])
         embed = discord.Embed(title=f'{number+1}. {server.name}')
         status = ':green_circle: '+ self.l.l['online'] if online else ':red_circle: ' + self.l.l['offline']
         pve = self.l.l['yes'] if server.PVE else self.l.l['no']
@@ -24,8 +25,21 @@ class Selector():
 
     async def select(self):
         reactions = ['⏮️','\u2B05','\u2705','\u27A1','⏭️','\u23F9']
-        data = makeRequest('SELECT * FROM Servers')
-        self.msg = await self.ctx.send(self.l.l['server_select'],embed=self.createEmbed(data,0))
+        if self.ctx.guild == None : 
+            GuildId = self.ctx.channel.id
+            Type = 1
+        else:
+            GuildId = self.ctx.guild.id
+            Type = 0
+        data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
+        Servers = json.loads(data[0][3])
+        statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
+        data = makeRequest(statement)
+        try:
+            self.msg = await self.ctx.send(self.l.l['server_select'],embed=self.createEmbed(data,0))
+        except IndexError:
+            await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
+            return ''
         for reaction in reactions:
             await self.msg.add_reaction(reaction)
         flag = 0
@@ -66,7 +80,7 @@ class Selector():
                     await self.msg.delete()
                     flag = 1
         if selected == True:
-            return c.ARKServer.fromJSON(data[counter][1])
+            return c.ARKServer.fromJSON(data[counter][4])
         else:
             return ''
 

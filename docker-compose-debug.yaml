@@ -9,13 +9,13 @@ services:
       - ./sql:/var/lib/mysql
     ports:
       - "3306:3306"
-  
-  bot:
-    build:
-      context: .
-      dockerfile: dockerfile
-  
-  updater:
-    build: 
-      context: .
-      dockerfile: updater_dockerfile
+   
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.0.1
+    restart: always
+    environment:
+      PMA_HOST: mysql-server
+      PMA_USER: root
+      PMA_PASSWORD: secret
+    ports:
+      - "8080:80"

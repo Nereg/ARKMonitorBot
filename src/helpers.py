@@ -5,17 +5,34 @@ import discord
 import sys
 import ipaddress
 import classes as c
+import config
 from inspect import currentframe
+import mysql.connector
 
-def makeRequest(SQL,params=[]): # wow universal !
-    conf = Config() # load config
-    conn = sqlite3.connect(conf.dbPath) # open connection to db in path from config 
-    cursor = conn.cursor() # old magic
-    cursor.execute(SQL,params) # really 
-    conn.commit() # I Ctrl + C and Ctrl + V this
-    results = cursor.fetchall() # from old code
-    conn.close() # close connection to DB!
-    return results # and return results
+def  makeRequest(SQL,params=()):
+    cfg = config.Config()
+    mydb = mysql.connector.connect(
+  host=cfg.dbHost,
+  user=cfg.dbUser,
+  password=cfg.dbPass,
+  database=cfg.DB,buffered = True
+    )
+    mycursor = mydb.cursor()
+    mycursor.execute(SQL, params)
+    mydb.commit()
+    try :
+        return mycursor.fetchall()
+    except mysql.connector.errors.InterfaceError :
+        return []
+#def makeRequest(SQL,params=[]): # wow universal !
+#    conf = Config() # load config
+#    conn = sqlite3.connect(conf.dbPath) # open connection to db in path from config 
+#    cursor = conn.cursor() # old magic
+#    cursor.execute(SQL,params) # really 
+#    conn.commit() # I Ctrl + C and Ctrl + V this
+#    results = cursor.fetchall() # from old code
+#    conn.close() # close connection to DB!
+#    return results # and return results
 
 def Debuger(name):
     #create logger
@@ -67,17 +84,19 @@ async def AddServer(ip,ctx):
         debug.debug(e)
         await ctx.send(f'Server {ip} is offline!')
         return
-    makeRequest('INSERT INTO Servers(Ip,ServerObj,DataObj,LastOnline) VALUES (?,?,?,?)',[ip,server.toJSON(),playersList.toJSON(),1])  # insert it into DB 
-    debug.debug(f'added server : {ip} !') # debug
+    splitted = ip.split(':')
+    makeRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
+    Id = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
+    debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
     await ctx.send('Done!') # and reply
-    return ip
+    return Id[0][0]
 
 def get_prefix(bot,message):
     conf = Config()
     guildId = message.guild.id
-    data = makeRequest('SELECT * FROM settings WHERE GuildId=?',[str(guildId)])
+    data = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
     if (data.__len__() <= 0):
         return conf.defaultPrefix
     else:
-        return data[0][3]
+        return data[0][2]
     

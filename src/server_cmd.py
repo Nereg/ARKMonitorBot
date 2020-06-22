@@ -3,6 +3,7 @@ import classes as c
 from menus import *
 import discord # main discord libary
 from discord.ext import commands # import commands extension
+import json
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
@@ -48,7 +49,29 @@ Ping : {server.ping} ms
                 await ctx.send('No IP!')
                 return 
             ip = args[0]
-            await AddServer(ip,ctx)
+            Id = await AddServer(ip,ctx)
+            if ctx.guild == None:
+                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=1',(ctx.channel.id,))
+                if data.__len__() <= 0:
+                    makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,1)',(ctx.channel.id,json.dumps([Id]),))
+                else:
+                    if (data[0][3] == None):
+                        ids = []
+                    else:
+                        ids = json.loads(data[0][3])
+                    ids.append(Id)
+                    makeRequest('UPDATE SET ServersId=%s WHERE GuildId=%s AND Type=1',(json.dumps(ids),ctx.channel.id,))
+            else:
+                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,))
+                if data.__len__() <= 0:
+                    makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),))
+                else:
+                    if (data[0][3] == None):
+                        ids = []  
+                    else:
+                        ids = json.loads(data[0][3])
+                    ids.append(Id)
+                    makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=0',(json.dumps(ids),ctx.guild.id,))
 
         elif (mode == 'info'): # if /server info 
             debug.debug('Entered INFO mode!') # debug
@@ -73,24 +96,24 @@ Ping : {server.ping} ms
                 debug.debug(e) # debug
                 debug.debug(f'Server {ip} is offline!') # also debug
                 online = False # set online flag to false
-                data = makeRequest('SELECT * FROM Servers WHERE IP = ?',[ip]) # Select server from DB
+                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # Select server from DB
                 if (data.__len__() > 0): # id we have record with that IP
-                    trys = data[0][4] # extract offline trys
-                    makeRequest('UPDATE Servers SET OfflineTrys=?, LastOnline=0 WHERE IP=?',[trys+1,ip]) # and update record 
+                    trys = data[0][6] # extract offline trys
+                    makeRequest('UPDATE servers SET OfflineTrys=%s, LastOnline=0 WHERE Ip=%s',(trys+1,ip,)) # and update record 
         
             if online: #if server is online
                 await ctx.send(self.serverInfo(server,playersList,online)) # send info
-                data = makeRequest('SELECT * FROM Servers WHERE IP = ?',[ip]) # select data from DB
+                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data from DB
                 if (data.__len__() > 0): # if we already have record 
-                    makeRequest('UPDATE Servers SET ServerObj=?, DataObj=?,LastOnline=1,OfflineTrys=0  WHERE IP=?',[server.toJSON(),playersList.toJSON(),ip]) # update it
+                    makeRequest('UPDATE servers SET ServerObj=%s, PlayersObj=%s,LastOnline=1,OfflineTrys=0  WHERE Ip=%s',(server.toJSON(),playersList.toJSON(),ip)) # update it
                     debug.debug(f'Updated DB record for {ip} server!') # debug
                 else: # if we doesn`t have record
                     debug.debug(f'Created DB record for {ip} server!') # debug
-                    makeRequest("INSERT INTO Servers (ServerObj,DataObj,LastOnline,OfflineTrys,IP) VALUES (?,?,?,?,?)",[server.toJSON(),playersList.toJSON(),int(True),0,server.ip]) # and add record
+                    makeRequest("INSERT INTO servers (ServerObj,PlayersObj,Ip) VALUES (%s,%s,%s)",[server.toJSON(),playersList.toJSON(),server.ip]) # and add record
             else: # id server is offline 
-                data = makeRequest('SELECT * FROM Servers WHERE IP = ?',[ip]) # select data
+                data = makeRequest('SELECT * FROM servers WHERE Ip = ?',(ip)) # select data
                 if (data.__len__() > 0): # if we have  record about this server
-                    await ctx.send(self.serverInfo(c.ARKServer.fromJSON(data[0][1]),c.PlayersList.fromJSON(data[0][2]),online)) # construct classes and send data
+                    await ctx.send(self.serverInfo(c.ARKServer.fromJSON(data[0][4]),c.PlayersList.fromJSON(data[0][5]),online)) # construct classes and send data
                 else: # else
                     debug.debug(f'server {ip} is offline and we have no data about it!') # debug
                     await ctx.send('Server is offline and we have no data about it!') # send message
