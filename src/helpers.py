@@ -1,5 +1,5 @@
 import sqlite3
-from config import Config
+import config
 import logging
 import discord
 import sys
@@ -92,7 +92,7 @@ async def AddServer(ip,ctx):
     return Id[0][0]
 
 def get_prefix(bot,message):
-    conf = Config()
+    conf = config.Config()
     guildId = message.guild.id
     data = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
     if (data.__len__() <= 0):

@@ -1,6 +1,6 @@
 import classes as c # our classes
 from helpers import * # our helpers
-from config import Config as conf # config
+import config  # config
 import discord # main discord libary
 from discord.ext import commands # import commands extension
 import commands as cmd # import all our commands
@@ -19,7 +19,7 @@ from datetime import datetime
 # helpers.py - helper funtions (like work with DB)
 
 debug = Debuger('main') # create debuger (see helpers.py)
-conf = conf() # load config
+conf = config.Config() # load config
 bot = commands.Bot(command_prefix=get_prefix,help_command=None) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation
