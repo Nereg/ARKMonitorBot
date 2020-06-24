@@ -124,7 +124,9 @@ class GuildSettings(JSON):
 class Translation():
     def load_file(self,lang,name='translations'):
         try:
-            file_object  = open('./{}/{}.json'.format(name,lang), "r")
+            script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+            rel_path = "translations/{}.json".format(lang)
+            file_object  = open(os.path.join(script_dir, rel_path), "r")
         except FileNotFoundError:
             raise Exception('Tarnslation file `{}` not found in `{}`!'.format(lang,path))
         content = file_object.read()
@@ -132,7 +134,7 @@ class Translation():
         self.json = content 
         self.l = json.loads(self.json)
 
-    def __init__(self,lang='EN'):
+    def __init__(self,lang='en'):
         self.lang = lang
         self.load_file(lang)
         pass

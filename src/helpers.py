@@ -15,6 +15,7 @@ def  makeRequest(SQL,params=()):
   host=cfg.dbHost,
   user=cfg.dbUser,
   password=cfg.dbPass,
+  port=3306,
   database=cfg.DB,buffered = True
     )
     mycursor = mydb.cursor()
@@ -95,7 +96,7 @@ def get_prefix(bot,message):
     conf = config.Config()
     guildId = message.guild.id
     data = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
-    if (data.__len__() <= 0):
+    if (data.__len__() <= 0 or data[0][2] == None):
         return conf.defaultPrefix
     else:
         return data[0][2]

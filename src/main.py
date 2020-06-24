@@ -12,7 +12,7 @@ import json
 import traceback
 import time
 from datetime import datetime
-
+import migration
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -30,18 +30,9 @@ t = c.Translation() # load default english translation
 #server info - get info about server (some already added sorver or you could enter ip:port ?) 
 #add - spits out link with invite !
 
-#@bot.on_message
-#async def on_message(message):
-#    await message.channel.send(t.l['curr_prefix'].format(get_prefix(bot,message)))
-#    if (message.author == bot.user):
-#        return
-#    else:
-#        await message.channel.send(t.l['curr_prefix'].format(get_prefix(bot,message)))
-#        for user in message.mentions:
-#            if user == bot.user:
-#                await message.channel.send(t.l['curr_prefix'].format(get_prefix(bot,message)))
-#                return
-                
+
+
+
 @bot.command()
 async def help(ctx):
     await ctx.send(t.l['help'].format(prefix=ctx.prefix))

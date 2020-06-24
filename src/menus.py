@@ -32,6 +32,9 @@ class Selector():
             GuildId = self.ctx.guild.id
             Type = 0
         data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
+        if (data.__len__() == 0):
+            await self.ctx.send('No servers added !')
+            return ''
         Servers = json.loads(data[0][3])
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
         data = makeRequest(statement)

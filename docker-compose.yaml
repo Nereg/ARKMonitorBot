@@ -1,12 +1,15 @@
 version: "3.7"
 services:
-  mysql-server:
+  db:
     image: mysql:8.0.19
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: bot
+      MYSQL_USER: root
     volumes:
       - ./sql:/var/lib/mysql
+      - ./src/:/docker-entrypoint-initdb.d/
     ports:
       - "3306:3306"
   
@@ -14,8 +17,22 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+    depends_on:
+      - "db"
   
   updater:
     build: 
       context: .
       dockerfile: updater_dockerfile
+    depends_on:
+      - "db"
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.0.1
+    restart: always
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: secret
+    ports:
+      - "8080:80"
