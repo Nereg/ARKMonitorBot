@@ -7,4 +7,4 @@ class Config:
         self.adminId = ''
         self.token = ''
         self.defaultPrefix = '!'
-        self.inviteUrl = 'https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot&permissions=8' #fix permisions!
+        self.inviteUrl = 'https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot&permissions=1141189696'
