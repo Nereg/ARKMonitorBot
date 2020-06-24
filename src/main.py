@@ -54,6 +54,17 @@ async def ping(ctx):
     await ctx.send(t.l['ping'].format(time))
 
 @bot.command()
+async def count(ctx):
+    guild_count = 0
+    members_count = 0
+    for guild in bot.guilds:
+        guild_count +=1
+        for member in guild.members:
+            members_count += 1
+    await ctx.send(f'Total guilds count:`{guild_count}`\nTotal members in that guilds:`{members_count}`')
+
+
+@bot.command()
 async def prefix(ctx,*args):
     print(args)
     if (args.__len__() <= 0):
