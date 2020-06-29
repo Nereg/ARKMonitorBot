@@ -1,6 +1,6 @@
 {
 
-    "help": "*Help message*\nBot version: `beta 0.1`\n`{prefix}prefix` - change or view current server's prefix\n`{prefix}server add` - add ARK server to bot's list\n`{prefix}server info` - view info about server\n`{prefix}share` - write this if you want to share this bot (uWu THX!)",
+    "help": "*Help message*\nBot version: `beta 0.1`\n`{prefix}prefix` - change or view current server's prefix\n`{prefix}server add` - add ARK server to bot's list\n`{prefix}server info` - view info about server\n`{prefix}server delete` - delete server from bot's list\n`{prefix}share` - write this if you want to share this bot (uWu THX!)",
     "ping" : "Pong! Ping is: {} ms !",
     "curr_prefix" : "Current prefix is : `{}` !",
     "cant_change_prefix" : "You can`t change prefix in DM.",
