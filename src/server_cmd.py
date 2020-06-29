@@ -122,13 +122,13 @@ Ping : {server.ping} ms
             server = await selector.select()
             if server == '':
                 return
-            if self.ctx.guild == None : 
-                GuildId = self.ctx.channel.id
+            if ctx.guild == None : 
+                GuildId = ctx.channel.id
                 Type = 1
             else:
-                GuildId = self.ctx.guild.id
+                GuildId = ctx.guild.id
                 Type = 0
-            serverId = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server,))
+            serverId = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server.ip,))
             serverId = serverId[0][0]
             serverIds = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
             serverIds = json.loads(serverIds[0][3]) #remove()
