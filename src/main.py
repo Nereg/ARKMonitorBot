@@ -123,8 +123,8 @@ async def watch(ctx): # same
     #makeRequest('INSERT INTO `notifications`(`Type`, `Data`) VALUES (%s,%s)',(1,json.dumps([ctx.channel.id,server.ip])))
     await ctx.send('Something will be here but not now ;)')
 
-@bot.command()
-async def test(ctx):
-    raise Exception('Test')
+#@bot.command()
+#async def test(ctx):
+#    raise Exception('Test')
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !

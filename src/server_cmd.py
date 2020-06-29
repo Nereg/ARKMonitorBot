@@ -117,3 +117,23 @@ Ping : {server.ping} ms
                 else: # else
                     debug.debug(f'server {ip} is offline and we have no data about it!') # debug
                     await ctx.send('Server is offline and we have no data about it!') # send message
+        elif (mode == 'delete'):
+            selector = Selector(ctx,self.bot,lang)
+            server = await selector.select()
+            if server == '':
+                return
+            if self.ctx.guild == None : 
+                GuildId = self.ctx.channel.id
+                Type = 1
+            else:
+                GuildId = self.ctx.guild.id
+                Type = 0
+            serverId = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server,))
+            serverId = serverId[0][0]
+            serverIds = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
+            serverIds = json.loads(serverIds[0][3]) #remove()
+            makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds.remove(serverId)),GuildId,Type))
+            await ctx.send('Done!')
+        else:
+            await ctx.send('Wrong mode selected !')
+            return
