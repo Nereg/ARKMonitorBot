@@ -7,6 +7,7 @@ import json
 
 async def list_servers(ctx): # /list entrypoint
     servers = '' # string with list of servers
+    l = c.Translation()
     if ctx.guild == None : 
         GuildId = ctx.channel.id
         Type = 1
@@ -14,7 +15,11 @@ async def list_servers(ctx): # /list entrypoint
         GuildId = ctx.guild.id
         Type = 0
     data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
-    Servers = json.loads(data[0][3])
+    if (data[0][3] == None or data[0][3] == 'null'):
+        await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
+        return
+    else:
+        Servers = json.loads(data[0][3]) #remove()
     statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
     data = makeRequest(statement)
     i = 1 # i (yeah classic)
