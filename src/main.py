@@ -60,10 +60,9 @@ async def ping(ctx):
 async def count(ctx):
     guild_count = 0
     members_count = 0
+    guild_count = bot.guilds.__len__()
     for guild in bot.guilds:
-        guild_count +=1
-        for member in guild.members:
-            members_count += 1
+        members_count += guild.members.__len__()
     await ctx.send(f'Total guilds count:`{guild_count}`\nTotal members in that guilds:`{members_count}`')
 
 
