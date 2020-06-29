@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 import migration
 import dbl
+import os 
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -57,6 +58,7 @@ async def ping(ctx):
     await ctx.send(t.l['ping'].format(time))
 
 @bot.command()
+@commands.is_owner()
 async def count(ctx):
     guild_count = 0
     members_count = 0
@@ -65,6 +67,42 @@ async def count(ctx):
         members_count += guild.members.__len__()
     await ctx.send(f'Total guilds count:`{guild_count}`\nTotal members in that guilds:`{members_count}`')
 
+@bot.command()
+@commands.is_owner()
+async def exec(ctx,sql):
+    data = makeRequest(sql)
+    await ctx.send(data)
+
+@bot.command()
+@commands.is_owner()
+async def stop(ctx):
+    await ctx.send('Bye!')
+    exit()
+
+#@bot.command()
+#@commands.is_owner()
+#async def restart(ctx):
+#    await ctx.send('OK i will restart myself')
+#    os.system("cd /app/ | sudo docker-compose up -d --build")  
+
+#@bot.command()
+#@commands.is_owner()
+#async def lockdown(ctx):
+#    await ctx.send('TOTAL LOCKDOWN!!')
+#    @bot.check
+#    async def lockdown(ctx):
+#        if (ctx.author.id == 277490576159408128):
+#            return True
+#        await ctx.send('Bot is on lockdown!')
+#        return False
+
+#@bot.command()
+#@commands.is_owner()
+#async def unlockdown(ctx):
+#    await ctx.send('Undoing total lockdown!')
+#    @bot.check
+#    async def unlockdown(ctx):
+#        return True
 
 @bot.command()
 async def prefix(ctx,*args):
@@ -89,6 +127,8 @@ async def prefix(ctx,*args):
 async def on_command_error(ctx,error):
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
         await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
+        return
+    if (type(error) == discord.ext.commands.errors.CheckFailure):
         return
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
@@ -115,6 +155,7 @@ async def share(ctx):
     await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
 
 @bot.command()
+@commands.is_owner()
 async def watch(ctx): # same
     #selector = Selector(ctx,bot,c.Translation())
     #server = await selector.select()
