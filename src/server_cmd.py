@@ -66,7 +66,7 @@ Ping : {server.ping} ms
                 if data.__len__() <= 0:
                     makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),))
                 else:
-                    if (data[0][3] == None):
+                    if (data[0][3] == None or data[0][3] == 'null'):
                         ids = []  
                     else:
                         ids = json.loads(data[0][3])
@@ -131,7 +131,10 @@ Ping : {server.ping} ms
             serverId = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server.ip,))
             serverId = serverId[0][0]
             serverIds = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
-            serverIds = json.loads(serverIds[0][3]) #remove()
+            if (serverIds[0][3] == None or serverIds[0][3] == 'null'):
+                serverIds = []
+            else:
+                serverIds = json.loads(serverIds[0][3]) #remove()
             makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds.remove(serverId)),GuildId,Type))
             await ctx.send('Done!')
         else:
