@@ -13,6 +13,8 @@ import traceback
 import time
 from datetime import datetime
 import migration
+import dbl
+
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -42,6 +44,7 @@ async def help(ctx):
 #    await cmd.server.server(ctx,mode,args)
 
 bot.add_cog(ServerCmd(bot))
+#bot.add_cog(dbl.TopGG(bot)) # will add when my bot approved by DBL see dbl.py for code and config string
 #bot.add_cog(Updater(bot))
 
 @bot.command()
