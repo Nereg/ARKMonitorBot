@@ -8,6 +8,8 @@ import classes as c
 import config
 from inspect import currentframe
 import mysql.connector
+import asyncio
+from discord.ext import commands 
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -25,15 +27,6 @@ def  makeRequest(SQL,params=()):
         return mycursor.fetchall()
     except mysql.connector.errors.InterfaceError :
         return []
-#def makeRequest(SQL,params=[]): # wow universal !
-#    conf = Config() # load config
-#    conn = sqlite3.connect(conf.dbPath) # open connection to db in path from config 
-#    cursor = conn.cursor() # old magic
-#    cursor.execute(SQL,params) # really 
-#    conn.commit() # I Ctrl + C and Ctrl + V this
-#    results = cursor.fetchall() # from old code
-#    conn.close() # close connection to DB!
-#    return results # and return results
 
 def Debuger(name):
     #create logger
@@ -49,6 +42,10 @@ def Debuger(name):
     ds = logging.getLogger('discord')
     ds.setLevel(logging.DEBUG)
     ds.addHandler(screen_handler)
+    #integrate async io 
+    aio = logging.getLogger("asyncio")
+    aio.setLevel(logging.DEBUG)
+    aio.addHandler(screen_handler)
     #and return
     return log_obj
 

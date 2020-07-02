@@ -12,7 +12,6 @@ import json
 import traceback
 import time
 from datetime import datetime
-import migration
 import dbl
 import os 
 
@@ -23,16 +22,12 @@ import os
 
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
-bot = commands.Bot(command_prefix=get_prefix,help_command=None) # create bot with default prefix and no help command
+game = discord.Game('ping me to get prefix')
+bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation
-#list of commands to implement
-#help - default help command (just a help command)
-#server - many commands for ark server
-#server add - add server to monitoring # done
-#server info - get info about server (some already added sorver or you could enter ip:port ?) 
-#add - spits out link with invite !
 
+bot.loop.set_debug(conf.debug)
 
 
 
@@ -45,64 +40,17 @@ async def help(ctx):
 #    await cmd.server.server(ctx,mode,args)
 
 bot.add_cog(ServerCmd(bot))
+bot.add_cog(cmd.BulkCommands(bot))
 #bot.add_cog(dbl.TopGG(bot)) # will add when my bot approved by DBL see dbl.py for code and config string
 #bot.add_cog(Updater(bot))
-
-@bot.command()
-async def list(ctx): # same
-    await cmd.list_servers(ctx)
-
-@bot.command()
-async def ping(ctx):
-    time = int(bot.latency * 1000)
-    await ctx.send(t.l['ping'].format(time))
-
-@bot.command()
-@commands.is_owner()
-async def count(ctx):
-    guild_count = 0
-    members_count = 0
-    guild_count = bot.guilds.__len__()
-    for guild in bot.guilds:
-        members_count += guild.members.__len__()
-    await ctx.send(f'Total guilds count:`{guild_count}`\nTotal members in that guilds:`{members_count}`')
-
-@bot.command()
-@commands.is_owner()
-async def exec(ctx,sql):
-    data = makeRequest(sql)
-    await ctx.send(data)
-
-@bot.command()
-@commands.is_owner()
-async def stop(ctx):
-    await ctx.send('Bye!')
-    exit()
-
-#@bot.command()
-#@commands.is_owner()
-#async def restart(ctx):
-#    await ctx.send('OK i will restart myself')
-#    os.system("cd /app/ | sudo docker-compose up -d --build")  
-
-#@bot.command()
-#@commands.is_owner()
-#async def lockdown(ctx):
-#    await ctx.send('TOTAL LOCKDOWN!!')
-#    @bot.check
-#    async def lockdown(ctx):
-#        if (ctx.author.id == 277490576159408128):
-#            return True
-#        await ctx.send('Bot is on lockdown!')
-#        return False
-
-#@bot.command()
-#@commands.is_owner()
-#async def unlockdown(ctx):
-#    await ctx.send('Undoing total lockdown!')
-#    @bot.check
-#    async def unlockdown(ctx):
-#        return True
+# and msg.author != bot.user
+@bot.event
+async def on_message(msg):
+    print(msg.content)
+    if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
+        await msg.channel.send(t.l['curr_prefix'].format(get_prefix(bot,msg)))
+        return
+    await bot.process_commands(msg)
 
 @bot.command()
 async def prefix(ctx,*args):
