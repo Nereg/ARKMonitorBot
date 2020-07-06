@@ -35,12 +35,13 @@ class Selector():
         if (data.__len__() == 0):
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
             return ''
-        if (data[0][3] == None or data[0][3] == 'null'):
+        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[null]'):
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
             return ''
         else:
             Servers = json.loads(data[0][3])
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
+        print(statement)
         data = makeRequest(statement)
         try:
             self.msg = await self.ctx.send(self.l.l['server_select'],embed=self.createEmbed(data,0))

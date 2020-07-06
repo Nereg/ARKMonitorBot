@@ -140,25 +140,25 @@ ALTER TABLE `users`
 --
 ALTER TABLE `errors`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-
+COMMIT;
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-
+COMMIT;
 --
 -- AUTO_INCREMENT for table `servers`
 --
 ALTER TABLE `servers`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-
+COMMIT;
 --
 -- AUTO_INCREMENT for table `settings`
 --
 ALTER TABLE `settings`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-
+COMMIT;
 --
 -- AUTO_INCREMENT for table `users`
 --

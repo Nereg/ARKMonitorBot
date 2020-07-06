@@ -71,6 +71,16 @@ async def prefix(ctx,*args):
                 makeRequest('INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,1)',(ctx.guild.id,prefix,))    
             await  ctx.send(t.l['done']) #https://discordpy.readthedocs.io/en/latest/ext/commands/api.html?highlight=commands#discord.ext.commands.Bot.command_prefix
 
+
+#@bot.event
+async def on_command_error1(ctx,error):
+    print(error)
+    try:
+        await on_command_error1(ctx,error)
+    except BaseException  as e:
+        print('Error in  handler!')
+        print(e)
+
 @bot.event
 async def on_command_error(ctx,error):
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
@@ -112,8 +122,10 @@ async def watch(ctx): # same
     #makeRequest('INSERT INTO `notifications`(`Type`, `Data`) VALUES (%s,%s)',(1,json.dumps([ctx.channel.id,server.ip])))
     await ctx.send('Something will be here but not now ;)')
 
-#@bot.command()
-#async def test(ctx):
-#    raise Exception('Test')
+@bot.command()
+async def test(ctx):
+    await ctx.send('Test')
+    print('Test')
+    raise Exception('Test')
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !
