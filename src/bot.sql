@@ -38,20 +38,41 @@ CREATE TABLE `errors` (
   `Message` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
 --
 -- Table structure for table `notifications`
 --
 
 CREATE TABLE `notifications` (
   `Id` int NOT NULL,
-  `Type` int NOT NULL,
-  `Data` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `Sent` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `ChannelId` bigint NOT NULL,
+  `ServerIds` text NOT NULL,
+  `Data` text NOT NULL,
+  `Language` text NOT NULL,
+  `Delivered` int NOT NULL,
+  `Type` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- --------------------------------------------------------
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`Id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+COMMIT;
+
 
 --
 -- Table structure for table `servers`
