@@ -66,7 +66,7 @@ async def prefix(ctx,*args):
         else:
             data = makeRequest('SELECT * FROM settings WHERE GuildId = %s',(ctx.guild.id,))
             if(data.__len__() > 0):
-                makeRequest('UPDATE settings SET Prefix="%s" WHERE GuildId=%s',(prefix,ctx.guild.id,))
+                makeRequest('UPDATE settings SET Prefix=%s WHERE GuildId=%s',(prefix,ctx.guild.id,))
             else:
                 makeRequest('INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,1)',(ctx.guild.id,prefix,))    
             await  ctx.send(t.l['done']) #https://discordpy.readthedocs.io/en/latest/ext/commands/api.html?highlight=commands#discord.ext.commands.Bot.command_prefix
