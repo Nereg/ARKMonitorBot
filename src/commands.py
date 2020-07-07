@@ -25,6 +25,9 @@ class BulkCommands(commands.Cog):
             GuildId = ctx.guild.id
             Type = 0
         data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
+        if (data.__len__() == 0):
+            await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
+            return 
         if (data[0][3] == None or data[0][3] == 'null'):
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
             return
