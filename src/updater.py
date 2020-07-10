@@ -1,29 +1,74 @@
-import schedule
+import classes as c # our classes
+from helpers import * # our helpers
+import config  # config
+import discord # main discord libary
+from discord.ext import commands # import commands extension
+from discord.ext import tasks
+import json 
+import traceback
 import time
-from helpers import *
-import a2s
-import classes as c
-import config as cfg
+from datetime import datetime
+import dbl
+import os 
+import notifications
 
-def job():
-    print('entered task!')
-    servers = makeRequest('SELECT * FROM servers')
-    for server in servers:
-        ip = server[1]
+debug = Debuger('updater') # create debuger (see helpers.py)
+conf = config.Config() # load config
+game = discord.Game('ping me to get prefix')
+bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
+debug.debug('Inited DB and Bot!') # debug into console !
+t = c.Translation() # load default english translation
+
+bot.loop.set_debug(conf.debug)
+
+class Updater(commands.Cog):
+    def __init__(self, bot):
+        self.index = 0
+        self.bot = bot
+        self.printer.start()
+
+    def cog_unload(self):
+        self.printer.cancel()
+
+    @tasks.loop(seconds=30.0)
+    async def printer(self):
         try:
-            serverObj = c.ARKServer(ip).GetInfo()
-            playersList = c.PlayersList(ip).getPlayersList()
-            makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip))
-            print(f'Updated record for online server: {ip}')
-        except:
-            makeRequest('UPDATE servers SET LastOnline=0, OfflineTrys=%s  WHERE Ip =%s',(server[6]+1,ip))
-            print(f'Updated record for offline server: {ip}')
-            
-schedule.every(5).minutes.do(job)
+            servers = makeRequest('SELECT * FROM servers')
+            notifications = makeRequest('SELECT * FROM notifications')
+            serverList = []
+            for server in servers:
+                ip = server[1]
+                id = server[0]
+                try:
+                    serverObj = c.ARKServer(ip).GetInfo()
+                    playersList = c.PlayersList(ip).getPlayersList()
+                    makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip))
+                    test = []
+                    test.append(id) # append server id
+                    test.append(1) # append 1 for online server status
+                    serverList.append(test)
+                    print(f'Updated record for online server: {ip}')
+                except:
+                    test = []
+                    test.append(id) # append server id
+                    test.append(0) # append 1 for offline server status
+                    serverList.append(test)
+                    makeRequest('UPDATE servers SET LastOnline=0, OfflineTrys=%s  WHERE Ip =%s',(server[6]+1,ip))
+                    print(f'Updated record for offline server: {ip}')
+            for server in serverList:
+                for record in notifications:
+                    idsList = json.loads(record[4])
+                    if server[0] in idsList:
+                        if record[2] == 1 and server[1] == 0 and record[3] == 0:
+                            channel = bot.get_channel(record[1])
+                            serverRecord = makeRequest('SELECT * FROM servers WHERE Id=%s',(server[0],))
+                            await channel.send(f'Server {serverRecord[0][1]} went down !')
+                            makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(record[0],))
+        except BaseException as e:
+            print(e)
+    
+bot.add_cog(Updater(bot))
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+bot.run(conf.token)
 
 
-#["Traceback (most recent call last):\n", "  File \"/usr/local/lib/python3.7/site-packages/mysql/connector/connection_cext.py\", line 489, in cmd_query\n    raw_as_string=raw_as_string)\n", "_mysql_connector.MySQLInterfaceError: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ')' at line 1\n", "\nDuring handling of the above exception, another exception occurred:\n\n", "Traceback (most recent call last):\n", "  File \"/usr/local/lib/python3.7/site-packages/discord/ext/commands/core.py\", line 83, in wrapped\n    ret = await coro(*args, **kwargs)\n", "  File \"/app/src/commands.py\", line 37, in list\n    data = makeRequest(statement)\n", "  File \"/app/src/helpers.py\", line 24, in makeRequest\n    mycursor.execute(SQL, params)\n", "  File \"/usr/local/lib/python3.7/site-packages/mysql/connector/cursor_cext.py\", line 266, in execute\n    raw_as_string=self._raw_as_string)\n", "  File \"/usr/local/lib/python3.7/site-packages/mysql/connector/connection_cext.py\", line 492, in cmd_query\n    sqlstate=exc.sqlstate)\n", "mysql.connector.errors.ProgrammingError: 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ')' at line 1\n", "\nThe above exception was the direct cause of the following exception:\n\n", "Traceback (most recent call last):\n", "  File \"/usr/local/lib/python3.7/site-packages/discord/ext/commands/bot.py\", line 892, in invoke\n    await ctx.command.invoke(ctx)\n", "  File \"/usr/local/lib/python3.7/site-packages/discord/ext/commands/core.py\", line 797, in invoke\n    await injected(*ctx.args, **ctx.kwargs)\n", "  File \"/usr/local/lib/python3.7/site-packages/discord/ext/commands/core.py\", line 92, in wrapped\n    raise CommandInvokeError(exc) from exc\n", "discord.ext.commands.errors.CommandInvokeError: Command raised an exception: ProgrammingError: 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ')' at line 1\n"]

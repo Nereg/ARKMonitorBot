@@ -44,12 +44,7 @@ CREATE TABLE `errors` (
 -- Table structure for table `notifications`
 --
 
-CREATE TABLE `notifications` (
-  `Id` int NOT NULL,
-  `Type` int NOT NULL,
-  `Data` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `Sent` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE `notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `Type` INT NOT NULL , `Sent` INT NOT NULL , `ServersIds` TEXT NOT NULL , `Data` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
 
 -- --------------------------------------------------------
 
@@ -108,12 +103,6 @@ ALTER TABLE `errors`
   ADD PRIMARY KEY (`Id`);
 
 --
--- Indexes for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`Id`);
-
---
 -- Indexes for table `servers`
 --
 ALTER TABLE `servers`
@@ -139,12 +128,6 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `errors`
 --
 ALTER TABLE `errors`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-COMMIT;
---
--- AUTO_INCREMENT for table `notifications`
---
-ALTER TABLE `notifications`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
 COMMIT;
 --

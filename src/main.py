@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 import dbl
 import os 
+import notifications
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -41,6 +42,7 @@ async def help(ctx):
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
+bot.add_cog(notifications.NotificationComands(bot))
 #bot.add_cog(dbl.TopGG(bot)) # will add when my bot approved by DBL see dbl.py for code and config string
 #bot.add_cog(Updater(bot))
 # and msg.author != bot.user
@@ -112,15 +114,6 @@ async def on_command_error(ctx,error):
 async def share(ctx):
     await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
 
-@bot.command()
-@commands.is_owner()
-async def watch(ctx): # same
-    #selector = Selector(ctx,bot,c.Translation())
-    #server = await selector.select()
-    #if server == '':
-    #    return
-    #makeRequest('INSERT INTO `notifications`(`Type`, `Data`) VALUES (%s,%s)',(1,json.dumps([ctx.channel.id,server.ip])))
-    await ctx.send('Something will be here but not now ;)')
 
 @bot.command()
 async def test(ctx):
