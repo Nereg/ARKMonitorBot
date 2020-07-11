@@ -25,13 +25,13 @@ class ServerCmd(commands.Cog):
         message = f''' 
 **{name}**
 IP : {server.ip}
-Статус : {'Online' if online else 'Offline'}
-Игроков : {server.online}/{server.maxPlayers}
-Карта : {server.map}
+Status : {'Online' if online else 'Offline'}
+Players : {server.online}/{server.maxPlayers}
+Map : {server.map}
 PVE ? : {server.PVE}
-Версия : {server.version}
+Version : {server.version}
 Ping : {server.ping} ms
-**Список игроков**
+**Players list**
 ```
 {players}
 ```
