@@ -55,7 +55,7 @@ CREATE TABLE `notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChanne
 CREATE TABLE `servers` (
   `Id` int NOT NULL,
   `Ip` text NOT NULL,
-  `Port` int NOT NULL,
+  `Port` int DEFAULT NULL, 
   `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci,
   `ServerObj` text NOT NULL,
   `PlayersObj` text NOT NULL,

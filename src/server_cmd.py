@@ -41,15 +41,17 @@ Ping : {server.ping} ms
     @commands.command()
     async def server(self,ctx, mode, *args): # /server command handler
         debug = Debuger('Server_command') # create debugger
-        lang = c.Translation()
-        debug.debug(args)
+        lang = c.Translation() # load translation
+        debug.debug(args) # debug
         if(mode == 'add'): # if /server add 
             debug.debug('Entered ADD mode!') # debug
-            if (args == ()):
-                await ctx.send('No IP!')
+            if (args == ()): # if no additional args 
+                await ctx.send('No IP!') # send error
+                return # return
+            ip = args[0] # if nwe have ip record it
+            Id = await AddServer(ip,ctx) # pass it to function
+            if Id == None or Id == 'null':
                 return 
-            ip = args[0]
-            Id = await AddServer(ip,ctx)
             if ctx.guild == None:
                 data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=1',(ctx.channel.id,))
                 if data.__len__() <= 0:
