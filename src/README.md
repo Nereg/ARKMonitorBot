@@ -24,3 +24,6 @@ Versioning schema - https://semver.org/
 * docker-compose.yaml - main docker-conpose file used torun bot with all nedded stuff (like MySql server)
 * updater_dockerfile - dockerfile for updater service (see updater.py)
 * wait-got-it.sh - shell script used to wait for DB container to start up (https://github.com/vishnubob/wait-for-it) 
+
+## Embeded designes 
+* https://bit.ly/3epFi6L - help message

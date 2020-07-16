@@ -56,7 +56,7 @@ class ARKServer(JSON):
         self.maxPlayers = server.max_players
         self.map = server.map_name
         self.password = server.password_protected
-        self.PVE = bool(data['SESSIONISPVE_i']) # in data no so much interesting data so let`s parse into class
+        self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
         try:
             self.clusterName = data['ClusterId_s'] # cluster name
         except KeyError:

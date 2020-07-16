@@ -48,7 +48,6 @@ bot.add_cog(notifications.NotificationComands(bot))
 # and msg.author != bot.user
 @bot.event
 async def on_message(msg):
-    print(msg.content)
     if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
         await msg.channel.send(t.l['curr_prefix'].format(get_prefix(bot,msg)))
         return
@@ -117,8 +116,7 @@ async def share(ctx):
 
 @bot.command()
 async def test(ctx):
-    await ctx.send('Test')
-    print('Test')
-    raise Exception('Test')
+    test = NotitifcationSelector(ctx,bot,c.Translation())
+    print(await test.select())
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !

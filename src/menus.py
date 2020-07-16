@@ -3,6 +3,8 @@ from helpers import * # all our helpers
 import classes as c
 import asyncio
 import json
+import datetime
+
 class Selector():
     def __init__(self,ctx,bot,lang):
         self.ctx = ctx
@@ -91,5 +93,45 @@ class Selector():
             return c.ARKServer.fromJSON(data[counter][4])
         else:
             return ''
+
+class NotitifcationSelector():
+    def __init__(self,ctx,bot,lang):
+        self.ctx = ctx
+        self.bot = bot
+        self.l = lang # classes.Translation 
+        pass
+
+    async def select(self):
+        reactions = ['1\N{variation selector-16}\N{combining enclosing keycap}','2\N{variation selector-16}\N{combining enclosing keycap}','3\N{variation selector-16}\N{combining enclosing keycap}','\u23F9']
+        time = datetime.datetime(2000,1,1,0,0,0,0)
+        embed = discord.Embed(title='Select notification type',description='Bot will send notifications to this channel\n \u200b',timestamp=time.utcnow())
+        embed.set_footer(text='Bot v0.1 • Ping me to get prefix!')
+        embed.add_field(name=':one: Server went offline',value='\u200b\u200b\u200b\u200b',inline=False)
+        embed.add_field(name=':two: Server went online',value='\u200b\u200b\u200b\u200b',inline=False)
+        embed.add_field(name=':three: Server went online/offline',value='\u200b\u200b\u200b\u200b',inline=False)
+        self.msg = await self.ctx.send(embed=embed)
+        for reaction in reactions:
+            await self.msg.add_reaction(reaction)
+        flag = 0
+        while flag == 0:
+            try:
+                reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
+            except asyncio.TimeoutError:
+                flag = 1
+                await self.msg.delete()
+            else :
+                if (str(reaction.emoji) == reactions[0]):
+                    await self.msg.delete()
+                    return 1
+                if (str(reaction.emoji) == reactions[1]):
+                    await self.msg.delete()
+                    return 2
+                elif (str(reaction.emoji) == reactions[2]):
+                    await self.msg.delete()
+                    return 3
+                elif (str(reaction.emoji) == reactions[3]):
+                    await self.msg.delete()
+                    flag = 1
+                    return 0
 
         

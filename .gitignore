@@ -2,3 +2,5 @@ Lib
 Scripts
 config.py
 sql
+./Lib
+./Scripts
