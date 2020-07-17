@@ -96,6 +96,7 @@ Ping : {server.ping} ms
                 debug.debug(f"Server {ip} is up!") # and debug
             except Exception as e: # if any exception
                 debug.debug(e) # debug
+                print(ip)
                 debug.debug(f'Server {ip} is offline!') # also debug
                 online = False # set online flag to false
                 data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # Select server from DB
@@ -113,7 +114,7 @@ Ping : {server.ping} ms
                     debug.debug(f'Created DB record for {ip} server!') # debug
                     makeRequest("INSERT INTO servers (ServerObj,PlayersObj,Ip) VALUES (%s,%s,%s)",[server.toJSON(),playersList.toJSON(),server.ip]) # and add record
             else: # id server is offline 
-                data = makeRequest('SELECT * FROM servers WHERE Ip = ?',(ip)) # select data
+                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data
                 if (data.__len__() > 0): # if we have  record about this server
                     await ctx.send(self.serverInfo(c.ARKServer.fromJSON(data[0][4]),c.PlayersList.fromJSON(data[0][5]),online)) # construct classes and send data
                 else: # else

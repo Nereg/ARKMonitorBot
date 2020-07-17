@@ -12,6 +12,7 @@ import dbl
 import os 
 import notifications
 import io
+import traceback
 
 debug = Debuger('updater') # create debuger (see helpers.py)
 conf = config.Config() # load config
@@ -68,18 +69,20 @@ class Updater(commands.Cog):
                 for record in notifications: # go throu all notifications
                     idsList = json.loads(record[4]) # load list of server ids in notification record
                     if server[0] in idsList: # if we found our current server id in list
-                        if 1 in record[2]  and server[1] == 0 and record[3] == 0: # if we found 1 (id for server went offline notification) AND server status in main list is 0 (offline) AND we didn't sent message already (sent row in DB) 
+                        if 1 in record[2] or 3 in record[2] and server[1] == 0 and record[3] == 0: # if we found 1 (id for server went offline notification) AND server status in main list is 0 (offline) AND we didn't sent message already (sent row in DB) 
                             channel = bot.get_channel(record[1]) # get channel id from notification record
                             serverRecord = makeRequest('SELECT * FROM servers WHERE Id=%s',(server[0],)) # get server record for that ip
                             await channel.send(f'Server {serverRecord[0][1]} went down !') # send channel with server ip (server record will be used to get server name) 
                             makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(record[0],)) # update notification record (set sent row to 1 it will be resetted later)
-                        if 2 in record[2]  and server[1] == 1 and record[3] == 0: # if we found 2 (id for server went online notification) AND server status in main list is 1 (online) AND we didn't sent message already (sent row in DB) 
+                        if 2 in record[2] or 3 in record[2]  and server[1] == 1 and record[3] == 0: # if we found 2 (id for server went online notification) AND server status in main list is 1 (online) AND we didn't sent message already (sent row in DB) 
                             channel = bot.get_channel(record[1]) # get channel id from notification record
                             serverRecord = makeRequest('SELECT * FROM servers WHERE Id=%s',(server[0],)) # get server record for that ip
                             await channel.send(f'Server {serverRecord[0][1]} went up !') # send channel with server ip (server record will be used to get server name) 
                             makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(record[0],)) # update notification record (set sent row to 1 it will be resetted later)
         except BaseException as e:
+            print(serverList)
             print(e)
+            print(traceback.format_exc())
     
 bot.add_cog(Updater(bot))
 

@@ -16,16 +16,20 @@ class NotificationComands(commands.Cog):
     @commands.command()
     async def watch(self,ctx):
         selector = m.Selector(ctx,self.bot,self.t)
-        server = await selector.select()
+        typeSelector = m.NotitifcationSelector(ctx,self.bot,self.t)
+        server = await selector.select()        
         if server == '':
+            return
+        Type = await typeSelector.select()
+        if Type == 0: 
             return
         ip = server.ip
         serverId = makeRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
-        notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=1',(ctx.channel.id,))
+        notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=%s',(ctx.channel.id,Type,))
         if (notifications.__len__() <= 0):
             ids = []
             ids.append(serverId)
-            makeRequest('INSERT INTO `notifications`(`DiscordChannelId`, `ServersIds`, `Data`, `Sent`, `Type`) VALUES (%s,%s,"{}",0,1)',(ctx.channel.id,json.dumps(ids),))
+            makeRequest('INSERT INTO `notifications`(`DiscordChannelId`, `ServersIds`, `Data`, `Sent`, `Type`) VALUES (%s,%s,"{}",0,%s)',(ctx.channel.id,json.dumps(ids),Type,))
             await ctx.send(self.t.l['done'])
             return
         else:
@@ -35,7 +39,7 @@ class NotificationComands(commands.Cog):
                 return
             else:
                 ids.append(serverId)
-                makeRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=1',(json.dumps(ids),ctx.channel.id,))
+                makeRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=%s',(json.dumps(ids),ctx.channel.id,Type,))
                 await ctx.send(self.t.l['done'])
                 return
             
