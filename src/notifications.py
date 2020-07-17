@@ -25,6 +25,7 @@ class NotificationComands(commands.Cog):
             return
         ip = server.ip
         serverId = makeRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        notifications2 = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s',(ctx.channel.id,))
         notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=%s',(ctx.channel.id,Type,))
         if (notifications.__len__() <= 0):
             ids = []

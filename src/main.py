@@ -114,9 +114,8 @@ async def share(ctx):
     await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
 
 
-#@bot.command()
+@bot.command()
 async def test(ctx):
-    test = NotitifcationSelector(ctx,bot,c.Translation())
-    print(await test.select())
+    raise Exception('TEST')
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !
