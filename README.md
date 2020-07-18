@@ -5,7 +5,7 @@
 * `nano config.example.py` - open default config file 
 * `mv config.example.py config.py` - rename default config 
 * `cd ..` - go to main bot's directory
-* `sudo docker-compose up -d --build` - start bot (you can lear how to install dokcer and docker-compose [here](https://calendarific.com/blog/how-to-install-docker-and-docker-compose-on-ubuntu-20-04-lts-focal-fossa))
+* `sudo docker-compose up -d --build` - start bot (you can lear how to install docker and docker-compose [here](https://calendarific.com/blog/how-to-install-docker-and-docker-compose-on-ubuntu-20-04-lts-focal-fossa))
 
 ## Usefull links
 * https://github.com/Yepoleb/python-a2s/ - library I am using to get info about ARK servers (MIT License Copyright (c) 2020 Gabriel Huber)
