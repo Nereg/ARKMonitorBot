@@ -138,7 +138,8 @@ Ping : {server.ping} ms
                 serverIds = []
             else:
                 serverIds = json.loads(serverIds[0][3]) #remove()
-            makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds.remove(serverId)),GuildId,Type))
+            serverIds.remove(serverId)
+            makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds),GuildId,Type))
             await ctx.send('Done!')
         else:
             await ctx.send('Wrong mode selected !')
