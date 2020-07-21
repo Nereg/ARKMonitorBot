@@ -17,6 +17,10 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+    logging:
+      driver: "local"
+      options:
+        max-size: "100m"
     depends_on:
       - "db"
   
@@ -24,6 +28,10 @@ services:
     build: 
       context: .
       dockerfile: updater_dockerfile
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
     depends_on:
       - "db"
   

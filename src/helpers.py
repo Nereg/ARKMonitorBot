@@ -72,6 +72,9 @@ async def AddServer(ip,ctx):
         debug.debug(f'Wrong IP : {ip}') # debug
         await ctx.send('Something is wrong with **IP**!') # and reply to user
         return # if ip is correct
+    servers = makeRequest('SELECT * FROM Servers WHERE Ip=%s',(ip,))
+    if (servers.__len__ > 0):
+        return servers[0][0]
     try: 
         server = c.ARKServer(ip) # construct our classes
         playersList = c.PlayersList(ip)

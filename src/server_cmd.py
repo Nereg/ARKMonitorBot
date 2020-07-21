@@ -49,7 +49,11 @@ Ping : {server.ping} ms
                 await ctx.send('No IP!') # send error
                 return # return
             ip = args[0] # if nwe have ip record it
-            Id = await AddServer(ip,ctx) # pass it to function
+            servers = makeRequest('SELECT * FROM Servers WHERE Ip=%s',(ip,))
+            if (servers.__len__ > 0):
+                
+            else:
+                Id = await AddServer(ip,ctx) # pass it to function
             if Id == None or Id == 'null':
                 return 
             if ctx.guild == None:
