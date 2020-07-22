@@ -49,11 +49,15 @@ Ping : {server.ping} ms
                 await ctx.send('No IP!') # send error
                 return # return
             ip = args[0] # if nwe have ip record it
-            servers = makeRequest('SELECT * FROM Servers WHERE Ip=%s',(ip,))
-            if (servers.__len__ > 0):
-                
-            else:
-                Id = await AddServer(ip,ctx) # pass it to function
+            servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
+            if (servers.__len__() > 0):
+                serverId = servers[0][0]
+                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=1',(ctx.guild.id,))
+                if (data.__len__() > 0):
+                    if (serverId in json.loads(data[0][3])):
+                        ctx.send('You already added that server!')
+                        return
+            Id = await AddServer(ip,ctx) # pass it to function
             if Id == None or Id == 'null':
                 return 
             if ctx.guild == None:
@@ -66,7 +70,7 @@ Ping : {server.ping} ms
                     else:
                         ids = json.loads(data[0][3])
                     ids.append(Id)
-                    makeRequest('UPDATE SET ServersId=%s WHERE GuildId=%s AND Type=1',(json.dumps(ids),ctx.channel.id,))
+                    makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=1',(json.dumps(ids),ctx.channel.id,))
             else:
                 data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,))
                 if data.__len__() <= 0:
