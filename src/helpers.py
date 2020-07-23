@@ -89,7 +89,6 @@ async def AddServer(ip,ctx):
     makeRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
     Id = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
     debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
-    await ctx.send('Done!') # and reply
     return Id[0][0]
 
 def get_prefix(bot,message):

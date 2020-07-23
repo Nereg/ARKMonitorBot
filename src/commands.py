@@ -28,7 +28,7 @@ class BulkCommands(commands.Cog):
         if (data.__len__() == 0):
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
             return 
-        if (data[0][3] == None or data[0][3] == 'null'):
+        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[]'):
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
             return
         else:
@@ -61,13 +61,13 @@ class BulkCommands(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def exec(ctx,sql):
+    async def exec(self,ctx,sql):
         data = makeRequest(sql)
         await ctx.send(data)
 
     @commands.command()
     @commands.is_owner()
-    async def stop(ctx):
+    async def stop(self,ctx):
         await ctx.send('Bye!')
         exit()
 

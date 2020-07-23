@@ -39,6 +39,7 @@ Ping : {server.ping} ms
         return message # and return it 
 
     @commands.command()
+    @commands.cooldown(10, 60, type=commands.BucketType.user)
     async def server(self,ctx, mode, *args): # /server command handler
         debug = Debuger('Server_command') # create debugger
         lang = c.Translation() # load translation
@@ -51,37 +52,29 @@ Ping : {server.ping} ms
             ip = args[0] # if nwe have ip record it
             servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
             if (servers.__len__() > 0):
-                serverId = servers[0][0]
-                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=1',(ctx.guild.id,))
-                if (data.__len__() > 0):
-                    if (serverId in json.loads(data[0][3])):
-                        ctx.send('You already added that server!')
-                        return
-            Id = await AddServer(ip,ctx) # pass it to function
-            if Id == None or Id == 'null':
-                return 
-            if ctx.guild == None:
-                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=1',(ctx.channel.id,))
-                if data.__len__() <= 0:
-                    makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,1)',(ctx.channel.id,json.dumps([Id]),))
-                else:
-                    if (data[0][3] == None):
-                        ids = []
-                    else:
-                        ids = json.loads(data[0][3])
-                    ids.append(Id)
-                    makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=1',(json.dumps(ids),ctx.channel.id,))
+                Id = servers[0][0]
             else:
-                data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,))
-                if data.__len__() <= 0:
-                    makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),))
+                Id = await AddServer(ip,ctx) # pass it to function
+                if Id == None or Id == 'null':
+                    return 
+            # add if already added check 
+            settings = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(ctx.guild.id,))
+            if (settings.__len__() > 0 and settings[0][3] != None):
+                if (Id in json.loads(settings[0][3])):
+                    await ctx.send('You already added that server!')
+                    return
+            data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,))
+            if data.__len__() <= 0:
+                makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),))
+                await ctx.send('Done!')
+            else:
+                if (data[0][3] == None or data[0][3] == 'null'):
+                    ids = []  
                 else:
-                    if (data[0][3] == None or data[0][3] == 'null'):
-                        ids = []  
-                    else:
-                        ids = json.loads(data[0][3])
-                    ids.append(Id)
-                    makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=0',(json.dumps(ids),ctx.guild.id,))
+                    ids = json.loads(data[0][3])
+                ids.append(Id)
+                makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=0',(json.dumps(ids),ctx.guild.id,))
+                await ctx.send('Done!')
 
         elif (mode == 'info'): # if /server info 
             debug.debug('Entered INFO mode!') # debug

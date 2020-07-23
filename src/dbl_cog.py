@@ -11,4 +11,6 @@ class TopGG(commands.Cog):
         self.cfg = config.Config()
         self.bot = bot
         self.token = self.cfg.DBLToken # set this to your DBL token
+        if (self.token == ''):
+            pass
         self.dblpy = dbl.DBLClient(self.bot, self.token, autopost=True) # Autopost will post your guild count every 30 minutes

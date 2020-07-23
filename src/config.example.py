@@ -8,5 +8,5 @@ class Config:
         self.token = ''
         self.defaultPrefix = '!'
         self.DBLToken = ''
-        self.inviteUrl = 'https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot&permissions=1141189696'
+        self.inviteUrl = 'https://bit.ly/ARKBot'
         self.debug = True
