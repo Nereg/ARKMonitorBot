@@ -4,10 +4,13 @@ from menus import *
 import discord # main discord libary
 from discord.ext import commands # import commands extension
 import json
+import aiohttp
+import classes as c
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.session = aiohttp.ClientSession()
 
     # /server command module
     def serverInfo(self,server,playersList,online): # return info about server
@@ -40,10 +43,11 @@ Ping : {server.ping} ms
 
     @commands.command()
     @commands.cooldown(10, 60, type=commands.BucketType.user)
-    async def server(self,ctx, mode, *args): # /server command handler
+    async def server(self,ctx, *args): # /server command handler
         debug = Debuger('Server_command') # create debugger
         lang = c.Translation() # load translation
         debug.debug(args) # debug
+        mode = args[0]
         if(mode == 'add'): # if /server add 
             debug.debug('Entered ADD mode!') # debug
             if (args == ()): # if no additional args 
@@ -145,3 +149,38 @@ Ping : {server.ping} ms
         else:
             await ctx.send('Wrong mode selected !')
             return
+
+    @commands.command()
+    async def ipfix(self,ctx,*args):
+        if (args == ()):
+            await ctx.send('No IP!')
+            return
+        ip = args[0]
+        splitted = ip.split(':')
+        if (IpCheck(ip) != True): # IP check
+            await ctx.send('Something is wrong with **IP**!') # and reply
+            return 
+        async with self.session as session:
+            async with session.get(f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}') as resp:
+                text = await resp.text()
+                text = json.loads(text)
+                message = '''
+List of detected servers on that ip by steam:
+
+'''
+                if (bool(text['response']['success'])):
+                    i = 1
+                    for server in text['response']['servers']:
+                        ip = server['addr']
+                        try:
+                            serverClass = c.ARKServer(ip).GetInfo()
+                            message += f'{i}. {ip} - {serverClass.name} (Online) \n'
+                        except:
+                            message += f'{i}. {ip} - ??? (Offline) \n'
+                        i += 1
+                else:
+                    await ctx.send('No games found on that IP by steam.')
+                    return
+                message += 'Use those ip to add server to bot!'
+                await ctx.send(message)
+

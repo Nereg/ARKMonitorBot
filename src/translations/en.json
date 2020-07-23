@@ -5,7 +5,7 @@
     "curr_prefix" : "Current prefix is : `{}` !",
     "cant_change_prefix" : "You can`t change prefix in DM.",
     "done" : "Done !",
-    "share_msg" : "Here is link {} to invite me to our server! Also you can DM me !",
+    "share_msg" : "Here is link {} to invite me to our server!",
 
     "online" : "Online",
     "offline" : "Offline",

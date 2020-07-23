@@ -83,7 +83,7 @@ async def AddServer(ip,ctx):
         debug.debug(f"Server {ip} is up!") # and debug
     except Exception as e: # if any exception
         debug.debug(e)
-        await ctx.send(f'Server {ip} is offline!')
+        await ctx.send(f'Server {ip} is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`')
         return
     splitted = ip.split(':')
     makeRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
