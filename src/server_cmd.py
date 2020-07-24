@@ -82,12 +82,11 @@ Ping : {server.ping} ms
 
         elif (mode == 'info'): # if /server info 
             debug.debug('Entered INFO mode!') # debug
-            if (args == ()):
-                selector = Selector(ctx,self.bot,lang)
-                server = await selector.select()
-                if server == '':
-                    return
-                ip = server.ip
+            selector = Selector(ctx,self.bot,lang)
+            server = await selector.select()
+            if server == '':
+                return
+            ip = server.ip
             if (IpCheck(ip) != True): # IP check
                 debug.debug(f'Wrong IP : {ip}') # debug
                 await ctx.send('Something is wrong with **IP**!') # and reply
