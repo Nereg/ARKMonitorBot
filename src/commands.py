@@ -44,7 +44,7 @@ class BulkCommands(commands.Cog):
             i += 1 
         # send message
         await ctx.send(f''' 
-Список добавленных серверов :
+List of added servers :
 {servers}
         ''')
     
