@@ -50,10 +50,10 @@ Ping : {server.ping} ms
         mode = args[0]
         if(mode == 'add'): # if /server add 
             debug.debug('Entered ADD mode!') # debug
-            if (args == ()): # if no additional args 
+            if (args.__len__() <= 1): # if no additional args 
                 await ctx.send('No IP!') # send error
                 return # return
-            ip = args[0] # if nwe have ip record it
+            ip = args[1] # if nwe have ip record it
             servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
             if (servers.__len__() > 0):
                 Id = servers[0][0]
