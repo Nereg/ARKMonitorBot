@@ -47,6 +47,9 @@ Ping : {server.ping} ms
         debug = Debuger('Server_command') # create debugger
         lang = c.Translation() # load translation
         debug.debug(args) # debug
+        if (args.__len__() <= 0):
+            await ctx.send('No mode selected!')
+            return 
         mode = args[0]
         if(mode == 'add'): # if /server add 
             debug.debug('Entered ADD mode!') # debug
