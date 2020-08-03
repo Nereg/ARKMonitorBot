@@ -102,7 +102,14 @@ class PlayersList(JSON):
         players = a2s.players((self.address,self.port)) # get raw data
         result = [] 
         for player in players: # for each player in data
-            result.append(Player(player.name,player.duration)) # construct player class and append it to our results
+            name = player.name
+            if (name == ''):
+                name = '(unknown player)'
+            try:
+                print(name,file=open(os.devnull,'w'))
+            except BaseException:
+                name = '(invalid name)'
+            result.append(Player(name,player.duration)) # construct player class and append it to our results
         self.list = result 
         return self
 

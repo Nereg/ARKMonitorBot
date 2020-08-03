@@ -20,7 +20,7 @@ class ServerCmd(commands.Cog):
         for player in playersList: # for each player in list
             players += '{}. {} {}\n'.format(i,player.name,player.time) # construct string
             i += 1 
-        players = 'Никого нет на сервере' if playersList.__len__() <= 0 else players # if no players override our players list
+        players = 'No one is on the server' if playersList.__len__() <= 0 else players # if no players override our players list
         emoji = ':green_circle:' if online else ':red_circle:' # if server online green circle else red
         server.online = server.online if online else 0 # if server offline override online players count
         name = f' {server.name} {emoji} '.center(50,'=') # construct first line
