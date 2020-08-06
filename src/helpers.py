@@ -81,6 +81,21 @@ async def AddServer(ip,ctx):
         playersList.getPlayersList() # and get data
         server.GetInfo()
         debug.debug(f"Server {ip} is up!") # and debug
+        if (server.version == ''  or server.version == None or '.' not in server.version):
+            global message  
+            message = await ctx.send(f"Server's name is too long and bot can't extract version from it. React with ✅ to continue with `(unknown)` version or react ⏹️ to not add this server.")
+            try:
+                reaction, user = await client.wait_for('reaction_add', timeout=60.0, check=lambda r,user: user.bot == False and r.message.id == message.id)
+            except asyncio.TimeoutError:
+                await message.edit('Timeout. Server won`t be added')
+                return
+            else:
+                if (str(reaction.emoji) == '✅'):
+                    await message.edit('OK!')
+                    server.version = '(unknown)'
+                elif (str(reaction.emoji) == '⏹️'):
+                    await message.edit('OK! Rename server and come back!')
+                    return
     except Exception as e: # if any exception
         debug.debug(e)
         await ctx.send(f'Server {ip} is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`')
