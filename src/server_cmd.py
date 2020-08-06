@@ -162,15 +162,18 @@ Ping : {server.ping} ms
         if (IpCheck(ip) != True): # IP check
             await ctx.send('Something is wrong with **IP**!') # and reply
             return 
+        HEADERS = {
+    'User-Agent' : "Magic Browser"
+        }
         async with self.session as session:
-            async with session.get(f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}') as resp:
+            async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
                 text = await resp.text()
                 text = json.loads(text)
                 message = '''
 List of detected servers on that ip by steam:
 
 '''
-                if (bool(text['response']['success'])):
+                if (bool(text['response']['success']) or text['response']['servers'].__len__() <= 0):
                     i = 1
                     for server in text['response']['servers']:
                         ip = server['addr']
