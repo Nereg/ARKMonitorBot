@@ -14,10 +14,11 @@ import time
 from datetime import datetime
 import dbl_cog
 import os 
-import notifications
 import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
+import test
+import notifications
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -47,7 +48,7 @@ bot.add_cog(cmd.BulkCommands(bot))
 bot.add_cog(notifications.NotificationComands(bot))
 bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot)) # will add when my bot approved by DBL see dbl.py for code and config string
-#bot.add_cog(Updater(bot))
+bot.add_cog(test.Notifications(bot))
 # and msg.author != bot.user
 @bot.event
 async def on_message(msg):

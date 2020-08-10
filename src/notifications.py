@@ -43,4 +43,9 @@ class NotificationComands(commands.Cog):
                 makeRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=%s',(json.dumps(ids),ctx.channel.id,Type,))
                 await ctx.send(self.t.l['done'])
                 return
+    
+    @commands.command()
+    async def eos(self,ctx):
+        await ctx.send('OK! Bot will send messahe here if someone will join or leave any added servers!')
+        makeRequest('INSERT INTO notifications (`DiscordChannelId`, `Type`, `Sent`, `ServersIds`, `Data`) VALUES (%s,123,0,"[]","[]")',(ctx.channel.id,))
             

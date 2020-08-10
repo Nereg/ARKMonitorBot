@@ -67,7 +67,8 @@ class ARKServer(JSON):
         self.hours = data['DayTime_s'][:2] # current in-game time
         self.minutes = data['DayTime_s'][2:]
         self.ping = int(server.ping * 1000)
-        self.newestVersion = requests.get('http://arkdedicated.com/version').text
+        headers = {'user-agent': 'my-app/0.0.1'}
+        self.newestVersion = requests.get('http://arkdedicated.com/version', headers=headers).text
         return self
     
 class Player(JSON):

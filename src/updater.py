@@ -13,6 +13,7 @@ import os
 import notifications
 import io
 import traceback
+from deepdiff import DeepDiff
 
 debug = Debuger('updater') # create debuger (see helpers.py)
 conf = config.Config() # load config
@@ -32,6 +33,55 @@ class Updater(commands.Cog):
     def cog_unload(self):
         self.printer.cancel()
 
+    async def playersCheck(self,ip,Id,playersList):
+        server = makeRequest("SELECT PlayersObj,ServerObj FROM servers WHERE Id=%s",(Id,))
+        notifications = makeRequest("SELECT * FROM notifications WHERE Type=123")
+        if (notifications.__len__() > 0):
+            channelId = notifications[0][1]
+        else:
+            return
+        playersObj = c.ARKServer.fromJSON(server[0][0])
+        serverObj = c.ARKServer.fromJSON(server[0][1])
+        test = DeepDiff(playersObj, playersList, view='tree')
+        print('Main obj')
+        print(test)
+        if ('iterable_item_removed' in test):
+            left = test['iterable_item_removed']
+            print('left')
+            print(left)
+            for entry in left:
+                print(entry.t1)
+                print(entry)
+                print(f'Player {entry.t1.name} left')
+                channel = bot.get_channel(channelId)
+                await channel.send(f'Player {entry.t1.name} left {serverObj.name} ({serverObj.ip})!')
+        else:
+            print('Noone left')
+        if ('iterable_item_added' in test):
+            joined = test['iterable_item_added']
+            print('joined')
+            print(joined)        
+            for entry in joined:
+                print(entry.t2)
+                print(entry)
+
+        else:
+            print('Noone joined')
+        
+        if ('values_changed' in test):
+            joined = test['values_changed']
+            print('changed')
+            print(joined)        
+            for entry in joined:
+                if (entry.t1 == '(unknown player)'):
+                    print(f'Player {entry.t2} joined')
+                    channel = bot.get_channel(channelId)
+                    await channel.send(f'Player {entry.t2} joined {serverObj.name} ({serverObj.ip})!')
+                print(entry.t2)
+                print(entry)
+        else:
+            print('notheing changed')
+
     @tasks.loop(seconds=30.0)
     async def printer(self):
         try:
@@ -44,6 +94,7 @@ class Updater(commands.Cog):
                 try: # standart online/offline check
                     serverObj = c.ARKServer(ip).GetInfo() # get info about server 
                     playersList = c.PlayersList(ip).getPlayersList() # get players list
+                    await self.playersCheck(ip,id,playersList)
                     makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
                     test = [] # ['server_ip',server_online(1 or 0)]
                     test.append(id) # append server id
@@ -53,7 +104,9 @@ class Updater(commands.Cog):
                         test.append(3) # fast fix to logic problem (if server was online on past check we don't need to notify user)
                     serverList.append(test) # append our mini list to our main list
                     print(f'Updated record for online server: {ip}') # debug
-                except: # if server not online (will throw socket.timeout but I lazy) 
+                    
+                except BaseException as e: # if server not online (will throw socket.timeout but I lazy) 
+                    print(e)
                     test = [] # make our mini list
                     test.append(id) # append server id
                     if (server[6] == 1):

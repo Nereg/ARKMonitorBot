@@ -15,6 +15,7 @@ import time
 import subprocess
 from typing import Union, Optional
 from helpers import *
+import classes as c
 
 # to expose to the eval command
 import datetime
