@@ -7,7 +7,6 @@ import commands as cmd # import all our commands
 from menus import *
 from server_cmd import *
 from tasks import *
-from discord.ext import menus
 import json 
 import traceback
 import time

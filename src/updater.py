@@ -14,6 +14,7 @@ import notifications
 import io
 import traceback
 from deepdiff import DeepDiff
+import datetime
 
 debug = Debuger('updater') # create debuger (see helpers.py)
 conf = config.Config() # load config
@@ -34,53 +35,57 @@ class Updater(commands.Cog):
         self.printer.cancel()
 
     async def playersCheck(self,ip,Id,playersList):
+        time = datetime.datetime(2000,1,1,0,0,0,0)
         server = makeRequest("SELECT PlayersObj,ServerObj FROM servers WHERE Id=%s",(Id,))
         notifications = makeRequest("SELECT * FROM notifications WHERE Type=123")
-        if (notifications.__len__() > 0):
-            channelId = notifications[0][1]
-        else:
-            return
-        playersObj = c.ARKServer.fromJSON(server[0][0])
-        serverObj = c.ARKServer.fromJSON(server[0][1])
-        test = DeepDiff(playersObj, playersList, view='tree')
-        print('Main obj')
-        print(test)
-        if ('iterable_item_removed' in test):
-            left = test['iterable_item_removed']
-            print('left')
-            print(left)
-            for entry in left:
-                print(entry.t1)
-                print(entry)
-                print(f'Player {entry.t1.name} left')
-                channel = bot.get_channel(channelId)
-                await channel.send(f'Player {entry.t1.name} left {serverObj.name} ({serverObj.ip})!')
-        else:
-            print('Noone left')
-        if ('iterable_item_added' in test):
-            joined = test['iterable_item_added']
-            print('joined')
-            print(joined)        
-            for entry in joined:
-                print(entry.t2)
-                print(entry)
-
-        else:
-            print('Noone joined')
-        
-        if ('values_changed' in test):
-            joined = test['values_changed']
-            print('changed')
-            print(joined)        
-            for entry in joined:
-                if (entry.t1 == '(unknown player)'):
-                    print(f'Player {entry.t2} joined')
+        for record in notifications:
+            if (notifications.__len__() > 0):
+                channelId = record[1]
+            else:
+                return
+            playersObj = c.ARKServer.fromJSON(server[0][0])
+            serverObj = c.ARKServer.fromJSON(server[0][1])
+            test = DeepDiff(playersObj, playersList, view='tree')
+            print('Main obj')
+            print(test)
+            if ('iterable_item_removed' in test):
+                left = test['iterable_item_removed']
+                print('left')
+                print(left)
+                for entry in left:
+                    print(entry.t1)
+                    print(entry)
+                    print(f'Player {entry.t1.name} left')
                     channel = bot.get_channel(channelId)
-                    await channel.send(f'Player {entry.t2} joined {serverObj.name} ({serverObj.ip})!')
-                print(entry.t2)
-                print(entry)
-        else:
-            print('notheing changed')
+                    await channel.send(f'Player {entry.t1.name} left {serverObj.name} ({serverObj.ip})!')
+            else:
+                print('Noone left')
+            if ('iterable_item_added' in test):
+                joined = test['iterable_item_added']
+                print('joined')
+                print(joined)        
+                for entry in joined:
+                    if (entry.t2.name != '(unknown player)'):
+                        print(entry.t2)
+                        print(entry)
+                        channel = bot.get_channel(channelId)
+                        await channel.send(f'Player {entry.t2.name} joined {serverObj.name} ({serverObj.ip})!')
+            else:
+                print('Noone joined')
+
+            if ('values_changed' in test):
+                joined = test['values_changed']
+                print('changed')
+                print(joined)        
+                for entry in joined:
+                    if (entry.t1 == '(unknown player)'):
+                        print(f'Player {entry.t2} joined')
+                        channel = bot.get_channel(channelId)
+                        await channel.send(f'Player {entry.t2} joined {serverObj.name} ({serverObj.ip})!')
+                    print(entry.t2)
+                    print(entry)
+            else:
+                print('notheing changed')
 
     @tasks.loop(seconds=30.0)
     async def printer(self):
