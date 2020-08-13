@@ -35,14 +35,17 @@ class Updater(commands.Cog):
         self.printer.cancel()
 
     async def playersCheck(self,ip,Id,playersList):
-        time = datetime.datetime(2000,1,1,0,0,0,0)
-        server = makeRequest("SELECT PlayersObj,ServerObj FROM servers WHERE Id=%s",(Id,))
-        notifications = makeRequest("SELECT * FROM notifications WHERE Type=123")
-        for record in notifications:
+        time = datetime.datetime(2000,1,1,0,0,0,0) # contrict this time because python
+        server = makeRequest("SELECT PlayersObj,ServerObj,Id FROM servers WHERE Id=%s",(Id,)) # select previos players list and server info and Id 
+        notifications = makeRequest("SELECT * FROM notifications WHERE Type=123") # select all notifications 
+        for record in notifications: # for each record
+            guild = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(record[5],)) # select settings of guild in record 
+            if (Id not in json.loads(guild[0][3])): # if server id not in json decoded array 
+                continue # return
             if (notifications.__len__() > 0):
                 channelId = record[1]
             else:
-                return
+                continue
             playersObj = c.ARKServer.fromJSON(server[0][0])
             serverObj = c.ARKServer.fromJSON(server[0][1])
             test = DeepDiff(playersObj, playersList, view='tree')
@@ -99,7 +102,7 @@ class Updater(commands.Cog):
                 try: # standart online/offline check
                     serverObj = c.ARKServer(ip).GetInfo() # get info about server 
                     playersList = c.PlayersList(ip).getPlayersList() # get players list
-                    await self.playersCheck(ip,id,playersList)
+                    await self.playersCheck(ip,id,playersList) # fucked part begins pass to it ip and id of current server as well as list of players that we got now
                     makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
                     test = [] # ['server_ip',server_online(1 or 0)]
                     test.append(id) # append server id
@@ -111,6 +114,7 @@ class Updater(commands.Cog):
                     print(f'Updated record for online server: {ip}') # debug
                     
                 except BaseException as e: # if server not online (will throw socket.timeout but I lazy) 
+                    traceback.print_last()
                     print(e)
                     test = [] # make our mini list
                     test.append(id) # append server id

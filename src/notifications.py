@@ -46,6 +46,14 @@ class NotificationComands(commands.Cog):
     
     @commands.command()
     async def eos(self,ctx):
-        await ctx.send('OK! Bot will send messahe here if someone will join or leave any added servers!')
-        makeRequest('INSERT INTO notifications (`DiscordChannelId`, `Type`, `Sent`, `ServersIds`, `Data`) VALUES (%s,123,0,"[]","[]")',(ctx.channel.id,))
+        server = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(ctx.guild.id,))
+        channelId = ctx.channel.id
+        notifications = makeRequest('SELECT * FROM notifications WHERE Type=123')
+        for record in notifications:
+            if (record[1] == channelId):
+                await ctx.send('OK you won`t recive any notifications now!')
+                makeRequest('DELETE FROM notifications WHERE DiscordChannelId=%s',(channelId,))
+                return
+        await ctx.send('OK! Bot will send message here if someone will join or leave any added servers!')
+        makeRequest('INSERT INTO notifications (`DiscordChannelId`, `Type`, `Sent`, `ServersIds`, `Data`) VALUES (%s,123,0,"[]",%s)',(ctx.channel.id,str(server[0][1]),))
             
