@@ -60,7 +60,7 @@ class Updater(commands.Cog):
                     print(entry)
                     print(f'Player {entry.t1.name} left')
                     channel = bot.get_channel(channelId)
-                    await channel.send(f'Player {entry.t1.name} left {serverObj.name} ({serverObj.ip})!')
+                    #await channel.send(f'Player {entry.t1.name} left {serverObj.name} ({serverObj.ip})!')
             else:
                 print('Noone left')
             if ('iterable_item_added' in test):
