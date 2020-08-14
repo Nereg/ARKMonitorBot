@@ -15,6 +15,7 @@ import io
 import traceback
 from deepdiff import DeepDiff
 import datetime
+from server_cmd import *
 
 debug = Debuger('updater') # create debuger (see helpers.py)
 conf = config.Config() # load config
@@ -90,6 +91,15 @@ class Updater(commands.Cog):
             else:
                 print('notheing changed')
 
+    async def updateMessage(self,Id,server,players):
+        messages = makeRequest('SELECT * FROM notifications WHERE Type=124,ServersIds=%s',(str(Id),))
+        embedMaker = ServerCmd(self.bot)
+        for message in messages:
+            channel = self.bot.get_channel(message[1])
+            messageToUpdate = await channel.fetch_message(int(message[4]))
+            embed = embedMaker.serverInfo(server,players,True)
+            await messageToUpdate.edit(embed=embed)
+
     @tasks.loop(seconds=30.0)
     async def printer(self):
         try:
@@ -103,6 +113,7 @@ class Updater(commands.Cog):
                     serverObj = c.ARKServer(ip).GetInfo() # get info about server 
                     playersList = c.PlayersList(ip).getPlayersList() # get players list
                     await self.playersCheck(ip,id,playersList) # fucked part begins pass to it ip and id of current server as well as list of players that we got now
+                    await self.updateMessage(id,serverObj,playersList)
                     makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
                     test = [] # ['server_ip',server_online(1 or 0)]
                     test.append(id) # append server id

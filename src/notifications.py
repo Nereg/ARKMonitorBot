@@ -6,7 +6,7 @@ import menus as m
 import server_cmd as server # import /server command module (see server_cmd.py)
 import json
 import config
-
+from server_cmd import ServerCmd
 class NotificationComands(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
@@ -43,7 +43,20 @@ class NotificationComands(commands.Cog):
                 makeRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=%s',(json.dumps(ids),ctx.channel.id,Type,))
                 await ctx.send(self.t.l['done'])
                 return
-    
+
+    @commands.command()
+    async def autolist(self,ctx):
+        selector = Selector(ctx,self.bot,c.Translation())
+        server = await selector.select()
+        if server == '':
+            return
+        embedMaker = ServerCmd(self.bot)
+        playersList = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server.ip,))
+        embed = embedMaker.serverInfo(server,c.PlayersList.fromJSON(playersList[0][5]),True)
+        msg = await ctx.send(embed=embed)
+        await ctx.send('Bot will update last message!')
+        makeRequest('INSERT INTO notifications (`DiscordChannelId`, `Type`, `Sent`, `ServersIds`, `Data`) VALUES (%s,124,0,%s,%s)',(ctx.channel.id,str(playersList[0][0]),str(msg.id),))
+
     @commands.command()
     async def eos(self,ctx):
         server = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(ctx.guild.id,))

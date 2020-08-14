@@ -59,11 +59,11 @@ List of added servers :
         meUser = self.bot.get_user(277490576159408128)
         embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow())
         embed.set_footer(text=f'Bot v0.1 • GPLv3 • Requested by {ctx.author.name}')
-        embed.add_field(name='<:Discord:739476979782254633> Support',value='@StormyQ#5109',inline=True)
-        embed.add_field(name='<:DB:739476980075986976> Servers in database',value=f'{makeRequest("SELECT COUNT(Id) FROM servers")[0][0]}',inline=True)
+        embed.add_field(name='<:Discord:739511277591986206> Support',value='@StormyQ#5109',inline=True)
+        embed.add_field(name='<:DB:739511277558300702> Servers in database',value=f'{makeRequest("SELECT COUNT(Id) FROM servers")[0][0]}',inline=True)
         embed.add_field(name='<:RAM:739511277600112640> RAM',value=RAM,inline=True)
         embed.add_field(name=':ping_pong: Ping',value=f'{int(self.bot.latency * 1000)} ms',inline=True)
-        embed.add_field(name='<:me:739473644874367007> Creator',value=f'{meUser.name}#{meUser.discriminator} (do not DM me for support!)',inline=True)
+        embed.add_field(name='<:Me:739511277571014656> Creator',value=f'{meUser.name}#{meUser.discriminator} (do not DM me for support!)',inline=True)
         embed.add_field(name=':grey_exclamation: Current prefix',value=f'{get_prefix(1,ctx.message)}',inline=True)
         await ctx.send(embed=embed)
 
@@ -79,11 +79,6 @@ List of added servers :
     async def count(self,ctx):
         await ctx.send(f'Total guilds count:`{len(self.bot.guilds)}`\nTotal members in that guilds:`{len(self.bot.users)}`')
 
-    @commands.command()
-    @commands.is_owner()
-    async def exec(self,ctx,sql):
-        data = makeRequest(sql)
-        await ctx.send(data)
 
     @commands.command()
     @commands.is_owner()

