@@ -92,13 +92,13 @@ class Updater(commands.Cog):
                 print('notheing changed')
 
     async def updateMessage(self,Id,server,players):
-        messages = makeRequest('SELECT * FROM notifications WHERE Type=124,ServersIds=%s',(str(Id),))
+        messages = makeRequest('SELECT * FROM notifications WHERE Type=124 AND ServersIds=%s',(str(Id),))
         embedMaker = ServerCmd(self.bot)
         for message in messages:
             channel = self.bot.get_channel(message[1])
-            messageToUpdate = await channel.fetch_message(int(message[4]))
+            messageToUpdate = await channel.fetch_message(int(message[5]))
             embed = embedMaker.serverInfo(server,players,True)
-            await messageToUpdate.edit(embed=embed)
+            await messageToUpdate.edit(content=embed)
 
     @tasks.loop(seconds=30.0)
     async def printer(self):
@@ -138,6 +138,7 @@ class Updater(commands.Cog):
                     print(f'Updated record for offline server: {ip}') # debug
             
             for server in serverList: # process our main list 
+                break
                 # for each server record 
                 for record in notifications: # go throu all notifications
                     idsList = json.loads(record[4]) # load list of server ids in notification record

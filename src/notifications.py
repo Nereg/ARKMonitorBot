@@ -46,14 +46,15 @@ class NotificationComands(commands.Cog):
 
     @commands.command()
     async def autolist(self,ctx):
-        selector = Selector(ctx,self.bot,c.Translation())
+        selector = m.Selector(ctx,self.bot,c.Translation())
         server = await selector.select()
         if server == '':
             return
         embedMaker = ServerCmd(self.bot)
         playersList = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server.ip,))
         embed = embedMaker.serverInfo(server,c.PlayersList.fromJSON(playersList[0][5]),True)
-        msg = await ctx.send(embed=embed)
+        print(embed)
+        msg = await ctx.send(embed)
         await ctx.send('Bot will update last message!')
         makeRequest('INSERT INTO notifications (`DiscordChannelId`, `Type`, `Sent`, `ServersIds`, `Data`) VALUES (%s,124,0,%s,%s)',(ctx.channel.id,str(playersList[0][0]),str(msg.id),))
 
