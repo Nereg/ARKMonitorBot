@@ -87,12 +87,6 @@ List of added servers :
 
     @commands.command()
     @commands.is_owner()
-    async def exec(self,ctx,sql):
-        data = makeRequest(sql)
-        await ctx.send(data)
-
-    @commands.command()
-    @commands.is_owner()
     async def stop(self,ctx):
         await ctx.send('Bye!')
         exit()

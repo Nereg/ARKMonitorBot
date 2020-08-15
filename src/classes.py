@@ -67,7 +67,9 @@ class ARKServer(JSON):
         self.hours = data['DayTime_s'][:2] # current in-game time
         self.minutes = data['DayTime_s'][2:]
         self.ping = int(server.ping * 1000)
-        self.newestVersion = requests.get('http://arkdedicated.com/version').text
+        self.headers = {'user-agent': 'my-app/0.0.1'}
+        self.newestVersion = requests.get('http://arkdedicated.com/version', headers=self.headers).text
+
         return self
     
 class Player(JSON):
@@ -113,20 +115,6 @@ class PlayersList(JSON):
         self.list = result 
         return self
 
-class GuildSettings(JSON):
-    """Class for guild settingslike prefix and anything in future"""
-    def __init__(self,prefix='!',data={}):
-        """Just init"""
-        self.prefix=prefix
-        self.data=data
-        pass
-
-    def addToData(self,key,value,override=False):
-        if (key in self.data and override == False):
-            raise Exception(f'{key} is in data array and override is false!')
-        else:
-            self.data[key] = value
-            return self.data
 
 class Translation():
     def load_file(self,lang,name='translations'):

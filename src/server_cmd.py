@@ -10,7 +10,6 @@ import classes as c
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession()
 
     # /server command module
     def serverInfo(self,server,playersList,online): # return info about server
@@ -165,7 +164,7 @@ Ping : {server.ping} ms
         HEADERS = {
     'User-Agent' : "Magic Browser"
         }
-        async with self.session as session:
+        async with 1 as session:
             async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
                 text = await resp.text()
                 text = json.loads(text)
