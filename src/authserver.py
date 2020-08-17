@@ -1,4 +1,10 @@
 from aiohttp import web
+import aiohttp
+from helpers import *
+import config
+
+global cfg 
+cfg = config()
 
 async def join(params):
     try:
@@ -9,15 +15,15 @@ async def join(params):
     'Content-Type': 'application/x-www-form-urlencoded'
         }
         data = {
-    'client_id': 713272720053239808,
-    'client_secret': 'ewIFngV9__rEDYMAskJUMCEG7118Erxu',
+    'client_id': cfg.client_id,
+    'client_secret': cfg.client_secret,
     'grant_type': 'authorization_code',
     'code': code,
-    'redirect_uri': 'https://arkbot.pp.ua/',
+    'redirect_uri': cfg.redirect_url,
     'scope': 'bot guilds.join'
         }
         async with aiohttp.request("POST", url, headers=HEADERS , data=data) as resp:
-            print(resp.json())
+            print(await resp.json())
     except KeyError as e:
         print(e)
         return
