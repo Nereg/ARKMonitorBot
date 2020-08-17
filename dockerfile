@@ -6,6 +6,6 @@ COPY . /app/
 RUN chmod +x wait-for-it.sh
 # installing all needed stuff
 RUN pip install --no-cache-dir -r requirements.txt
-
+EXPOSE 80
 # and FIRE IT UP ! 
 CMD ["./wait-for-it.sh", "--timeout=60" , "db:3306", "--", "python3", "/app/src/main.py"]
