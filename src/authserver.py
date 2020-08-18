@@ -4,7 +4,7 @@ from helpers import *
 import config
 
 global cfg 
-cfg = config()
+cfg = config.Config()
 
 async def join(params):
     try:
@@ -23,7 +23,13 @@ async def join(params):
     'scope': 'bot guilds.join'
         }
         async with aiohttp.request("POST", url, headers=HEADERS , data=data) as resp:
-            print(await resp.json())
+            data = await resp.json()
+            auth ={
+                'Authorization' : f'Bearer {data["access_token"]}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+            async with aiohttp.request("GET", f'https://discord.com/api/v6/users/@me', headers=auth) as resp2:
+                print(await resp2.json())
     except KeyError as e:
         print(e)
         return
