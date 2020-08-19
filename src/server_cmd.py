@@ -164,27 +164,26 @@ Ping : {server.ping} ms
         HEADERS = {
     'User-Agent' : "Magic Browser"
         }
-        async with 1 as session:
-            async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
-                text = await resp.text()
-                text = json.loads(text)
-                message = '''
+        async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
+            text = await resp.text()
+            text = json.loads(text)
+            message = '''
 List of detected servers on that ip by steam:
 
 '''
-                if (bool(text['response']['success']) or text['response']['servers'].__len__() <= 0):
-                    i = 1
-                    for server in text['response']['servers']:
-                        ip = server['addr']
-                        try:
-                            serverClass = c.ARKServer(ip).GetInfo()
-                            message += f'{i}. {ip} - {serverClass.name} (Online) \n'
-                        except:
-                            message += f'{i}. {ip} - ??? (Offline) \n'
-                        i += 1
-                else:
-                    await ctx.send('No games found on that IP by steam.')
-                    return
-                message += 'Use those ip to add server to bot!'
-                await ctx.send(message)
+            if (bool(text['response']['success']) or text['response']['servers'].__len__() <= 0):
+                i = 1
+                for server in text['response']['servers']:
+                    ip = server['addr']
+                    try:
+                        serverClass = c.ARKServer(ip).GetInfo()
+                        message += f'{i}. {ip} - {serverClass.name} (Online) \n'
+                    except:
+                        message += f'{i}. {ip} - ??? (Offline) \n'
+                    i += 1
+            else:
+                await ctx.send('No games found on that IP by steam.')
+                return
+            message += 'Use those ip to add server to bot!'
+            await ctx.send(message)
 

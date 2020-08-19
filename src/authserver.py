@@ -11,7 +11,7 @@ async def join(params):
         code = params['code']
         url = 'https://discord.com/api/oauth2/token'
         HEADERS = {
-    'User-Agent' : "Magic Browser",
+    'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)",
     'Content-Type': 'application/x-www-form-urlencoded'
         }
         data = {
@@ -26,10 +26,19 @@ async def join(params):
             data = await resp.json()
             auth ={
                 'Authorization' : f'Bearer {data["access_token"]}',
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/json',
+                'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)"
+            }
+            bot_auth = {
+                'Authorization' : f'Bot {cfg.token}',
+                'Content-Type': 'application/json',
+                'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)"
             }
             async with aiohttp.request("GET", f'https://discord.com/api/v6/users/@me', headers=auth) as resp2:
-                print(await resp2.json())
+                data2 = await resp2.json()
+                print(data2)
+                async with aiohttp.request("PUT", f'https://discord.com/api/v6/guilds/723121116012347492/members/{data2["id"]}', headers=bot_auth, data=json.dumps({'access_token':data["access_token"]})) as resp3:
+                    print(await resp3.json())
     except KeyError as e:
         print(e)
         return
