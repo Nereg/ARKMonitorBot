@@ -18,6 +18,7 @@ import notifications
 import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
+import updater
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -112,7 +113,7 @@ Try later.
         await ctx.send(message)
         return
     if (type(error) == discord.ext.commands.errors.MissingPermissions):
-        await ctx.send(error)
+        await ctx.send('Hello! Bot is missing some permissions! In most cases channel permissions override bot`s one so check that or try in another channel.')
         return
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
