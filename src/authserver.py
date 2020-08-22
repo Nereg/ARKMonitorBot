@@ -2,7 +2,6 @@ from aiohttp import web
 import aiohttp
 from helpers import *
 import config
-import json 
 
 global cfg 
 cfg = config.Config()
@@ -21,11 +20,10 @@ async def join(params):
     'grant_type': 'authorization_code',
     'code': code,
     'redirect_uri': cfg.redirect_url,
-    'scope': 'bot guilds.join identify'
+    'scope': 'bot guilds.join'
         }
         async with aiohttp.request("POST", url, headers=HEADERS , data=data) as resp:
             data = await resp.json()
-            print(data)
             auth ={
                 'Authorization' : f'Bearer {data["access_token"]}',
                 'Content-Type': 'application/json',
@@ -40,7 +38,7 @@ async def join(params):
                 data2 = await resp2.json()
                 print(data2)
                 async with aiohttp.request("PUT", f'https://discord.com/api/v6/guilds/723121116012347492/members/{data2["id"]}', headers=bot_auth, data=json.dumps({'access_token':data["access_token"]})) as resp3:
-                    print('lol')
+                    print(await resp3.json())
     except KeyError as e:
         print(e)
         return
@@ -48,7 +46,7 @@ async def join(params):
 async def index(request):
     params = request.rel_url.query
     await join(params)
-    raise web.HTTPFound(location='https://discord.com/oauth2/authorized', headers={'Server': 'NotYourBusiness'})
+    raise web.HTTPFound(location='https://discord.com/oauth2/authorized')
 
 app = web.Application()
 app.router.add_get('/', index)
