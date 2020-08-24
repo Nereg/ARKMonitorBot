@@ -115,3 +115,5 @@ def get_prefix(bot,message):
     else:
         return data[0][2]
     
+def safe_output(text): # returns safe text output to not ping @everyone
+    return text.replace("@", "@\u200B")

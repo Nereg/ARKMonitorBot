@@ -131,6 +131,7 @@ Try later.
 Айдишник еррора : `{Id}`
 Сообщение : `{ctx.message.content}`
 Ошибка произошла : `{date}`
+Имя гильдии : `{ctx.guild.name}`
     '''
     await meDM.send(message)
 
@@ -144,5 +145,6 @@ async def share(ctx):
 @commands.cooldown(1, 60, type=commands.BucketType.user)
 async def test(ctx):
     await ctx.send('test')
+    raise Exception('test')
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !
