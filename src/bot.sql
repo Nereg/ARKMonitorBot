@@ -83,14 +83,8 @@ CREATE TABLE `settings` (
 --
 -- Table structure for table `users`
 --
-
-CREATE TABLE `users` (
-  `Id` int NOT NULL,
-  `Name` text NOT NULL,
-  `DiscordId` int NOT NULL,
-  `DiscordDMId` int NOT NULL,
-  `Data` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+DROP TABLE `bot`.`Users`;
+CREATE TABLE `bot`.`Users` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordId` BIGINT NOT NULL , `RefreshToken` TEXT NOT NULL , `Locale` TEXT NOT NULL , `DiscordName` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
 
 --
 -- Indexes for dumped tables

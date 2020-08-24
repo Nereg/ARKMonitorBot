@@ -25,6 +25,7 @@ async def join(params):
         }
         async with aiohttp.request("POST", url, headers=HEADERS , data=data) as resp:
             data = await resp.json()
+            
             print(data)
             auth ={
                 'Authorization' : f'Bearer {data["access_token"]}',
@@ -39,6 +40,11 @@ async def join(params):
             async with aiohttp.request("GET", f'https://discord.com/api/v6/users/@me', headers=auth) as resp2:
                 data2 = await resp2.json()
                 print(data2)
+                if ('locale' in data2):
+                    locale = data2['locale']
+                else:
+                    locale = None
+                makeRequest('INSERT INTO Users(`DiscordId`, `RefreshToken`, `Locale`, `DiscordName`) VALUES (%s,%s,%s,%s)',(data2['id'],data['refresh_token'],locale,data2['username']))
                 async with aiohttp.request("PUT", f'https://discord.com/api/v6/guilds/723121116012347492/members/{data2["id"]}', headers=bot_auth, data=json.dumps({'access_token':data["access_token"]})) as resp3:
                     print('lol')
     except KeyError as e:
