@@ -46,7 +46,7 @@ async def join(params):
         code = params['code']
         url = 'https://discord.com/api/oauth2/token'
         HEADERS = {
-    'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)",
+    'User-Agent' : "DiscordBot (cutt.ly/ARKBot, IDK I won't update this)",
     'Content-Type': 'application/x-www-form-urlencoded'
         }
         data = {
@@ -64,7 +64,7 @@ async def join(params):
             auth ={
                 'Authorization' : f'Bearer {data["access_token"]}',
                 'Content-Type': 'application/json',
-                'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)"
+                'User-Agent' : "DiscordBot (cutt.ly/ARKBot, IDK I won't update this)"
             }
             bot_auth = {
                 'Authorization' : f'Bot {cfg.token}',

@@ -61,7 +61,7 @@ List of added servers :
         embed.set_footer(text=f'Bot v0.1 • GPLv3 • Requested by {ctx.author.name}')
         embed.add_field(name='<:Link:739476980004814898> Invite link',value='[Here!](https://bit.ly/ARKTop)',inline=True)
         embed.add_field(name='<:Github:739476979631521886> GitHub',value='[Here!](https://github.com/Nereg/ARKMonitorBot)',inline=True)
-        embed.add_field(name='<:Discord:739476979782254633> Support server',value='[Here!](https://discord.gg/QbSDHtq)',inline=True)
+        embed.add_field(name='<:Discord:739476979782254633> Support server',value='[Here!](https://bit.ly/ARKDiscord)',inline=True)
         embed.add_field(name='<:DB:739476980075986976> Servers in database',value=f'{makeRequest("SELECT COUNT(Id) FROM servers")[0][0]}',inline=True)
         embed.add_field(name='<:RAM:739511277600112640> RAM',value=RAM,inline=True)
         embed.add_field(name='<:Commit:739476980013072384> Commit',value='[`IAMLAZYSHIT`](https://github.com/Nereg/ARKMonitorBot)',inline=True)
