@@ -39,7 +39,8 @@ Ping : {server.ping} ms
 ```
         '''
         return message # and return it 
-
+    
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     @commands.cooldown(10, 60, type=commands.BucketType.user)
     async def server(self,ctx, *args): # /server command handler
@@ -151,6 +152,7 @@ Ping : {server.ping} ms
             await ctx.send('Wrong mode selected !')
             return
 
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def ipfix(self,ctx,*args):
         if (args == ()):
