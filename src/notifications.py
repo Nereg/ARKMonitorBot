@@ -12,7 +12,9 @@ class NotificationComands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
-
+        
+    @commands.is_owner()
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def watch(self,ctx):
         selector = m.Selector(ctx,self.bot,self.t)

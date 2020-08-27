@@ -91,15 +91,15 @@ async def on_command_error1(ctx,error):
         print(e)
 
 @bot.event
-async def on_command_error(ctx,error):
+async def on_command_error(ctx,error):        
+    meUser = bot.get_user(277490576159408128)
+    meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
         await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
         return
     if (type(error) == discord.ext.commands.errors.CheckFailure):
         return
     if (type(error) == discord.ext.commands.errors.NotOwner):
-        meUser = bot.get_user(277490576159408128)
-        meDM = await meUser.create_dm()
         await meDM.send(f'Someone tried used only admin command ! It was `{ctx.message.content}`')
         return
     if (type(error) == discord.ext.commands.CommandOnCooldown):
@@ -111,8 +111,15 @@ Try later.
         '''
         await ctx.send(message)
         return
-    if (type(error) == discord.ext.commands.errors.MissingPermissions):
-        await ctx.send(error)
+    if (type(error) == discord.ext.commands.errors.BotMissingPermissions):
+        needed_perms = "```Add reactions\nUse external reactions\nSend and read messages\nManage messages```"
+        if(commands.bot_has_permissions(send_messages=True)):
+            await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')
+        else:
+            try:
+                await ctx.author.send(f'Hey hello. You invited me to your `{ctx.guild.name}` guild and used `{ctx.message.content}` command. But I am missing some permissions! Most likely some channel permissions overrides bots one. I need:\n{needed_perms}')
+            except discord.Forbidden:
+                await meDM.send(f'Fuck there is `{ctx.guild.name}` guild with closed DM and no send messages permissions! They tried to do `{ctx.message.content}`. I am out bro!')
         return
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
@@ -143,6 +150,7 @@ async def share(ctx):
 @bot.command()
 @commands.is_owner()
 @commands.cooldown(1, 60, type=commands.BucketType.user)
+@commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
 async def test(ctx):
     await ctx.send('test')
     raise Exception('test')

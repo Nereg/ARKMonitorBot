@@ -17,7 +17,7 @@ class BulkCommands(commands.Cog):
         self.cfg = config.Config()
         self.t = c.Translation()
     
-
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def list(self, ctx):
         servers = '' # string with list of servers
@@ -52,6 +52,7 @@ List of added servers :
 {servers}
         ''')
     
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def info(self, ctx):
         time = datetime.datetime(2000,1,1,0,0,0,0)
@@ -63,7 +64,7 @@ List of added servers :
         embed.add_field(name='<:Github:739476979631521886> GitHub',value='[Here!](https://github.com/Nereg/ARKMonitorBot)',inline=True)
         embed.add_field(name='<:Discord:739476979782254633> Support server',value='[Here!](https://bit.ly/ARKDiscord)',inline=True)
         embed.add_field(name='<:DB:739476980075986976> Servers in database',value=f'{makeRequest("SELECT COUNT(Id) FROM servers")[0][0]}',inline=True)
-        embed.add_field(name='<:RAM:739511277600112640> RAM',value=RAM,inline=True)
+        embed.add_field(name='<:RAM:739476925852155914> RAM',value=RAM,inline=True)
         embed.add_field(name='<:Commit:739476980013072384> Commit',value='[`IAMLAZYSHIT`](https://github.com/Nereg/ARKMonitorBot)',inline=True)
         embed.add_field(name=':ping_pong: Ping',value=f'{int(self.bot.latency * 1000)} ms',inline=True)
         embed.add_field(name='<:me:739473644874367007> Creator',value=f'{meUser.name}#{meUser.discriminator}',inline=True)
@@ -73,7 +74,7 @@ List of added servers :
         embed.add_field(name='<:Cpu:739492057990693005> Current CPU utilisation',value=f'{round(statistics.mean(psutil.getloadavg()),1)}',inline=True)
         await ctx.send(embed=embed)
 
-
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def ping(self,ctx):
         time = int(self.bot.latency * 1000)
