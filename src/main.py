@@ -55,7 +55,8 @@ async def on_message(msg):
         await msg.channel.send(t.l['curr_prefix'].format(get_prefix(bot,msg)))
         return
     await bot.process_commands(msg)
-
+    
+@commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
 @bot.command()
 async def prefix(ctx,*args):
     print(args)
@@ -113,9 +114,9 @@ Try later.
         return
     if (type(error) == discord.ext.commands.errors.BotMissingPermissions):
         needed_perms = "```Add reactions\nUse external reactions\nSend and read messages\nManage messages```"
-        if(commands.bot_has_permissions(send_messages=True)):
+        try:
             await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')
-        else:
+        except discord.Forbidden:
             try:
                 await ctx.author.send(f'Hey hello. You invited me to your `{ctx.guild.name}` guild and used `{ctx.message.content}` command. But I am missing some permissions! Most likely some channel permissions overrides bots one. I need:\n{needed_perms}')
             except discord.Forbidden:
