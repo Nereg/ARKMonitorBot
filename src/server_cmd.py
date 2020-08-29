@@ -38,6 +38,8 @@ Ping : {server.ping} ms
 {players}
 ```
         '''
+        if (message.__len__() >= 2000):
+            message = f'Hello! ARK is so bugged and it returned player list that is bigger than 2k characters which is limit of discord. Pls report this to my support guild. Also there was {i} player on the list.'
         return message # and return it 
     
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
