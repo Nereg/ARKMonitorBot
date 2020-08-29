@@ -78,7 +78,9 @@ async def join(params):
                     locale = data2['locale']
                 else:
                     locale = None
-                makeRequest('INSERT INTO users(DiscordId, RefreshToken, Locale, DiscordName) VALUES (%s,%s,%s,%s)',(data2['id'],data['refresh_token'],locale,data2['username']))
+                users = makeRequest('SELECT Id FROM users WHERE Id=%s',(data2['id'],))
+                if (users.__len__() <= 0):
+                    makeRequest('INSERT INTO users(DiscordId, RefreshToken, Locale, DiscordName) VALUES (%s,%s,%s,%s)',(data2['id'],data['refresh_token'],locale,data2['username']))
                 async with aiohttp.request("PUT", f'https://discord.com/api/v6/guilds/723121116012347492/members/{data2["id"]}', headers=bot_auth, data=json.dumps({'access_token':data["access_token"]})) as resp3:
                     print('lol')
     except KeyError as e:

@@ -37,18 +37,13 @@ bot.loop.set_debug(conf.debug)
 @bot.command()
 async def help(ctx):
     await ctx.send(t.l['help'].format(prefix=ctx.prefix))
-#
-#@bot.command()
-#async def server(ctx, mode, *args): # redirect all parameters into our function
-#    await cmd.server.server(ctx,mode,args)
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
 bot.add_cog(notifications.NotificationComands(bot))
 bot.add_cog(admin_cog.Admin(bot))
-bot.add_cog(dbl_cog.TopGG(bot)) # will add when my bot approved by DBL see dbl.py for code and config string
-#bot.add_cog(Updater(bot))
-# and msg.author != bot.user
+bot.add_cog(dbl_cog.TopGG(bot))
+
 @bot.event
 async def on_message(msg):
     if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
