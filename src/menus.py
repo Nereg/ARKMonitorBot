@@ -60,7 +60,8 @@ class Selector():
                 reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
             except asyncio.TimeoutError:
                 flag = 1
-                await self.msg.delete()
+                await self.msg.clear_reactions()
+                await self.msg.edit(content='Selector has timed out.',embed=None)
             else :
                 if (str(reaction.emoji) == reactions[0]):
                     await reaction.remove(self.ctx.author)
