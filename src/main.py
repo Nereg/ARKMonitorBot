@@ -36,7 +36,7 @@ bot.loop.set_debug(conf.debug)
 
 @bot.command()
 async def help(ctx):
-    await ctx.send(t.l['help'].format(prefix=ctx.prefix))
+    await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version))
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
