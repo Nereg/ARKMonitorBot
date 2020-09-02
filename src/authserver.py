@@ -69,7 +69,7 @@ async def join(params):
             bot_auth = {
                 'Authorization' : f'Bot {cfg.token}',
                 'Content-Type': 'application/json',
-                'User-Agent' : "DiscordBot (bit.ly/ARKBot, IDK I won't update this)"
+                'User-Agent' : "DiscordBot (cutt.ly/ARKBot, IDK I won't update this)"
             }
             async with aiohttp.request("GET", f'https://discord.com/api/v6/users/@me', headers=auth) as resp2:
                 data2 = await resp2.json()

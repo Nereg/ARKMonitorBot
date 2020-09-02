@@ -13,6 +13,7 @@ import os
 import notifications
 import io
 import traceback
+import socket
 
 debug = Debuger('updater') # create debuger (see helpers.py)
 conf = config.Config() # load config
@@ -28,12 +29,60 @@ class Updater(commands.Cog):
         self.index = 0
         self.bot = bot
         self.printer.start()
+        self.server_list = [] #list of lists : [[server_id,server_status]...]
+        print('Init')
+        # 1 - went online 
+        # 2 - went offline
+        # 3 - unchanged
 
     def cog_unload(self):
         self.printer.cancel()
 
+    async def server_notificator(self,server):
+        if (server[1] == 1): # server went online
+            channel = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=1',(f'%{server[0]}%',))
+            discordChannel = self.bot.get_channel(channel[1])
+
+    async def notificator(self,serverList):
+        for server in serverList:
+            if (server[1] != 3):
+                await self.server_notificator(server)
+            #player_notificator()
+    async def update_server(self,serverId):
+        server = makeRequest('SELECT * FROM servers WHERE Id=%s',(serverId,)) #get current server
+        server = server[0]
+        ip = server[1]
+        try:
+            serverObj = c.ARKServer(ip).GetInfo() # get info about server 
+            playersList = c.PlayersList(ip).getPlayersList() # get players list
+            makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
+            if (bool(server[4]) == False): # if previously server was offline 
+                return [1,playersList] # return server went online
+            else:
+                return [3,playersList] # return unchanged
+        except socket.timeout:
+            makeRequest('UPDATE servers SET LastOnline=1 WHERE Ip=%s',(ip,)) # update DB
+            if (bool(server[4]) == True): # if server was online
+                return [2,playersList] #return server went offline
+            else:
+                return [3,playersList] # return unchanged
+
     @tasks.loop(seconds=30.0)
     async def printer(self):
+        print('Entered updater!')
+        servers = makeRequest('SELECT * FROM servers')
+        server_list = []
+        for server in servers:
+            print(f'Updating server {server[0]}')
+            result = await self.update_server(server[0])
+            server_list.append([server[0],result[0],result[1]])
+            print(f'Updated server! Result is {result}')
+        print(server_list)
+        print('handling notifications')
+        await self.notificator(server_list)
+
+    @tasks.loop(seconds=30.0)
+    async def printer_old(self):
         try:
             servers = makeRequest('SELECT * FROM servers') #get all servers
             notifications = makeRequest('SELECT * FROM notifications') # get all notifications
