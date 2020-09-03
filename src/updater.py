@@ -67,7 +67,7 @@ class Updater(commands.Cog):
             else:
                 return [3,playersList] # return unchanged
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(seconds=120.0)
     async def printer(self):
         print('Entered updater!')
         servers = makeRequest('SELECT * FROM servers')
