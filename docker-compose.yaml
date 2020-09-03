@@ -10,8 +10,6 @@ services:
     volumes:
       - ./sql:/var/lib/mysql
       - ./src/:/docker-entrypoint-initdb.d/
-    ports:
-      - "3306:3306"
   
   bot:
     restart: always
