@@ -5,6 +5,7 @@ import jsonpickle
 import requests
 import os
 from os import path
+import aiohttp
 
 class JSON: #base class
     """Base class for all classes to easly JSON encode and decode"""
@@ -29,6 +30,49 @@ class ARKServer(JSON):
         self.port = int(self.port) # convert port to int
         pass
     
+    async def AGetInfo(self):
+        """Function to get info about server
+        (To get players list see Playerslist class)
+        """
+        server = await a2s.ainfo((self.address,self.port)) # get server data
+        #players = a2s.players(address) #this is list of players I will implement it in another class
+        data = await a2s.arules((self.address,self.port)) # custom ARK data
+
+        version = server.server_name #get name
+        first = version.find('(') # split out version
+        second = version.rfind(')')
+        self.version = version[first+1:second] # read https://ark.gamepedia.com/Server_Browser#Server_Name
+
+        platform = server.platform # get platform server running on
+        if (platform == 'w'): # decode
+            platform = 'Windows'
+        elif (platform == 'l'):
+            platform = 'Linux'
+        elif (platform == 'm' or platform == 'o'):
+            platform = 'Mac' # =/
+        self.platform = platform
+
+        self.name = server.server_name # just extract data 
+        self.online = server.player_count
+        self.maxPlayers = server.max_players
+        self.map = server.map_name
+        self.password = server.password_protected
+        self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+        try:
+            self.clusterName = data['ClusterId_s'] # cluster name
+        except KeyError:
+            self.clusterName = None
+        self.BattleEye = bool(data['SERVERUSESBATTLEYE_b']) # Is BattleEye used ?
+        self.itemDownload = bool(data['ALLOWDOWNLOADITEMS_i'])  # can you download items to this ARK ?
+        self.characterDownload = bool(data['ALLOWDOWNLOADCHARS_i']) # Can you download characters to this ARK ?
+        self.hours = data['DayTime_s'][:2] # current in-game time
+        self.minutes = data['DayTime_s'][2:]
+        self.ping = int(server.ping * 1000)
+        HEADERS = {'User-Agent' : "Magic Browser"}
+        async with aiohttp.request("GET", 'http://arkdedicated.com/version', headers=HEADERS) as response:
+            self.newestVersion = await response.text()
+        return self
+
     def GetInfo(self):
         """Function to get info about server
         (To get players list see Playerslist class)
@@ -98,6 +142,22 @@ class PlayersList(JSON):
         self.port = int(self.port) # convert port to int
         self.list = []
         pass
+
+    async def AgetPlayersList(self):
+        """Gets all needed data"""
+        players = await a2s.aplayers((self.address,self.port)) # get raw data
+        result = [] 
+        for player in players: # for each player in data
+            name = player.name
+            if (name == ''):
+                name = '(unknown player)'
+            try:
+                print(name,file=open(os.devnull,'w'))
+            except BaseException:
+                name = '(invalid name)'
+            result.append(Player(name,player.duration)) # construct player class and append it to our results
+        self.list = result 
+        return self
 
     def getPlayersList(self):
         """Gets all needed data"""

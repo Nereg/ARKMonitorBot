@@ -123,7 +123,7 @@ Try later.
     data = makeRequest('SELECT * FROM errors WHERE Time=%s',(Time,))
     Id = data[0][0]
     meUser = bot.get_user(277490576159408128)
-    await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : https://bit.ly/ARKDiscord')
+    await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
     meDM = await meUser.create_dm()
     errors_str = ''.join(errors)
     date = datetime.utcfromtimestamp(Time).strftime('%Y-%m-%d %H:%M:%S')

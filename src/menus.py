@@ -61,7 +61,7 @@ class Selector():
             except asyncio.TimeoutError:
                 flag = 1
                 await self.msg.clear_reactions()
-                await self.msg.edit(content='Selector has timed out.',embed=None)
+                await self.msg.edit(content='The interactive menu was closed.',embed=None)
             else :
                 if (str(reaction.emoji) == reactions[0]):
                     await reaction.remove(self.ctx.author)

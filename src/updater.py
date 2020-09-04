@@ -53,8 +53,8 @@ class Updater(commands.Cog):
         server = server[0]
         ip = server[1]
         try:
-            serverObj = c.ARKServer(ip).GetInfo() # get info about server 
-            playersList = c.PlayersList(ip).getPlayersList() # get players list
+            serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
+            playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
             makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[4]) == False): # if previously server was offline 
                 return [1,playersList] # return server went online
