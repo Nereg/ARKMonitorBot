@@ -320,3 +320,8 @@ class Admin(commands.Cog):
     async def exec(self,ctx,sql):
         data = makeRequest(sql)
         await ctx.send(data)
+    
+    @commands.command()
+    async def setMessage(self, ctx, message):
+        makeRequest('UPDATE settings SET Admins=%s WHERE Guildid=1',(message,))
+        await ctx.send('Done!')

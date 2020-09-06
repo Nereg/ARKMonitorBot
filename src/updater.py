@@ -108,7 +108,6 @@ class Updater(commands.Cog):
             print('handling notifications')
             await self.notificator(server_list)
         except BaseException as e:
-            print(notifications)
             print(e)
             print(traceback.format_exc())
 

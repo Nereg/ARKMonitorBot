@@ -73,6 +73,12 @@ List of added servers :
         embed.add_field(name='<:Role:739476980076118046> Role on this server',value=role,inline=True)
         embed.add_field(name=':grey_exclamation: Current prefix',value=f'{get_prefix(1,ctx.message)}',inline=True)
         embed.add_field(name='<:Cpu:739492057990693005> Current CPU utilisation',value=f'{round(statistics.mean(psutil.getloadavg()),1)}',inline=True)
+        message = makeRequest('SELECT * FROM settings WHERE GuildId=1')
+        if (message.__len__() <= 0):
+            message = 'No current message'
+        else: 
+            message = message[0][4]
+        embed.add_field(name='Message from creator',value=message)
         await ctx.send(embed=embed)
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
