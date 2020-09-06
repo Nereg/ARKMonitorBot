@@ -23,18 +23,6 @@ services:
     depends_on:
       - "db"
   
-  updater:
-    restart: always
-    build: 
-      context: .
-      dockerfile: updater_dockerfile
-    logging:
-      driver: "local"
-      options:
-        max-size: "50m"
-    depends_on:
-      - "db"
-  
   server:
     restart: always
     build:

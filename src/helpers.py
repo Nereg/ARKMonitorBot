@@ -40,12 +40,12 @@ def Debuger(name):
     logging.getLogger(name).addHandler(screen_handler)
     #integrate discord.py
     ds = logging.getLogger('discord')
-    ds.setLevel(logging.DEBUG)
+    ds.setLevel(logging.INFO)
     ds.addHandler(screen_handler)
     #integrate async io 
-    aio = logging.getLogger("asyncio")
-    aio.setLevel(logging.DEBUG)
-    aio.addHandler(screen_handler)
+    #aio = logging.getLogger("asyncio")
+    #aio.setLevel(logging.DEBUG)
+    #aio.addHandler(screen_handler)
     #and return
     return log_obj
 

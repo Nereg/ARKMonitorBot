@@ -14,10 +14,10 @@ import time
 from datetime import datetime
 import dbl_cog
 import os 
-import notifications
 import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
+import updater
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -40,9 +40,9 @@ async def help(ctx):
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
-bot.add_cog(notifications.NotificationComands(bot))
 bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot))
+bot.add_cog(updater.Updater(bot))
 
 @bot.event
 async def on_message(msg):
