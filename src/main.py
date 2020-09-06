@@ -42,7 +42,7 @@ bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
 bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot))
-#bot.add_cog(updater.Updater(bot))
+bot.add_cog(updater.Updater(bot))
 
 @bot.event
 async def on_message(msg):
