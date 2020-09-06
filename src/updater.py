@@ -145,6 +145,25 @@ class Updater(commands.Cog):
                 await ctx.send(self.t.l['done'])
                 return
 
+    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
+    @commands.command()
+    async def unwatch(self,ctx):
+        selector = m.Selector(ctx,self.bot,self.t)
+        server = await selector.select()        
+        if server == '':
+            return
+        ip = server.ip
+        serverId = makeRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=3 AND ServersIds LIKE %s',(ctx.channel.id, f'%{serverId}%',))
+        if (notifications.__len__() <= 0):
+            await ctx.send('You is not subscribed to that server!')
+            return
+        else:
+            newServerlist = json.loads(notifications[0][4])
+            newServerlist.remove(serverId)
+            newServerlist = json.dumps(newServerlist)
+            makeRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(newServerlist,notifications[0][0]))
+            await ctx.send('Done !')
 def setup(bot):
     bot.add_cog(Updater(bot))
 

@@ -1,6 +1,6 @@
 {
 
-    "help": "*Help message*\nBot version: `{version}`\n`{prefix}prefix` - change or view current server's prefix\n`{prefix}server add` - add ARK server to bot's list\n`{prefix}server info` - view info about server\n`{prefix}server delete` - delete server from bot's list\n`{prefix}list` - write list of added servers to bot's list\n`{prefix}info` - all info about this bot (also useful links)\n`{prefix}watch` - bot will send notification if your server goes down !",
+    "help": "*Help message*\nBot version: `{version}`\n`{prefix}prefix` - change or view current server's prefix\n`{prefix}server add` - add ARK server to bot's list\n`{prefix}server info` - view info about server\n`{prefix}server delete` - delete server from bot's list\n`{prefix}list` - write list of added servers to bot's list\n`{prefix}info` - all info about this bot (also useful links)\n`{prefix}watch` - bot will send notification if your server goes down!\n`{prefix}unwatch` - if you don't want to receive notifications about servers",
     "ping" : "Pong! Ping is: {} ms !",
     "curr_prefix" : "Current prefix is : `{}`",
     "cant_change_prefix" : "You can`t change prefix in DM.",
