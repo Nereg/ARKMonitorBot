@@ -29,6 +29,12 @@ class BulkCommands(commands.Cog):
             GuildId = ctx.guild.id
             Type = 0
         data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
+        notifications = makeRequest('SELECT * FROM notifications WHERE Type=3')
+        channels = ctx.guild.channels
+        watchedServers = []
+        for notification in notifications:
+            if (notification[1] in  [channel.id for channel in ctx.guild.text_channels]):
+                watchedServers.append(json.loads(notification[4]))
         if (data.__len__() == 0):
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
             return 
@@ -41,10 +47,14 @@ class BulkCommands(commands.Cog):
         data = makeRequest(statement)
         i = 1 # i (yeah classic)
         for result in data: # fro each record in DB
+            #print(result)
+            #print(result[0] in watchedServers[0])
+            #print(watchedServers)
             server = c.ARKServer.fromJSON(result[4]) # construct our class
             online = bool(result[6]) # exstarct last online state 
             emoji = ':green_circle:' if online else ':red_circle:' # if last online is tru green circle else (if offline) red
-            servers += f'{i}. {server.name}  {emoji}  ||{server.ip}|| \n' # construct line and add it to all strings
+            watched = '(watched)' if result[0] in watchedServers[0] else ''
+            servers += f'{i}. {server.name}  {emoji} {watched} {server.ip}\n' # construct line and add it to all strings
             i += 1 
         # send message
         await ctx.send(f''' 
