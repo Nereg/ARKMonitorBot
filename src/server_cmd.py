@@ -129,7 +129,7 @@ Ping : {server.ping} ms
                 else: # else
                     debug.debug(f'server {ip} is offline and we have no data about it!') # debug
                     await ctx.send('Server is offline and we have no data about it!') # send message
-        elif (mode == 'delete'):
+        elif (mode == 'delete'): # add !exec "delete from notifications where ServersIds like '%4%'"
             selector = Selector(ctx,self.bot,lang)
             server = await selector.select()
             if server == '':
@@ -149,6 +149,7 @@ Ping : {server.ping} ms
                 serverIds = json.loads(serverIds[0][3]) #remove()
             serverIds.remove(serverId)
             makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds),GuildId,Type))
+            #makeRequest('DELETE FROM notifications WHERE ServersIds LIKE %s',(f'%{serverId}%',)) will delete other servers too so no
             await ctx.send('Done!')
         else:
             await ctx.send('Wrong mode selected !')

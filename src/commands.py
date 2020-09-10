@@ -53,7 +53,10 @@ class BulkCommands(commands.Cog):
             server = c.ARKServer.fromJSON(result[4]) # construct our class
             online = bool(result[6]) # exstarct last online state 
             emoji = ':green_circle:' if online else ':red_circle:' # if last online is tru green circle else (if offline) red
-            watched = '(watched)' if result[0] in watchedServers[0] else ''
+            if watchedServers.__len__() > 0:
+                watched = '(watched)' if result[0] in watchedServers[0] else ''
+            else:
+                watched = ''
             servers += f'{i}. {server.name}  {emoji} {watched} {server.ip}\n' # construct line and add it to all strings
             i += 1 
         # send message
