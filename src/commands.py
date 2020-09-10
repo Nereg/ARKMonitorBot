@@ -57,7 +57,7 @@ class BulkCommands(commands.Cog):
                 watched = '(watched)' if result[0] in watchedServers[0] else ''
             else:
                 watched = ''
-            servers += f'{i}. {server.name}  {emoji} {watched} {server.ip}\n' # construct line and add it to all strings
+            servers += f'{i}. {server.name} {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
             i += 1 
         # send message
         await ctx.send(f''' 
