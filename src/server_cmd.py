@@ -143,21 +143,12 @@ Ping : {server.ping} ms
             serverId = makeRequest('SELECT * FROM servers WHERE Ip=%s',(server.ip,))
             serverId = serverId[0][0]
             serverIds = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
-            notifications = makeRequest('SELECT * FROM notifications WHERE Type=3')
-            watchedServers = []
             if (serverIds[0][3] == None or serverIds[0][3] == 'null'):
                 serverIds = []
             else:
                 serverIds = json.loads(serverIds[0][3]) #remove()
             serverIds.remove(serverId)
-            for notification in notifications:
-                if (notification[1] in  [channel.id for channel in ctx.guild.text_channels]):
-                    watchedServers.append(json.loads(notification[4]))
             makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds),GuildId,Type))
-            if (serverId in watchedServers[0]):
-                print(serverId)
-                print(watchedServers)
-                makeRequest('UPDATE notifications SET ServersIds=%s WHERE ServersIds LIKE %s',(json.dumps(watchedServers[0].remove(serverId)),f'%{serverId}%',)) 
             await ctx.send('Done!')
         else:
             await ctx.send('Wrong mode selected !')
