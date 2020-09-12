@@ -325,3 +325,17 @@ class Admin(commands.Cog):
     async def setMessage(self, ctx, message):
         makeRequest('UPDATE settings SET Admins=%s WHERE Guildid=1',(message,))
         await ctx.send('Done!')
+
+    @commands.command()
+    async def deleteMessage(self, ctx, channelId : int, messageId : int):
+        channel = self.bot.get_channel(channelId)
+        if (channel == None):
+            await ctx.send('Wrong channel id')
+        else:
+            try:
+                message =  await channel.fetch_message(messageId)
+            except BaseException as e:
+                await ctx.send('error')
+                await ctx.send(e)
+            await message.delete()
+            await ctx.send('Done !')
