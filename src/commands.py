@@ -57,7 +57,7 @@ class BulkCommands(commands.Cog):
                 watched = '(watched)' if result[0] in watchedServers[0] else ''
             else:
                 watched = ''
-            name = server.name.find('-')
+            name = server.name.find(f'- ({server.version})')
             name = server.name[:name].strip()
             servers += f'{i}. {name} {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
             i += 1 
