@@ -14,7 +14,7 @@
 * https://ark.gamepedia.com/Web_API - how I get current ARK version
 * https://ark.gamepedia.com/Server_Browser - how I get additional info about ARK servers 
 * https://discord.gg/NxEVYBt - our discord support server
-* олег#3220 - I am on discord
+* Nereg#1010 - I am on discord
 
 ## Contributing
 Just open PR I will test it and merge !
