@@ -23,6 +23,7 @@ class Selector():
         embed.add_field(name=self.l.l['version'],value=f'{server.version}')
         embed.add_field(name='PVE?',value=pve)
         embed.add_field(name=self.l.l['players_count'],value=f'{server.online}/{server.maxPlayers}')
+        embed.add_field(name='Map',value=server.Map)
         return embed
 
     async def select(self):
