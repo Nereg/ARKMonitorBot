@@ -85,8 +85,15 @@ class Updater(commands.Cog):
                 return [1,serverObj,playersList] # return server went online
             else:
                 return [3,serverObj,playersList] # return unchanged
-        except BaseException as e:
-            print(e)
+        except BaseException as error:
+            meUser = bot.get_user(277490576159408128)
+            meDM = await meUser.create_dm()
+            errors = traceback.format_exception(type(error), error, error.__traceback__)
+            errors_str = ''.join(errors)
+            date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
+            await meDM.send(f'{errors_str}\nDate: {date}')
+            print('123123123')
+            print(error)
             makeRequest('UPDATE servers SET LastOnline=0 WHERE Ip=%s',(ip,)) # update DB
             if (bool(server[6]) == True): # if server was online
                 return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5])] #return server went offline

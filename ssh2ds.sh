@@ -5,6 +5,8 @@
 #Move this file to /usr/local/bin/ssh2ds.sh
 #Add to /etc/pam.d/sshd :
 #session optional pam_exec.so type=open_session seteuid /usr/local/bin/ssh2ds.sh
+#Add exec permissions to file
+#chmod +x /usr/local/bin/ssh2ds.sh
 URL="https://discordapp.com/api/webhooks/************/********************" #your webhook url
 DATE1="$(date "+%H:%M:%S")"
 DATE2="$(date "+%d %B %Y")"
