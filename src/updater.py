@@ -14,6 +14,7 @@ import io
 import traceback
 import socket
 import menus as m
+import concurrent.futures._base as base
 
 #debug = Debuger('updater') # create debuger (see helpers.py)
 #conf = config.Config() # load config
@@ -42,7 +43,7 @@ class Updater(commands.Cog):
 
     async def server_notificator(self,server):
         print('entered message sender')
-        if (server[1] == 1 ): # server went online
+        if (server[0] == 1 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
                 server = server[2]
@@ -53,7 +54,7 @@ class Updater(commands.Cog):
                     else:
                         await discordChannel.send(f'Server {server.name} ({server.map}) ({server.ip}) went online!')
                         print('sent message for went online')
-        if (server[1] == 2 ): # server went online
+        if (server[0] == 2 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
                 server = server[2]
@@ -86,12 +87,13 @@ class Updater(commands.Cog):
             else:
                 return [3,serverObj,playersList] # return unchanged
         except BaseException as error:
-            meUser = bot.get_user(277490576159408128)
-            meDM = await meUser.create_dm()
-            errors = traceback.format_exception(type(error), error, error.__traceback__)
-            errors_str = ''.join(errors)
-            date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-            await meDM.send(f'{errors_str}\nDate: {date}')
+            if (type(error) != base.TimeoutError):
+                meUser = self.bot.get_user(277490576159408128)
+                meDM = await meUser.create_dm()
+                errors = traceback.format_exception(type(error), error, error.__traceback__)
+                errors_str = ''.join(errors)
+                date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
+                await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}')
             print('123123123')
             print(error)
             makeRequest('UPDATE servers SET LastOnline=0 WHERE Ip=%s',(ip,)) # update DB
