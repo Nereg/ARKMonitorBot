@@ -43,7 +43,7 @@ class Updater(commands.Cog):
 
     async def server_notificator(self,server):
         print('entered message sender')
-        if (server[0] == 1 ): # server went online
+        if (server[1] == 1 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
                 server = server[2]
@@ -54,7 +54,7 @@ class Updater(commands.Cog):
                     else:
                         await discordChannel.send(f'Server {server.name} ({server.map}) ({server.ip}) went online!')
                         print('sent message for went online')
-        if (server[0] == 2 ): # server went online
+        if (server[1] == 2 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
                 server = server[2]
