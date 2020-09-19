@@ -96,7 +96,9 @@ class Updater(commands.Cog):
                 date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
                 await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}')
             print('123123123')
-            print(error)
+            errors = traceback.format_exception(type(error), error, error.__traceback__)
+            errors_str = ''.join(errors)
+            print(errors_str)
             makeRequest('UPDATE servers SET LastOnline=0 WHERE Ip=%s',(ip,)) # update DB
             if (bool(server[6]) == True): # if server was online
                 return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5])] #return server went offline
