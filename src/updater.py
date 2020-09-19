@@ -43,27 +43,28 @@ class Updater(commands.Cog):
 
     async def server_notificator(self,server):
         print('entered message sender')
+        print(server)
         if (server[1] == 1 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
-                server = server[2]
+                ARKServer = server[2]
                 for channel in channels:
                     discordChannel = self.bot.get_channel(channel[1])
                     if (discordChannel == None):
                         print(f'Channel not found! Channel id :{channel[1]}')
                     else:
-                        await discordChannel.send(f'Server {server.name} ({server.map}) ({server.ip}) went online!')
+                        await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went online!')
                         print('sent message for went online')
         if (server[1] == 2 ): # server went online
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
             if (channels.__len__() >= 1):
-                server = server[2]
+                ARKServer = server[2]
                 for channel in channels:
                     discordChannel = self.bot.get_channel(channel[1])
                     if (discordChannel == None):
                         print(f'Channel not found! Channel id :{channel[1]}')
                     else:
-                        await discordChannel.send(f'Server {server.name} ({server.map}) ({server.ip}) went offline!')
+                        await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went offline!')
                         print('sent message for went online')
 
 

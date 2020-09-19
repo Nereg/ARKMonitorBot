@@ -22,7 +22,7 @@ protobuf==3.12.2
 psutil==5.7.2
 pycares==3.1.1
 pycparser==2.20
-python-a2s==1.2.0
+python-a2s @ git+https://github.com/Nereg/python-a2s@6165cebc6420c79afb1315a1d9051c79564ce6a5
 python-dateutil==2.8.1
 pytz==2020.1
 ratelimiter==1.2.0.post0
