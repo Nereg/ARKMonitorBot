@@ -180,7 +180,7 @@ List of detected servers on that ip by steam:
                 for server in text['response']['servers']:
                     ip = server['addr']
                     try:
-                        serverClass = c.ARKServer(ip).GetInfo()
+                        serverClass = await c.ARKServer(ip).AGetInfo()
                         message += f'{i}. {ip} - {serverClass.name} (Online) \n'
                     except:
                         message += f'{i}. {ip} - ??? (Offline) \n'

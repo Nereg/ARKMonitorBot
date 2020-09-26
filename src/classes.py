@@ -6,6 +6,15 @@ import requests
 import os
 from os import path
 import aiohttp
+import concurrent.futures._base as base
+import socket
+
+class ARKServerError(Exception):
+    def __init__(self,reason, error, *args, **kwargs):
+        self.reason = reason
+        self.error = error
+        super().__init__(*args, **kwargs)
+    pass
 
 class JSON: #base class
     """Base class for all classes to easly JSON encode and decode"""
@@ -34,10 +43,15 @@ class ARKServer(JSON):
         """Function to get info about server
         (To get players list see Playerslist class)
         """
-        server = await a2s.ainfo((self.address,self.port)) # get server data
-        #players = a2s.players(address) #this is list of players I will implement it in another class
-        data = await a2s.arules((self.address,self.port)) # custom ARK data
-
+        try:
+            server = await a2s.ainfo((self.address,self.port)) # get server data
+            data = await a2s.arules((self.address,self.port)) # custom ARK data
+        except base.TimeoutError as e:
+            raise ARKServerError('1: Timeout',e)
+        except socket.gaierror as e:
+            raise ARKServerError('2: DNS resolution error',e)
+        except ConnectionRefusedError as e:
+            raise ARKServerError('3: Connection was refused',e)
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')

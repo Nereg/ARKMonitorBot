@@ -56,8 +56,9 @@ class Updater(commands.Cog):
                         await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went online!')
                         print('sent message for went online')
         if (server[1] == 2 ): # server went online
+            db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
             channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
-            if (channels.__len__() >= 1):
+            if (channels.__len__() >= 1 and db_server[0][0] >= 2):
                 ARKServer = server[2]
                 for channel in channels:
                     discordChannel = self.bot.get_channel(channel[1])
@@ -69,59 +70,61 @@ class Updater(commands.Cog):
 
 
     async def notificator(self,serverList):
+        print('Entered notificator!')
         for server in serverList:
             if (server[1] != 3): #################################
-                print('sent server notifications')
                 await self.server_notificator(server)
+                print(f'Sent server notifications for server : {server[0]}!')
             #player_notificator()
 
-    async def update_server(self,serverId):
+    async def update_server(self,serverId): # universal server upgrader 
         server = makeRequest('SELECT * FROM servers WHERE Id=%s',(serverId,)) #get current server
-        server = server[0]
-        ip = server[1]
-        try:
+        server = server[0] # set var to first found result
+        ip = server[1] # get server's ip
+        try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
-            if (bool(server[6]) == False): # if previously server was offline 
-                return [1,serverObj,playersList] # return server went online
+            makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
+            if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
+                return [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
-                return [3,serverObj,playersList] # return unchanged
-        except BaseException as error:
-            if (type(error) != base.TimeoutError):
-                meUser = self.bot.get_user(277490576159408128)
+                return [3,serverObj,playersList,0] # return unchanged (return status 3 and two new objects)
+        except c.ARKServerError as error: # catch my own error 
+            if (type(error) != c.ARKServerError): # if not my error 
+                meUser = self.bot.get_user(277490576159408128) # log it
                 meDM = await meUser.create_dm()
                 errors = traceback.format_exception(type(error), error, error.__traceback__)
                 errors_str = ''.join(errors)
                 date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-                await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}')
-            print('123123123')
-            errors = traceback.format_exception(type(error), error, error.__traceback__)
-            errors_str = ''.join(errors)
-            print(errors_str)
-            makeRequest('UPDATE servers SET LastOnline=0 WHERE Ip=%s',(ip,)) # update DB
+                ip = makeRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
+                await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}')
+            print('123123123') # debug
+            #errors = traceback.format_exception(type(error), error, error.__traceback__)
+            #errors_str = ''.join(errors)
+            #print(errors_str)
+            makeRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB
             if (bool(server[6]) == True): # if server was online
-                return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5])] #return server went offline
+                return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
             else:
-                return [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5])] # return unchanged
+                return [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] # return unchanged
 
     @tasks.loop(seconds=30.0)
-    async def printer(self):
+    async def printer(self): #entrypoint
         try:
-            print('Entered updater!')
-            servers = makeRequest('SELECT * FROM servers')
-            server_list = []
-            for server in servers:
-                print(f'Updating server {server[0]}')
-                result = await self.update_server(server[0])
-                server_list.append([server[0],result[0],result[1],result[2]])
+            print('Entered updater!') # debug
+            servers = makeRequest('SELECT * FROM servers') # select all servers
+            server_list = [] # empty list
+            for server in servers: # for server in servers
+                print(f'Updating server {server[0]}') # debug
+                result = await self.update_server(server[0]) # update server
+                server_list.append([server[0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
                 print(f'Updated server! Result is {result}')
             print(server_list)
             print('handling notifications')
             await self.notificator(server_list)
-        except BaseException as e:
+        except BaseException as e: # if any exception
             print(e)
-            print(traceback.format_exc())
+            print(traceback.format_exc()) # print it
 
     @printer.before_loop
     async def before_printer(self):

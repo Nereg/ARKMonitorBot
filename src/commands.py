@@ -33,7 +33,7 @@ class BulkCommands(commands.Cog):
         channels = ctx.guild.channels
         watchedServers = []
         for notification in notifications:
-            if (notification[1] in  [channel.id for channel in ctx.guild.text_channels]):
+            if (notification[1] ==  ctx.channel.id):
                 watchedServers.append(json.loads(notification[4]))
         if (data.__len__() == 0):
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
