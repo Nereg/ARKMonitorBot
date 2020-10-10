@@ -8,6 +8,7 @@ from os import path
 import aiohttp
 import concurrent.futures._base as base
 import socket
+import discord
 
 class ARKServerError(Exception):
     def __init__(self,reason, error, *args, **kwargs):
@@ -55,7 +56,7 @@ class ARKServer(JSON):
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
-        self.version = version[first+1:second] # read https://ark.gamepedia.com/Server_Browser#Server_Name
+        self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
 
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
@@ -66,14 +67,14 @@ class ARKServer(JSON):
             platform = 'Mac' # =/
         self.platform = platform
 
-        self.name = server.server_name # just extract data 
+        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
         self.online = server.player_count
         self.maxPlayers = server.max_players
-        self.map = server.map_name
+        self.map = discord.utils.escape_mentions(server.map_name)
         self.password = server.password_protected
         self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
         try:
-            self.clusterName = data['ClusterId_s'] # cluster name
+            self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
             self.clusterName = None
         self.BattleEye = bool(data['SERVERUSESBATTLEYE_b']) # Is BattleEye used ?
@@ -84,7 +85,7 @@ class ARKServer(JSON):
         self.ping = int(server.ping * 1000)
         HEADERS = {'User-Agent' : "Magic Browser"}
         async with aiohttp.request("GET", 'http://arkdedicated.com/version', headers=HEADERS) as response:
-            self.newestVersion = await response.text()
+            self.newestVersion = discord.utils.escape_mentions(await response.text()) # just in case ya know
         return self
 
     def GetInfo(self):
@@ -98,7 +99,7 @@ class ARKServer(JSON):
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
-        self.version = version[first+1:second] # read https://ark.gamepedia.com/Server_Browser#Server_Name
+        self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
 
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
@@ -109,14 +110,14 @@ class ARKServer(JSON):
             platform = 'Mac' # =/
         self.platform = platform
 
-        self.name = server.server_name # just extract data 
+        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
         self.online = server.player_count
         self.maxPlayers = server.max_players
-        self.map = server.map_name
+        self.map = discord.utils.escape_mentions(server.map_name)
         self.password = server.password_protected
         self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
         try:
-            self.clusterName = data['ClusterId_s'] # cluster name
+            self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
             self.clusterName = None
         self.BattleEye = bool(data['SERVERUSESBATTLEYE_b']) # Is BattleEye used ?
@@ -126,7 +127,7 @@ class ARKServer(JSON):
         self.minutes = data['DayTime_s'][2:]
         self.ping = int(server.ping * 1000)
         self.headers = {'user-agent': 'my-app/0.0.1'}
-        self.newestVersion = requests.get('http://arkdedicated.com/version', headers=self.headers).text
+        self.newestVersion = discord.utils.escape_mentions(requests.get('http://arkdedicated.com/version', headers=self.headers).text)
 
         return self
     
@@ -140,7 +141,7 @@ class Player(JSON):
         time = arrow.get(int(time)) #convert to int because of decimal digits later 
         time = time - basetime
         self.time = time.__str__()
-        self.name = name
+        self.name = discord.utils.escape_mentions(name)
         pass  
 
 class PlayersList(JSON):
@@ -159,10 +160,17 @@ class PlayersList(JSON):
 
     async def AgetPlayersList(self):
         """Gets all needed data"""
-        players = await a2s.aplayers((self.address,self.port)) # get raw data
+        try :
+            players = await a2s.aplayers((self.address,self.port)) # get raw data
+        except base.TimeoutError as e:
+            raise ARKServerError('1: Timeout',e)
+        except socket.gaierror as e:
+            raise ARKServerError('2: DNS resolution error',e)
+        except ConnectionRefusedError as e:
+            raise ARKServerError('3: Connection was refused',e)
         result = [] 
         for player in players: # for each player in data
-            name = player.name
+            name = discord.utils.escape_mentions(player.name)
             if (name == ''):
                 name = '(unknown player)'
             try:
@@ -178,7 +186,7 @@ class PlayersList(JSON):
         players = a2s.players((self.address,self.port)) # get raw data
         result = [] 
         for player in players: # for each player in data
-            name = player.name
+            name = discord.utils.escape_mentions(player.name)
             if (name == ''):
                 name = '(unknown player)'
             try:

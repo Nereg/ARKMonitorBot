@@ -33,6 +33,7 @@ class Updater(commands.Cog):
         self.server_list = [] #list of lists : [[server_id,server_status]...]
         print('Init')
         self.printer.start()
+        self.resetter.start()
         self.t = c.Translation()
         # 1 - went online 
         # 2 - went offline
@@ -44,29 +45,44 @@ class Updater(commands.Cog):
     async def server_notificator(self,server):
         print('entered message sender')
         print(server)
+        channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
+        if (channels.__len__() <= 0):
+            return
+        db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
         if (server[1] == 1 ): # server went online
-            channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
-            if (channels.__len__() >= 1):
-                ARKServer = server[2]
-                for channel in channels:
-                    discordChannel = self.bot.get_channel(channel[1])
-                    if (discordChannel == None):
-                        print(f'Channel not found! Channel id :{channel[1]}')
-                    else:
-                        await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went online!')
-                        print('sent message for went online')
-        if (server[1] == 2 ): # server went online
-            db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
-            channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
-            if (channels.__len__() >= 1 and db_server[0][0] >= 2):
-                ARKServer = server[2]
-                for channel in channels:
-                    discordChannel = self.bot.get_channel(channel[1])
-                    if (discordChannel == None):
-                        print(f'Channel not found! Channel id :{channel[1]}')
-                    else:
-                        await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went offline!')
-                        print('sent message for went online')
+            ARKServer = server[2]
+            for channel in channels:
+                discordChannel = self.bot.get_channel(channel[1])
+                if (discordChannel == None):
+                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
+                else:
+                    await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went online!')
+                    print(f'sent message for went online for server {server[0]}')
+        if (server[1] == 2 or server[1] == 3 and db_server[0][0] > 2): # may be fucked up sometimes but it won't notify servial times 
+            ARKServer = server[2]
+            for channel in channels:
+                if (channel[3] == 1):
+                    break
+                discordChannel = self.bot.get_channel(channel[1])
+                if (discordChannel == None):
+                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
+                else:
+                    await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went offline!')
+                    print(f'sent message for went offline for server {server[0]}')
+                    makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
+
+        #if (server[1] == 2 ): # server went offline
+        #    db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
+        #    channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
+        #    if (channels.__len__() >= 1):
+        #        ARKServer = server[2]
+        #        for channel in channels:
+        #            discordChannel = self.bot.get_channel(channel[1])
+        #            if (discordChannel == None):
+        #                print(f'Channel not found! Channel id :{channel[1]}')
+        #            else:
+        #                await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went offline!')
+        #                print('sent message for went offline')
 
 
     async def notificator(self,serverList):
@@ -131,6 +147,10 @@ class Updater(commands.Cog):
         print('waiting...')
         await self.bot.wait_until_ready()
 
+    @tasks.loop(seconds=60.0)
+    async def resetter(self):
+        makeRequest('UPDATE notifications SET Sent = 0')
+
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def watch(self,ctx):
@@ -179,6 +199,7 @@ class Updater(commands.Cog):
             newServerlist = json.dumps(newServerlist)
             makeRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(newServerlist,notifications[0][0]))
             await ctx.send('Done !')
+
 def setup(bot):
     bot.add_cog(Updater(bot))
 

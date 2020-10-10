@@ -25,7 +25,9 @@ import updater
 
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
-game = discord.Game('ping me to get prefix')
+#game = discord.Game('ping me to get prefix')
+# ARK:SE app id in discord : 356887282982191114 
+game = discord.Activity(application_id=713272720053239808,name='test',url='',type=discord.ActivityType.playing,state="state",details='details',timestamps={'start':123456789010,'end':123132143254356},assets={'large_image':'empty_logo','large_text':'test','small_image':'empty_logo','small_text':'test'})
 bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation

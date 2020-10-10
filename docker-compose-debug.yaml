@@ -1,20 +1,33 @@
 version: "3.7"
 services:
-  mysql-server:
+  db:
     image: mysql:8.0.19
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: bot
+      MYSQL_USER: root
     volumes:
       - ./sql:/var/lib/mysql
-    ports:
-      - "3306:3306"
-   
+      - ./src/:/docker-entrypoint-initdb.d/
+  
+  bot:
+    restart: always
+    build:
+      context: .
+      dockerfile: dockerfile
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+    depends_on:
+      - "db"
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.0.1
     restart: always
     environment:
-      PMA_HOST: mysql-server
+      PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: secret
     ports:
