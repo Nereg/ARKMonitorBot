@@ -45,7 +45,7 @@ class Updater(commands.Cog):
     async def server_notificator(self,server):
         print('entered message sender')
         print(server)
-        channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s AND Type=3',(f'%{server[0]}%',))
+        channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s OR ServersIds LIKE %s OR ServersIds LIKE "[100, %" AND Type=3 ',(f'%{server[0]}]',f'%, {server[0]},%',f'[{server[0]}, %',))
         if (channels.__len__() <= 0):
             return
         db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))

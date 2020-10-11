@@ -10,6 +10,7 @@ from inspect import currentframe
 import mysql.connector
 import asyncio
 from discord.ext import commands 
+import aiomysql
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -27,6 +28,35 @@ def  makeRequest(SQL,params=()):
         return mycursor.fetchall()
     except mysql.connector.errors.InterfaceError :
         return []
+
+async def  makeAsyncRequest(SQL,params=()б):
+    cfg = config.Config()
+    mydb = mysql.connector.connect(
+  host=,
+  user=,
+  password=,
+  port=3306,
+  database=,buffered = True
+    )
+    mycursor = mydb.cursor()
+    mycursor.execute(SQL, params)
+    mydb.commit()
+    try :
+        return mycursor.fetchall()
+    except mysql.connector.errors.InterfaceError :
+        return []
+
+    pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
+                                      user=cfg.dbUser, password=cfg.dbPass,
+                                      db=cfg.DB, loop=loop)
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT 42;")
+            print(cur.description)
+            (r,) = await cur.fetchone()
+            assert r == 42
+    pool.close()
+    await pool.wait_closed()
 
 def Debuger(name):
     #create logger
