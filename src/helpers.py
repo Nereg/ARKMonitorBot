@@ -29,34 +29,17 @@ def  makeRequest(SQL,params=()):
     except mysql.connector.errors.InterfaceError :
         return []
 
-async def  makeAsyncRequest(SQL,params=()б):
+async def  makeAsyncRequest(SQL,loop,params=()):
     cfg = config.Config()
-    mydb = mysql.connector.connect(
-  host=,
-  user=,
-  password=,
-  port=3306,
-  database=,buffered = True
-    )
-    mycursor = mydb.cursor()
-    mycursor.execute(SQL, params)
-    mydb.commit()
-    try :
-        return mycursor.fetchall()
-    except mysql.connector.errors.InterfaceError :
-        return []
-
-    pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
+    conn = await aiomysql.connect(host=cfg.dbHost, port=3306,
                                       user=cfg.dbUser, password=cfg.dbPass,
                                       db=cfg.DB, loop=loop)
-    async with pool.acquire() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT 42;")
-            print(cur.description)
-            (r,) = await cur.fetchone()
-            assert r == 42
-    pool.close()
-    await pool.wait_closed()
+    async with conn.cursor() as cur:
+        await cur.execute(SQL,params)
+        result = await cur.fetchall()
+    conn.close()
+    await conn.wait_closed()
+    return result
 
 def Debuger(name):
     #create logger

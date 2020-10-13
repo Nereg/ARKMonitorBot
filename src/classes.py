@@ -57,7 +57,12 @@ class ARKServer(JSON):
         first = version.find('(') # split out version
         second = version.rfind(')')
         self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
-
+        self.isARK = False
+        self.game_id = server.game_id
+        if (server.game == 'ARK: Survival Evolved'):
+            self.isARK = True
+        if (server.game_id == 346110 or server.game_id == 407530): # ARK:SE and ARK:SOTF
+            self.isARK = True
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
             platform = 'Windows'

@@ -45,7 +45,12 @@ class Updater(commands.Cog):
     async def server_notificator(self,server):
         print('entered message sender')
         print(server)
-        channels = makeRequest('SELECT * FROM notifications WHERE ServersIds LIKE %s OR ServersIds LIKE %s OR ServersIds LIKE "[100, %" AND Type=3 ',(f'%{server[0]}]',f'%, {server[0]},%',f'[{server[0]}, %',))
+        for i in self.notificationsList:
+            print(i[4][1:-1].split(','))
+        channels = self.notificationsList
+        channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList))
+        print('channels')
+        print(channels)
         if (channels.__len__() <= 0):
             return
         db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
@@ -56,9 +61,11 @@ class Updater(commands.Cog):
                 if (discordChannel == None):
                     print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
-                    await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went online!')
+                    name = ARKServer.name.find(f'- ({ARKServer.version})')
+                    name = ARKServer.name[:name].strip()
+                    await discordChannel.send(f'Server {name} ({ARKServer.map}) went online!')
                     print(f'sent message for went online for server {server[0]}')
-        if (server[1] == 2 or server[1] == 3 and db_server[0][0] > 2): # may be fucked up sometimes but it won't notify servial times 
+        if (server[1] == 2): # may be fucked up sometimes but it won't notify servial times 
             ARKServer = server[2]
             for channel in channels:
                 if (channel[3] == 1):
@@ -67,7 +74,9 @@ class Updater(commands.Cog):
                 if (discordChannel == None):
                     print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
-                    await discordChannel.send(f'Server {ARKServer.name} ({ARKServer.map}) ({ARKServer.ip}) went offline!')
+                    name = ARKServer.name.find(f'- ({ARKServer.version})')
+                    name = ARKServer.name[:name].strip()
+                    await discordChannel.send(f'Server {name} ({ARKServer.map}) went offline!')
                     print(f'sent message for went offline for server {server[0]}')
                     makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
 
@@ -88,14 +97,15 @@ class Updater(commands.Cog):
     async def notificator(self,serverList):
         print('Entered notificator!')
         for server in serverList:
-            if (server[1] != 3): #################################
-                await self.server_notificator(server)
-                print(f'Sent server notifications for server : {server[0]}!')
+            await self.server_notificator(server)
+            print(f'Sent server notifications for server : {server[0]}!')
             #player_notificator()
 
     async def update_server(self,serverId): # universal server upgrader 
-        server = makeRequest('SELECT * FROM servers WHERE Id=%s',(serverId,)) #get current server
-        server = server[0] # set var to first found result
+        #server = makeRequest('SELECT * FROM servers WHERE Id=%s',(serverId,)) #get current server
+        #server = server[0] # set var to first found result
+        server = list(filter(lambda x:x[0] == serverId,self.servers))
+        server = server[0]
         ip = server[1] # get server's ip
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
@@ -126,9 +136,11 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def printer(self): #entrypoint
+        self.notificationsList = makeRequest('SELECT * FROM notifications WHERE Type=3')
+        self.servers = makeRequest('SELECT * FROM servers')
         try:
             print('Entered updater!') # debug
-            servers = makeRequest('SELECT * FROM servers') # select all servers
+            servers = self.servers
             server_list = [] # empty list
             for server in servers: # for server in servers
                 print(f'Updating server {server[0]}') # debug
