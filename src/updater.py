@@ -53,7 +53,7 @@ class Updater(commands.Cog):
         print(channels)
         if (channels.__len__() <= 0):
             return
-        db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
+        db_server = await makeAsyncRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
         if (server[1] == 1 ): # server went online
             ARKServer = server[2]
             for channel in channels:
@@ -78,7 +78,7 @@ class Updater(commands.Cog):
                     name = ARKServer.name[:name].strip()
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went offline!')
                     print(f'sent message for went offline for server {server[0]}')
-                    makeRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
+                    await makeAsyncRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
 
         #if (server[1] == 2 ): # server went offline
         #    db_server = makeRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
@@ -110,7 +110,7 @@ class Updater(commands.Cog):
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            makeRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
+            await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
                 return [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
@@ -122,13 +122,13 @@ class Updater(commands.Cog):
                 errors = traceback.format_exception(type(error), error, error.__traceback__)
                 errors_str = ''.join(errors)
                 date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-                ip = makeRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
+                ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
                 await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}')
             print('123123123') # debug
             #errors = traceback.format_exception(type(error), error, error.__traceback__)
             #errors_str = ''.join(errors)
             #print(errors_str)
-            makeRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB
+            await makeAsyncRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB
             if (bool(server[6]) == True): # if server was online
                 return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
             else:
@@ -136,8 +136,8 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def printer(self): #entrypoint
-        self.notificationsList = makeRequest('SELECT * FROM notifications WHERE Type=3')
-        self.servers = makeRequest('SELECT * FROM servers')
+        self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
+        self.servers = await makeAsyncRequest('SELECT * FROM servers')
         try:
             print('Entered updater!') # debug
             servers = self.servers
@@ -161,7 +161,7 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=60.0)
     async def resetter(self):
-        makeRequest('UPDATE notifications SET Sent = 0')
+        await makeAsyncRequest('UPDATE notifications SET Sent = 0')
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
@@ -172,13 +172,13 @@ class Updater(commands.Cog):
             return
         Type = 3
         ip = server.ip
-        serverId = makeRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
-        notifications2 = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s',(ctx.channel.id,))
-        notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=%s',(ctx.channel.id,Type,))
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        notifications2 = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s',(ctx.channel.id,))
+        notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=%s',(ctx.channel.id,Type,))
         if (notifications.__len__() <= 0):
             ids = []
             ids.append(serverId)
-            makeRequest('INSERT INTO `notifications`(`DiscordChannelId`, `ServersIds`, `Data`, `Sent`, `Type`) VALUES (%s,%s,"{}",0,%s)',(ctx.channel.id,json.dumps(ids),Type,))
+            await makeAsyncRequest('INSERT INTO `notifications`(`DiscordChannelId`, `ServersIds`, `Data`, `Sent`, `Type`) VALUES (%s,%s,"{}",0,%s)',(ctx.channel.id,json.dumps(ids),Type,))
             await ctx.send(self.t.l['done'])
             return
         else:
@@ -188,7 +188,7 @@ class Updater(commands.Cog):
                 return
             else:
                 ids.append(serverId)
-                makeRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=%s',(json.dumps(ids),ctx.channel.id,Type,))
+                await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE DiscordChannelId=%s AND Type=%s',(json.dumps(ids),ctx.channel.id,Type,))
                 await ctx.send(self.t.l['done'])
                 return
 
@@ -200,8 +200,8 @@ class Updater(commands.Cog):
         if server == '':
             return
         ip = server.ip
-        serverId = makeRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
-        notifications = makeRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=3 AND ServersIds LIKE %s',(ctx.channel.id, f'%{serverId}%',))
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=3 AND ServersIds LIKE %s',(ctx.channel.id, f'%{serverId}%',))
         if (notifications.__len__() <= 0):
             await ctx.send('You is not subscribed to that server!')
             return
@@ -209,7 +209,7 @@ class Updater(commands.Cog):
             newServerlist = json.loads(notifications[0][4])
             newServerlist.remove(serverId)
             newServerlist = json.dumps(newServerlist)
-            makeRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(newServerlist,notifications[0][0]))
+            await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(newServerlist,notifications[0][0]))
             await ctx.send('Done !')
 
 def setup(bot):

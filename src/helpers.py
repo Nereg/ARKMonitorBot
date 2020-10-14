@@ -29,16 +29,16 @@ def  makeRequest(SQL,params=()):
     except mysql.connector.errors.InterfaceError :
         return []
 
-async def  makeAsyncRequest(SQL,loop,params=()):
+async def  makeAsyncRequest(SQL,params=()):
     cfg = config.Config()
     conn = await aiomysql.connect(host=cfg.dbHost, port=3306,
                                       user=cfg.dbUser, password=cfg.dbPass,
-                                      db=cfg.DB, loop=loop)
+                                      db=cfg.DB, loop=asyncio.get_running_loop()) #https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.get_running_loop
     async with conn.cursor() as cur:
         await cur.execute(SQL,params)
         result = await cur.fetchall()
+        await conn.commit()
     conn.close()
-    await conn.wait_closed()
     return result
 
 def Debuger(name):
