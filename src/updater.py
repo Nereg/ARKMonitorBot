@@ -172,7 +172,8 @@ class Updater(commands.Cog):
             return
         Type = 3
         ip = server.ip
-        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))
+        serverId = serverId[0][0]
         notifications2 = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s',(ctx.channel.id,))
         notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=%s',(ctx.channel.id,Type,))
         if (notifications.__len__() <= 0):
@@ -200,7 +201,8 @@ class Updater(commands.Cog):
         if server == '':
             return
         ip = server.ip
-        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))[0][0]
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(ip,))
+        serverId = serverId[0][0]
         notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=3 AND ServersIds LIKE %s',(ctx.channel.id, f'%{serverId}%',))
         if (notifications.__len__() <= 0):
             await ctx.send('You is not subscribed to that server!')
