@@ -15,7 +15,7 @@ import time
 import subprocess
 from typing import Union, Optional
 from helpers import *
-
+import json
 # to expose to the eval command
 import datetime
 from collections import Counter
@@ -339,3 +339,33 @@ class Admin(commands.Cog):
                 await ctx.send(e)
             await message.delete()
             await ctx.send('Done !')
+
+    @commands.command()
+    async def deleteServer(self, ctx, serverIp : str):
+        server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp))
+        if (server.__len__() <=0 ):
+            await ctx.send('No server found!')
+        else:
+            serverId = server[0][0]
+            notifications = await makeAsyncRequest('SELECT * FROM notifications')
+            settings = await makeAsyncRequest('SELECT * FROM settings')
+            removed = 0
+            for notification in notifications:
+                ids = json.loads(notification[4])
+                if (serverId in ids):
+                    ids.remove(serverId)
+                    await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(json.dumps(ids),server[0]))
+                    removed += 1
+            await ctx.send(f'Removed server from notifications! Affected {removed} records')
+            removed = 0
+            for setting in settings:
+                ids = json.loads(notification[3])
+                if (serverId in ids):
+                    ids.remove(serverId)
+                    await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE Id=%s',(json.dumps(ids),server[0]))
+                    removed += 1
+            await ctx.send(f'Removed server from settings! Affected {removed} records')
+            await makeAsyncRequest('DELETE FROM servers WHERE Id=%s',(serverId,))
+            await ctx.send('Done!')
+
+

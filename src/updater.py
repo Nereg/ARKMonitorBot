@@ -45,7 +45,7 @@ class Updater(commands.Cog):
     async def server_notificator(self,server):
         print('entered message sender')
         print(server)
-        for i in self.notificationsList:
+        for i in self.notificationsList: #IT COULD BE LOADED WITH json.loads !!1!!!!1!
             print(i[4][1:-1].split(','))
         channels = self.notificationsList
         channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList))
