@@ -56,7 +56,10 @@ class ARKServer(JSON):
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
-        self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
+        if (second == -1 or first == -1):
+            self.version = 'No version'
+        else:
+            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
             platform = 'Windows'
@@ -116,7 +119,10 @@ class ARKServer(JSON):
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
-        self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
+        if (second == -1 or first == -1):
+            self.version = 'No version'
+        else:
+            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
 
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
