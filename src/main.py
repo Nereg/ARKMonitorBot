@@ -49,7 +49,7 @@ bot.add_cog(updater.Updater(bot))
 @bot.event
 async def on_message(msg):
     if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
-        await msg.channel.send(t.l['curr_prefix'].format(get_prefix(bot,msg)))
+        await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg)))
         return
     await bot.process_commands(msg)
     
@@ -79,8 +79,8 @@ async def prefix(ctx,*args):
             await ctx.send('You need manage roles permission to change my prefix!')
             return
 
-#@bot.event
-async def on_command_error1(ctx,error):
+@bot.event
+async def on_command_error(ctx,error):
     print(error)
     try:
         await on_command_error1(ctx,error)
@@ -89,7 +89,7 @@ async def on_command_error1(ctx,error):
         print(e)
 
 @bot.event
-async def on_command_error(ctx,error):        
+async def on_command_error1(ctx,error):        
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
@@ -138,7 +138,11 @@ Try later.
 Ошибка произошла : `{date}`
 Имя гильдии : `{ctx.guild.name}`
     '''
-    await meDM.send(message)
+    if (message.__len__() >= 2000):
+        await meDM.send(message[:1975] + '`\nEnd of first part')
+        await meDM.send(message[1975:-1])
+    else:
+        await meDM.send(message)
 
 @bot.command()
 async def share(ctx):

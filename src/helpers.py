@@ -107,12 +107,11 @@ async def AddServer(ip,ctx):
     debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
     return Id[0][0]
 
-def get_prefix(bot,message):
+async def get_prefix(bot,message):
     conf = config.Config()
     guildId = message.guild.id
-    data = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
+    data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
     if (data.__len__() <= 0 or data[0][2] == None):
         return conf.defaultPrefix
     else:
         return data[0][2]
-    
