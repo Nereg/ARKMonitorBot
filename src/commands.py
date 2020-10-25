@@ -95,24 +95,11 @@ List of added servers :
             message = message[0][4]
         embed.add_field(name='Message from creator',value=message)
         await ctx.send(embed=embed)
-
-    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
-    @commands.command()
-    async def ping(self,ctx):
-        time = int(self.bot.latency * 1000)
-        await ctx.send(self.t.l['ping'].format(time))
-
     
     @commands.command()
     @commands.is_owner()
     async def count(self,ctx):
         await ctx.send(f'Total guilds count:`{len(self.bot.guilds)}`\nTotal members in that guilds:`{len(self.bot.users)}`')
-
-    @commands.command()
-    @commands.is_owner()
-    async def stop(self,ctx):
-        await ctx.send('Bye!')
-        exit()
 
 
 

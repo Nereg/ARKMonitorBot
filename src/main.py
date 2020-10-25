@@ -69,6 +69,9 @@ async def prefix(ctx,*args):
                 await ctx.send(t.l['cant_change_prefix'])
                 return
             else:
+                if('@' in prefix):
+                    await ctx.send('You can`t set prefix that contains @!')
+                    return
                 data = makeRequest('SELECT * FROM settings WHERE GuildId = %s',(ctx.guild.id,))
                 if(data.__len__() > 0):
                     makeRequest('UPDATE settings SET Prefix=%s WHERE GuildId=%s',(prefix,ctx.guild.id,))
