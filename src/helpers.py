@@ -11,6 +11,7 @@ import mysql.connector
 import asyncio
 from discord.ext import commands 
 import aiomysql
+import json
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -115,3 +116,18 @@ async def get_prefix(bot,message):
         return conf.defaultPrefix
     else:
         return data[0][2]
+
+async def getAlias(serverId,guildId,serverIp=''):
+    if(serverIp != ''):
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(serverIp,))
+        serverId = serverId[0][0]
+    settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,))
+    if (settings[0][6] == None or settings[0][6] == ''):
+        return ''
+    else:
+        aliases = json.loads(settings[0][6])
+        if (serverId in aliases):
+            mainIndex = aliases.index(serverId)
+            return aliases[mainIndex+1]
+        else:
+            return ''

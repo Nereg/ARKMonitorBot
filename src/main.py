@@ -142,8 +142,12 @@ Try later.
 Имя гильдии : `{ctx.guild.name}`
     '''
     if (message.__len__() >= 2000):
-        await meDM.send(message[:1975] + '`\nEnd of first part')
-        await meDM.send(message[1975:-1])
+        try:
+            await meDM.send(message[:1975] + '`\nEnd of first part')
+            await meDM.send(message[1975:-1])
+        except BaseException as e:
+            await meDM.send('Lenth of error message is over 4k!')
+            await meDM.send(e)
     else:
         await meDM.send(message)
 
@@ -157,7 +161,6 @@ async def share(ctx):
 @commands.cooldown(1, 60, type=commands.BucketType.user)
 @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
 async def test(ctx):
-    await ctx.send('test')
-    raise Exception('test')
+    await ctx.send(await getAlias(8,ctx.guild.id))
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !

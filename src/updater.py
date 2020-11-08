@@ -61,8 +61,12 @@ class Updater(commands.Cog):
                 if (discordChannel == None):
                     print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
-                    name = ARKServer.name.find(f'- ({ARKServer.version})')
-                    name = ARKServer.name[:name].strip()
+                    aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
+                    if (aliases == ''):
+                        name = ARKServer.name.find(f'- ({ARKServer.version})')
+                        name = ARKServer.name[:name].strip()
+                    else:
+                        name = aliases
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went online!')
                     print(f'sent message for went online for server {server[0]}')
         if (server[1] == 2): # may be fucked up sometimes but it won't notify servial times 
@@ -74,8 +78,12 @@ class Updater(commands.Cog):
                 if (discordChannel == None):
                     print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
-                    name = ARKServer.name.find(f'- ({ARKServer.version})')
-                    name = ARKServer.name[:name].strip()
+                    aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
+                    if (aliases == ''):
+                        name = ARKServer.name.find(f'- ({ARKServer.version})')
+                        name = ARKServer.name[:name].strip()
+                    else:
+                        name = aliases
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went offline!')
                     print(f'sent message for went offline for server {server[0]}')
                     await makeAsyncRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))

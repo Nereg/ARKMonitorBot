@@ -57,9 +57,13 @@ class BulkCommands(commands.Cog):
                 watched = '(watched)' if result[0] in watchedServers[0] else ''
             else:
                 watched = ''
-            name = server.name.find(f'- ({server.version})')
-            name = server.name[:name].strip()
-            servers += f'{i}. {name} {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
+            alias = await getAlias(result[0],ctx.guild.id)
+            if(alias == ''):
+                name = server.name.find(f'- ({server.version})')
+                name = server.name[:name].strip()
+            else:
+                name = alias
+            servers += f'{i}. {name} ({server.map}) {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
             i += 1 
         # send message
         await ctx.send(f''' 

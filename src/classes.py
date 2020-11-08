@@ -53,13 +53,17 @@ class ARKServer(JSON):
             raise ARKServerError('2: DNS resolution error',e)
         except ConnectionRefusedError as e:
             raise ARKServerError('3: Connection was refused',e)
+        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
         if (second == -1 or first == -1):
             self.version = 'No version'
-        else:
-            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
+            self.stripedName = self.name
+        else:            
+            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name           
+            index = self.name.find(f'- ({version[first+1:second]})')
+            self.stripedName = self.name[:index].strip()
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
             platform = 'Windows'
@@ -115,15 +119,17 @@ class ARKServer(JSON):
         server = a2s.info((self.address,self.port)) # get server data
         #players = a2s.players(address) #this is list of players I will implement it in another class
         data = a2s.rules((self.address,self.port)) # custom ARK data
-
+        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
         version = server.server_name #get name
         first = version.find('(') # split out version
         second = version.rfind(')')
         if (second == -1 or first == -1):
             self.version = 'No version'
-        else:
-            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name
-
+            self.stripedName = self.name
+        else:            
+            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name           
+            index = self.name.find(f'- ({version[first+1:second]})')
+            self.stripedName = self.name[:index].strip()
         platform = server.platform # get platform server running on
         if (platform == 'w'): # decode
             platform = 'Windows'
@@ -133,7 +139,7 @@ class ARKServer(JSON):
             platform = 'Mac' # =/
         self.platform = platform
 
-        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
+        
         self.online = server.player_count
         self.maxPlayers = server.max_players
         self.map = discord.utils.escape_mentions(server.map_name)
