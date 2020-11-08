@@ -18,6 +18,7 @@ import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 import updater
+import datetime
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -34,11 +35,31 @@ t = c.Translation() # load default english translation
 
 bot.loop.set_debug(conf.debug)
 
-
-
 @bot.command()
 async def help(ctx):
-    await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version))
+    #await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version)) # ha old small version SUCKS lol 
+    time = datetime.datetime(2000,1,1,0,0,0,0)
+    message = discord.Embed(title='List of commands',timestamp=time.utcnow())
+    empty = 'test'
+    prefix = await get_prefix(bot,ctx.message)
+    isInline=False
+    message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
+    serverValue = f'**`{prefix}server info`- select and view info about added server\n`{prefix}server add <IP>:<Query port>`- add server to your list\n`{prefix}server delete`- delete server from your list\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias "<Alias>"`- select and add alias for server\n`{prefix}server alias delete`- delete alias for your server**'
+    message.add_field(name=f'**Server group:**',value=serverValue)
+    #message.add_field(name=f'`{prefix}server info`- select and view info about added server',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server add <IP>:<Query port>`- add server to your list',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server delete`- delete server from your list',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias`- list aliases for your servers',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias "<Alias>"`- select and add alias for server',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias delete`- delete alias for your server',value=empty,inline=isInline)
+    notificationsValue = f'**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel\n`{prefix}unwatch` - undone what `{prefix}watch` command do**'
+    message.add_field(name=f'**Notifications:**',value=notificationsValue,inline=isInline)
+    #message.add_field(name=f'`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}unwatch` - undone what `{prefix}watch` command do',value=empty,inline=isInline)
+    miscValue =f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**'
+    message.add_field(name=f'**Miscellaneous:**',value=miscValue,inline=isInline)
+    #message.add_field(name=f'`{prefix}info`- get info about this bot (e.g. support server, github etc.)',value=empty,inline=isInline)
+    await ctx.send(embed=message)
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
