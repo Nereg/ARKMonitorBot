@@ -43,14 +43,12 @@ class Updater(commands.Cog):
         self.printer.cancel()
 
     async def server_notificator(self,server):
-        print('entered message sender')
-        print(server)
-        for i in self.notificationsList: #IT COULD BE LOADED WITH json.loads !!1!!!!1!
-            print(i[4][1:-1].split(','))
+        #print('entered message sender')
+        #print(server)
         channels = self.notificationsList
         channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList))
-        print('channels')
-        print(channels)
+        #print('channels')
+        #print(channels)
         if (channels.__len__() <= 0):
             return
         db_server = await makeAsyncRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
@@ -59,7 +57,8 @@ class Updater(commands.Cog):
             for channel in channels:
                 discordChannel = self.bot.get_channel(channel[1])
                 if (discordChannel == None):
-                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
+                    continue
+                    #print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
                     aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
                     if (aliases == ''):
@@ -68,7 +67,7 @@ class Updater(commands.Cog):
                     else:
                         name = aliases
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went online!')
-                    print(f'sent message for went online for server {server[0]}')
+                    #print(f'sent message for went online for server {server[0]}')
         if (server[1] == 2): # may be fucked up sometimes but it won't notify servial times 
             ARKServer = server[2]
             for channel in channels:
@@ -76,7 +75,8 @@ class Updater(commands.Cog):
                     break
                 discordChannel = self.bot.get_channel(channel[1])
                 if (discordChannel == None):
-                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
+                    continue
+                    #print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
                 else:
                     aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
                     if (aliases == ''):
@@ -85,7 +85,7 @@ class Updater(commands.Cog):
                     else:
                         name = aliases
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went offline!')
-                    print(f'sent message for went offline for server {server[0]}')
+                    #print(f'sent message for went offline for server {server[0]}')
                     await makeAsyncRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
 
         #if (server[1] == 2 ): # server went offline
@@ -132,7 +132,7 @@ class Updater(commands.Cog):
                 date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
                 ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
                 await meDM.send(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}')
-            print('123123123') # debug
+            #print('123123123') # debug
             #errors = traceback.format_exception(type(error), error, error.__traceback__)
             #errors_str = ''.join(errors)
             #print(errors_str)
@@ -154,8 +154,8 @@ class Updater(commands.Cog):
                 print(f'Updating server {server[0]}') # debug
                 result = await self.update_server(server[0]) # update server
                 server_list.append([server[0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
-                print(f'Updated server! Result is {result}')
-            print(server_list)
+                #print(f'Updated server! Result is {result}')
+            #print(server_list)
             print('handling notifications')
             await self.notificator(server_list)
         except BaseException as e: # if any exception
@@ -164,7 +164,7 @@ class Updater(commands.Cog):
 
     @printer.before_loop
     async def before_printer(self):
-        print('waiting...')
+        #print('waiting...')
         await self.bot.wait_until_ready()
 
     @tasks.loop(seconds=60.0)
