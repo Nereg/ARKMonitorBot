@@ -18,6 +18,7 @@ import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 import updater
+import datetime
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -25,20 +26,40 @@ import updater
 
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
-#game = discord.Game('ping me to get prefix')
+game = discord.Game('ping me to get prefix')
 # ARK:SE app id in discord : 356887282982191114 
-game = discord.Activity(application_id=713272720053239808,name='test',url='',type=discord.ActivityType.playing,state="state",details='details',timestamps={'start':123456789010,'end':123132143254356},assets={'large_image':'empty_logo','large_text':'test','small_image':'empty_logo','small_text':'test'})
+#game = discord.Activity(application_id=713272720053239808,name='test',url='',type=discord.ActivityType.playing,state="state",details='details',timestamps={'start':123456789010,'end':123132143254356},assets={'large_image':'empty_logo','large_text':'test','small_image':'empty_logo','small_text':'test'})
 bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation
 
 bot.loop.set_debug(conf.debug)
 
-
-
 @bot.command()
 async def help(ctx):
-    await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version))
+    #await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version)) # ha old small version SUCKS lol 
+    time = datetime.datetime(2000,1,1,0,0,0,0)
+    message = discord.Embed(title='List of commands',timestamp=time.utcnow())
+    empty = 'test'
+    prefix = await get_prefix(bot,ctx.message)
+    isInline=False
+    message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
+    serverValue = f'**`{prefix}servePr info`- select and view info about added server\n`{prefix}server add <IP>:<Query port>`- add server to your list\n`{prefix}server delete`- delete server from your list\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias "<Alias>"`- select and add alias for server\n`{prefix}server alias delete`- delete alias for your server**'
+    message.add_field(name=f'**Server group:**',value=serverValue)
+    #message.add_field(name=f'`{prefix}server info`- select and view info about added server',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server add <IP>:<Query port>`- add server to your list',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server delete`- delete server from your list',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias`- list aliases for your servers',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias "<Alias>"`- select and add alias for server',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}server alias delete`- delete alias for your server',value=empty,inline=isInline)
+    notificationsValue = f'**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel\n`{prefix}unwatch` - undone what `{prefix}watch` command do**'
+    message.add_field(name=f'**Notifications:**',value=notificationsValue,inline=isInline)
+    #message.add_field(name=f'`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel',value=empty,inline=isInline)
+    #message.add_field(name=f'`{prefix}unwatch` - undone what `{prefix}watch` command do',value=empty,inline=isInline)
+    miscValue =f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**'
+    message.add_field(name=f'**Miscellaneous:**',value=miscValue,inline=isInline)
+    #message.add_field(name=f'`{prefix}info`- get info about this bot (e.g. support server, github etc.)',value=empty,inline=isInline)
+    await ctx.send(embed=message)
 
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
@@ -49,7 +70,7 @@ bot.add_cog(updater.Updater(bot))
 @bot.event
 async def on_message(msg):
     if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
-        await msg.channel.send(t.l['curr_prefix'].format(get_prefix(bot,msg)))
+        await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg)))
         return
     await bot.process_commands(msg)
     
@@ -69,6 +90,9 @@ async def prefix(ctx,*args):
                 await ctx.send(t.l['cant_change_prefix'])
                 return
             else:
+                if('@' in prefix):
+                    await ctx.send('You can`t set prefix that contains @!')
+                    return
                 data = makeRequest('SELECT * FROM settings WHERE GuildId = %s',(ctx.guild.id,))
                 if(data.__len__() > 0):
                     makeRequest('UPDATE settings SET Prefix=%s WHERE GuildId=%s',(prefix,ctx.guild.id,))
@@ -79,8 +103,8 @@ async def prefix(ctx,*args):
             await ctx.send('You need manage roles permission to change my prefix!')
             return
 
-#@bot.event
-async def on_command_error1(ctx,error):
+@bot.event
+async def on_command_error(ctx,error):
     print(error)
     try:
         await on_command_error1(ctx,error)
@@ -89,7 +113,7 @@ async def on_command_error1(ctx,error):
         print(e)
 
 @bot.event
-async def on_command_error(ctx,error):        
+async def on_command_error1(ctx,error):        
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
@@ -138,7 +162,15 @@ Try later.
 Ошибка произошла : `{date}`
 Имя гильдии : `{ctx.guild.name}`
     '''
-    await meDM.send(message)
+    if (message.__len__() >= 2000):
+        try:
+            await meDM.send(message[:1975] + '`\nEnd of first part')
+            await meDM.send(message[1975:-1])
+        except BaseException as e:
+            await meDM.send('Lenth of error message is over 4k!')
+            await meDM.send(e)
+    else:
+        await meDM.send(message)
 
 @bot.command()
 async def share(ctx):
@@ -150,7 +182,6 @@ async def share(ctx):
 @commands.cooldown(1, 60, type=commands.BucketType.user)
 @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
 async def test(ctx):
-    await ctx.send('test')
-    raise Exception('test')
+    await ctx.send(await getAlias(8,ctx.guild.id))
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !

@@ -12,10 +12,12 @@ class Selector():
         self.l = lang # classes.Translation 
         pass
 
-    def createEmbed(self, data,number):
+    async def createEmbed(self, data,number):
         server = c.ARKServer.fromJSON(data[number][4])
         online = bool(data[number][6])
-        embed = discord.Embed(title=f'{number+1}. {server.name}')
+        aliases = await getAlias(0,self.ctx.guild.id,server.ip)
+        name = server.name if aliases == '' else aliases
+        embed = discord.Embed(title=f'{number+1}. {name}')
         status = ':green_circle: '+ self.l.l['online'] if online else ':red_circle: ' + self.l.l['offline']
         pve = self.l.l['yes'] if server.PVE else self.l.l['no']
         embed.add_field(name='IP',value=server.ip)
@@ -47,7 +49,7 @@ class Selector():
         print(statement)
         data = makeRequest(statement)
         try:
-            self.msg = await self.ctx.send(self.l.l['server_select'],embed=self.createEmbed(data,0))
+            self.msg = await self.ctx.send(self.l.l['server_select'],embed=await self.createEmbed(data,0))
         except IndexError:
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
             return ''
@@ -67,12 +69,12 @@ class Selector():
                 if (str(reaction.emoji) == reactions[0]):
                     await reaction.remove(self.ctx.author)
                     counter = 0
-                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                    await self.msg.edit(embed=await self.createEmbed(data,counter))
                 if (str(reaction.emoji) == reactions[1]):
                     await reaction.remove(self.ctx.author)
                     if (counter > 0):
                         counter -= 1
-                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                    await self.msg.edit(embed=await self.createEmbed(data,counter))
                 elif (str(reaction.emoji) == reactions[2]):
                     await reaction.remove(self.ctx.author)
                     await self.msg.delete()
@@ -82,11 +84,11 @@ class Selector():
                     await reaction.remove(self.ctx.author)
                     if (counter < data.__len__() - 1):
                         counter += 1
-                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                    await self.msg.edit(embed=await self.createEmbed(data,counter))
                 elif (str(reaction.emoji) == reactions[4]):
                     await reaction.remove(self.ctx.author)
                     counter = data.__len__() - 1 
-                    await self.msg.edit(embed=self.createEmbed(data,counter))
+                    await self.msg.edit(embed=await self.createEmbed(data,counter))
                 elif (str(reaction.emoji) == reactions[5]):
                     await reaction.remove(self.ctx.author)
                     await self.msg.delete()

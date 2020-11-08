@@ -57,9 +57,13 @@ class BulkCommands(commands.Cog):
                 watched = '(watched)' if result[0] in watchedServers[0] else ''
             else:
                 watched = ''
-            name = server.name.find(f'- ({server.version})')
-            name = server.name[:name].strip()
-            servers += f'{i}. {name} {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
+            alias = await getAlias(result[0],ctx.guild.id)
+            if(alias == ''):
+                name = server.name.find(f'- ({server.version})')
+                name = server.name[:name].strip()
+            else:
+                name = alias
+            servers += f'{i}. {name} ({server.map}) {watched} {emoji} {server.ip}\n' # construct line and add it to all strings
             i += 1 
         # send message
         await ctx.send(f''' 
@@ -73,7 +77,7 @@ List of added servers :
         time = datetime.datetime(2000,1,1,0,0,0,0)
         RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
         meUser = self.bot.get_user(277490576159408128)
-        role = f'@{ctx.me.roles[1].name}' if 1 in ctx.me.roles else 'No role'
+        role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
         embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow())
         embed.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
         embed.add_field(name='<:Link:739476980004814898> Invite link',value='[Here!](https://bit.ly/ARKTop)',inline=True)
@@ -86,7 +90,7 @@ List of added servers :
         embed.add_field(name='<:me:739473644874367007> Creator',value=f'{meUser.name}#{meUser.discriminator}',inline=True)
         embed.add_field(name='<:Discord:739476979782254633> Currently in',value=f'{len(self.bot.guilds)} servers',inline=True)
         embed.add_field(name='<:Role:739476980076118046> Role on this server',value=role,inline=True)
-        embed.add_field(name=':grey_exclamation: Current prefix',value=f'{get_prefix(1,ctx.message)}',inline=True)
+        embed.add_field(name=':grey_exclamation: Current prefix',value=f'{await get_prefix(1,ctx.message)}',inline=True)
         embed.add_field(name='<:Cpu:739492057990693005> Current CPU utilisation',value=f'{round(statistics.mean(psutil.getloadavg()),1)}',inline=True)
         message = makeRequest('SELECT * FROM settings WHERE GuildId=1')
         if (message.__len__() <= 0):
@@ -95,24 +99,11 @@ List of added servers :
             message = message[0][4]
         embed.add_field(name='Message from creator',value=message)
         await ctx.send(embed=embed)
-
-    @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
-    @commands.command()
-    async def ping(self,ctx):
-        time = int(self.bot.latency * 1000)
-        await ctx.send(self.t.l['ping'].format(time))
-
     
     @commands.command()
     @commands.is_owner()
     async def count(self,ctx):
         await ctx.send(f'Total guilds count:`{len(self.bot.guilds)}`\nTotal members in that guilds:`{len(self.bot.users)}`')
-
-    @commands.command()
-    @commands.is_owner()
-    async def stop(self,ctx):
-        await ctx.send('Bye!')
-        exit()
 
 
 

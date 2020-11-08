@@ -75,7 +75,8 @@ CREATE TABLE `settings` (
   `Prefix` text CHARACTER SET utf8 COLLATE utf8_general_ci,
   `ServersId` text CHARACTER SET utf8 COLLATE utf8_general_ci,
   `Admins` text CHARACTER SET utf8 COLLATE utf8_general_ci,
-  `Type` int NOT NULL
+  `Type` int NOT NULL,
+  `Aliases` text CHARACTER SET utf8 COLLATE utf8_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------

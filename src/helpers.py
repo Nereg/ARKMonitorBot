@@ -11,6 +11,7 @@ import mysql.connector
 import asyncio
 from discord.ext import commands 
 import aiomysql
+import json
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -29,34 +30,17 @@ def  makeRequest(SQL,params=()):
     except mysql.connector.errors.InterfaceError :
         return []
 
-async def  makeAsyncRequest(SQL,params=()б):
+async def  makeAsyncRequest(SQL,params=()):
     cfg = config.Config()
-    mydb = mysql.connector.connect(
-  host=,
-  user=,
-  password=,
-  port=3306,
-  database=,buffered = True
-    )
-    mycursor = mydb.cursor()
-    mycursor.execute(SQL, params)
-    mydb.commit()
-    try :
-        return mycursor.fetchall()
-    except mysql.connector.errors.InterfaceError :
-        return []
-
-    pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
+    conn = await aiomysql.connect(host=cfg.dbHost, port=3306,
                                       user=cfg.dbUser, password=cfg.dbPass,
-                                      db=cfg.DB, loop=loop)
-    async with pool.acquire() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT 42;")
-            print(cur.description)
-            (r,) = await cur.fetchone()
-            assert r == 42
-    pool.close()
-    await pool.wait_closed()
+                                      db=cfg.DB, loop=asyncio.get_running_loop()) #https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.get_running_loop
+    async with conn.cursor() as cur:
+        await cur.execute(SQL,params)
+        result = await cur.fetchall()
+        await conn.commit()
+    conn.close()
+    return result
 
 def Debuger(name):
     #create logger
@@ -110,22 +94,10 @@ async def AddServer(ip,ctx):
         playersList = c.PlayersList(ip)
         playersList.getPlayersList() # and get data
         server.GetInfo()
+        if (not server.isARK):
+            await ctx.send(f'This server is not ARK! Possible Steam AppId: {server.game_id}')
+            return
         debug.debug(f"Server {ip} is up!") # and debug
-        if (server.version == ''  or server.version == None or '.' not in server.version):
-            global message  
-            message = await ctx.send(f"Server's name is too long and bot can't extract version from it. React with ✅ to continue with `(unknown)` version or react ⏹️ to not add this server.")
-            try:
-                reaction, user = await client.wait_for('reaction_add', timeout=60.0, check=lambda r,user: user.bot == False and r.message.id == message.id)
-            except asyncio.TimeoutError:
-                await message.edit('Timeout. Server won`t be added')
-                return
-            else:
-                if (str(reaction.emoji) == '✅'):
-                    await message.edit('OK!')
-                    server.version = '(unknown)'
-                elif (str(reaction.emoji) == '⏹️'):
-                    await message.edit('OK! Rename server and come back!')
-                    return
     except Exception as e: # if any exception
         debug.debug(e)
         await ctx.send(f'Server {ip} is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`')
@@ -136,12 +108,26 @@ async def AddServer(ip,ctx):
     debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
     return Id[0][0]
 
-def get_prefix(bot,message):
+async def get_prefix(bot,message):
     conf = config.Config()
     guildId = message.guild.id
-    data = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
+    data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
     if (data.__len__() <= 0 or data[0][2] == None):
         return conf.defaultPrefix
     else:
         return data[0][2]
-    
+
+async def getAlias(serverId,guildId,serverIp=''):
+    if(serverIp != ''):
+        serverId = await makeAsyncRequest('SELECT Id FROM servers WHERE Ip=%s',(serverIp,))
+        serverId = serverId[0][0]
+    settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,))
+    if (settings[0][6] == None or settings[0][6] == ''):
+        return ''
+    else:
+        aliases = json.loads(settings[0][6])
+        if (serverId in aliases):
+            mainIndex = aliases.index(serverId)
+            return aliases[mainIndex+1]
+        else:
+            return ''

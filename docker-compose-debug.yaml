@@ -22,6 +22,8 @@ services:
         max-size: "50m"
     depends_on:
       - "db"
+    volumes:
+      - ./temp:/app/temp
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.0.1
