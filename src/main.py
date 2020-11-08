@@ -44,7 +44,7 @@ async def help(ctx):
     prefix = await get_prefix(bot,ctx.message)
     isInline=False
     message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
-    serverValue = f'**`{prefix}servePr info`- select and view info about added server\n`{prefix}server add <IP>:<Query port>`- add server to your list\n`{prefix}server delete`- delete server from your list\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias "<Alias>"`- select and add alias for server\n`{prefix}server alias delete`- delete alias for your server**'
+    serverValue = f'**`{prefix}server info`- select and view info about added server\n`{prefix}server add <IP>:<Query port>`- add server to your list\n`{prefix}server delete`- delete server from your list\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias "<Alias>"`- select and add alias for server\n`{prefix}server alias delete`- delete alias for your server**'
     message.add_field(name=f'**Server group:**',value=serverValue)
     #message.add_field(name=f'`{prefix}server info`- select and view info about added server',value=empty,inline=isInline)
     #message.add_field(name=f'`{prefix}server add <IP>:<Query port>`- add server to your list',value=empty,inline=isInline)
