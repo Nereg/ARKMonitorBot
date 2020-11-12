@@ -38,7 +38,7 @@ bot.loop.set_debug(conf.debug)
 @bot.command()
 async def help(ctx):
     #await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version)) # ha old small version SUCKS lol 
-    time = datetime.datetime(2000,1,1,0,0,0,0)
+    time = datetime(2000,1,1,0,0,0,0)
     message = discord.Embed(title='List of commands',timestamp=time.utcnow())
     empty = 'test'
     prefix = await get_prefix(bot,ctx.message)
