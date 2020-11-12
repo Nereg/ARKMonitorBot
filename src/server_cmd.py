@@ -215,7 +215,7 @@ Ping : {server.ping} ms
             if serverIp == '':
                 return
 
-            alias = discord.utils.escape_mentions(args[1]) # ALTER TABLE settings ADD Aliases text CHARACTER SET utf8 COLLATE utf8_general_ci;
+            alias = discord.utils.escape_mentions(args[1]) #    
             server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp.ip,)) # find needed server
             guildId = ctx.guild.id # make Id of discord guild
             guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,)) # find guild in settings table (can't be unset because you must add server to select it)

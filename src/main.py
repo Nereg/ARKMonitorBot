@@ -18,7 +18,7 @@ import admin_cog
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 import updater
-import datetime
+import automessage
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -66,6 +66,7 @@ bot.add_cog(cmd.BulkCommands(bot))
 bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot))
 bot.add_cog(updater.Updater(bot))
+bot.add_cog(automessage.Automessage(bot))
 
 @bot.event
 async def on_message(msg):
@@ -105,15 +106,17 @@ async def prefix(ctx,*args):
 
 @bot.event
 async def on_command_error(ctx,error):
-    print(error)
+    debug.debug('Entered second handler!')
+    debug.debug(error)
     try:
         await on_command_error1(ctx,error)
     except BaseException  as e:
-        print('Error in  handler!')
-        print(e)
+        debug.debug('Error in  handler!')
+        debug.debug(e)
 
 @bot.event
-async def on_command_error1(ctx,error):        
+async def on_command_error1(ctx,error):  
+    debug.debug('Entered error handler')      
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
@@ -146,10 +149,12 @@ Try later.
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
     makeRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)',(json.dumps(errors),Time,ctx.author.id,ctx.channel.id,ctx.guild.id,ctx.message.content,))
+    debug.debug('Made SQL')
     data = makeRequest('SELECT * FROM errors WHERE Time=%s',(Time,))
     Id = data[0][0]
     meUser = bot.get_user(277490576159408128)
     await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
+    debug.debug('Sent channel message')
     meDM = await meUser.create_dm()
     errors_str = ''.join(errors)
     date = datetime.utcfromtimestamp(Time).strftime('%Y-%m-%d %H:%M:%S')
