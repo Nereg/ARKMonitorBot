@@ -105,7 +105,7 @@ async def prefix(ctx,*args):
             return
 
 @bot.event
-async def on_command_error(ctx,error):
+async def on_command_error1(ctx,error):
     debug.debug('Entered second handler!')
     debug.debug(error)
     try:
@@ -115,7 +115,7 @@ async def on_command_error(ctx,error):
         debug.debug(e)
 
 @bot.event
-async def on_command_error1(ctx,error):  
+async def on_command_error(ctx,error):  
     debug.debug('Entered error handler')      
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
@@ -136,15 +136,13 @@ Try later.
         '''
         await ctx.send(message)
         return
-    if (type(error) == discord.ext.commands.errors.BotMissingPermissions):
+    if (type(error) == discord.ext.commands.errors.BotMissingPermissions or type(error) == discord.errors.Forbidden): # hey wtf some reason (missing permissions) and two exeptions!
         needed_perms = "```Add reactions\nUse external reactions\nSend and read messages\nManage messages```"
         try:
             await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')
         except discord.Forbidden:
             try:
                 await ctx.author.send(f'Hey hello. You invited me to your `{ctx.guild.name}` guild and used `{ctx.message.content}` command. But I am missing some permissions! Most likely some channel permissions overrides bots one. I need:\n{needed_perms}')
-            except discord.Forbidden:
-                await meDM.send(f'Fuck there is `{ctx.guild.name}` guild with closed DM and no send messages permissions! They tried to do `{ctx.message.content}`. I am out bro!')
         return
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())

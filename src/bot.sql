@@ -87,6 +87,9 @@ CREATE TABLE `settings` (
 DROP TABLE users;
 CREATE TABLE `bot`.`users` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordId` BIGINT NOT NULL , `RefreshToken` TEXT NOT NULL , `Locale` TEXT NOT NULL , `DiscordName` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
 
+CREATE TABLE `bot`.`Automessages` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `DiscordMsgId` BIGINT NOT NULL , `ServerId` INT NOT NULL , `Comment` TEXT NULL DEFAULT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
+
+
 --
 -- Indexes for dumped tables
 --
