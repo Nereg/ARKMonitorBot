@@ -131,3 +131,8 @@ async def getAlias(serverId,guildId,serverIp=''):
             return aliases[mainIndex+1]
         else:
             return ''
+
+async def stripVersion(server):
+    name = server.name.find(f'- ({server.version})')
+    name = server.name[:name].strip()
+    return name

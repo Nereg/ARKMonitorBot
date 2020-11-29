@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 -- Table structure for table `errors`
 --
 
-CREATE TABLE `errors` (
+CREATE TABLE `bot`.`errors` (
   `Id` int NOT NULL,
   `Error` text NOT NULL,
   `Time` bigint NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE `errors` (
 -- Table structure for table `notifications`
 --
 
-CREATE TABLE `notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `Type` INT NOT NULL , `Sent` INT NOT NULL , `ServersIds` TEXT NOT NULL , `Data` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
+CREATE TABLE `bot`.`notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `Type` INT NOT NULL , `Sent` INT NOT NULL , `ServersIds` TEXT NOT NULL , `Data` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
 
 -- --------------------------------------------------------
 
@@ -52,7 +52,7 @@ CREATE TABLE `notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChanne
 -- Table structure for table `servers`
 --
 
-CREATE TABLE `servers` (
+CREATE TABLE `bot`.`servers` (
   `Id` int NOT NULL,
   `Ip` text NOT NULL,
   `Port` int DEFAULT NULL, 
@@ -69,7 +69,7 @@ CREATE TABLE `servers` (
 -- Table structure for table `settings`
 --
 
-CREATE TABLE `settings` (
+CREATE TABLE `bot`.`settings` (
   `Id` int NOT NULL,
   `GuildId` bigint NOT NULL,
   `Prefix` text CHARACTER SET utf8 COLLATE utf8_general_ci,
@@ -87,8 +87,36 @@ CREATE TABLE `settings` (
 DROP TABLE users;
 CREATE TABLE `bot`.`users` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordId` BIGINT NOT NULL , `RefreshToken` TEXT NOT NULL , `Locale` TEXT NOT NULL , `DiscordName` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
 
-CREATE TABLE `bot`.`Automessages` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `DiscordMsgId` BIGINT NOT NULL , `ServerId` INT NOT NULL , `Comment` TEXT NULL DEFAULT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
+CREATE TABLE `bot`.`automessages` (
+  `Id` int NOT NULL,
+  `DiscordChannelId` bigint NOT NULL,
+  `DiscordMsgId` bigint NOT NULL,
+  `ServerId` bigint NOT NULL,
+  `Comment` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `automessages`
+--
+ALTER TABLE `bot`.`automessages`
+  ADD PRIMARY KEY (`Id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `automessages`
+--
+ALTER TABLE `bot`.`automessages`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+ALTER TABLE `bot`.`automessages` ADD `DiscordGuildId` BIGINT NOT NULL AFTER `Comment`; 
 
 --
 -- Indexes for dumped tables

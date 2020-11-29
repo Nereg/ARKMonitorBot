@@ -6,7 +6,6 @@ from discord.ext import commands # import commands extension
 import commands as cmd # import all our commands
 from menus import *
 from server_cmd import *
-from tasks import *
 from discord.ext import menus
 import json 
 import traceback
@@ -143,6 +142,8 @@ Try later.
         except discord.Forbidden:
             try:
                 await ctx.author.send(f'Hey hello. You invited me to your `{ctx.guild.name}` guild and used `{ctx.message.content}` command. But I am missing some permissions! Most likely some channel permissions overrides bots one. I need:\n{needed_perms}')
+            except BaseException:
+                return
         return
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
