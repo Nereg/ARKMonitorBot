@@ -48,8 +48,8 @@ class Automessage(commands.Cog):
         embed.add_field(name='Ping',value=f'{serverObj.ping} ms',inline=False)
         embed.add_field(name='Map',value=serverObj.map,inline=False)
         embed.add_field(name='IP',value=f'{serverObj.ip}')
-        curTime = datetime.datetime.now()
-        embed.set_footer(text=f'Updated: {curTime.strftime("%m.%d at %H:%M")}')
+        curTime = datetime.datetime.utcnow()
+        embed.set_footer(text=f'Updated: {curTime.strftime("%m.%d at %H:%M")} (UTC)')
         return embed
 
     async def checkPermissions(self,channel,channel_id=0): #check for : send,edit messages , use external emojis, ...
@@ -116,7 +116,7 @@ class Automessage(commands.Cog):
                     embed = discord.Embed(title='Delete that message?')
                     serverObj = c.ARKServer.fromJSON(server[4])
                     alias = await getAlias(server[0],ctx.guild.id)
-                    name = stripVersion(serverObj) if alias == '' else alias
+                    name = await stripVersion(serverObj) if alias == '' else alias
                     link = f'https://discordapp.com/channels/{ctx.guild.id}/{messages[0][1]}/{messages[0][2]}'
                     channelMention = self.bot.get_channel(messages[0][1])
                     if (channelMention == None):
@@ -156,7 +156,7 @@ class Automessage(commands.Cog):
                 alias = await getAlias(message[3],ctx.guild.id)
                 server = await makeAsyncRequest('SELECT ServerObj FROM servers WHERE Id=%s',(message[3],))
                 serverObj = c.ARKServer.fromJSON(server[0][0])
-                name = stripVersion(serverObj) if alias == '' else alias
+                name = await stripVersion(serverObj) if alias == '' else alias
                 link = f'https://discordapp.com/channels/{ctx.guild.id}/{message[1]}/{message[2]}'
                 channelMention = self.bot.get_channel(message[1])
                 if (channelMention == None):
@@ -181,7 +181,7 @@ class Automessage(commands.Cog):
         automessages = await makeAsyncRequest('SELECT * FROM automessages WHERE ServerId = %s',(server[0][0]))
         if (automessages.__len__() >= 1):
             link = f'https://discordapp.com/channels/{ctx.guild.id}/{automessages[0][1]}/{automessages[0][2]}'
-            await ctx.send(f'You already have [message]({link}) for that server!')
+            await ctx.send(f'You already have message(<{link}>) for that server!')
             return
         try:
             message = await channel.send(embed=await self.makeMessage(0,channel.guild.id,serverIp.ip))
