@@ -51,7 +51,12 @@ async def help(ctx):
     #message.add_field(name=f'`{prefix}server alias`- list aliases for your servers',value=empty,inline=isInline)
     #message.add_field(name=f'`{prefix}server alias "<Alias>"`- select and add alias for server',value=empty,inline=isInline)
     #message.add_field(name=f'`{prefix}server alias delete`- delete alias for your server',value=empty,inline=isInline)
-    notificationsValue = f'**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel\n`{prefix}unwatch` - undone what `{prefix}watch` command do**'
+    notificationsValue = f'''**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel
+`{prefix}unwatch` - undone what `{prefix}watch` command do 
+`{prefix}automessage #any_channel` - bot will send and update message about some server!
+`{prefix}automessage` - list any automessages you have
+`{prefix}automessage delete` - delete all automessages for some server
+**'''
     message.add_field(name=f'**Notifications:**',value=notificationsValue,inline=isInline)
     #message.add_field(name=f'`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel',value=empty,inline=isInline)
     #message.add_field(name=f'`{prefix}unwatch` - undone what `{prefix}watch` command do',value=empty,inline=isInline)
