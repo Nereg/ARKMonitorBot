@@ -31,7 +31,7 @@ class Automessage(commands.Cog):
         if (alias != ''):
             name = alias
         else:
-            name = serverObj.name
+            name = await stripVersion(serverObj)
         embed=discord.Embed(title=name)
         if (playersObj.list.__len__() > 0):
             nameValue = ''
@@ -45,9 +45,9 @@ class Automessage(commands.Cog):
             embed.add_field(name='No one is on the server',value='\u200B',inline=True)
         status = ':green_circle: Online' if server[0][6] == 1 else ':red_circle: Offline'
         embed.add_field(name='Status',value=status,inline=False)
-        embed.add_field(name='Ping',value=f'{serverObj.ping} ms',inline=False)
-        embed.add_field(name='Map',value=serverObj.map,inline=False)
-        embed.add_field(name='IP',value=f'{serverObj.ip}')
+        embed.add_field(name='Ping',value=f'{serverObj.ping} ms',inline=True)
+        embed.add_field(name='Map',value=serverObj.map,inline=True)
+        embed.add_field(name='IP',value=f'{serverObj.ip}',inline=True)
         curTime = datetime.datetime.utcnow()
         embed.set_footer(text=f'Updated: {curTime.strftime("%m.%d at %H:%M")} (UTC)')
         return embed
