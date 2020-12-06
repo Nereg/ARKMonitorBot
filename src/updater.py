@@ -144,6 +144,7 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def printer(self): #entrypoint
+        await sendToMe('Entered updater')
         start = time.perf_counter()
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
         self.servers = await makeAsyncRequest('SELECT * FROM servers')
