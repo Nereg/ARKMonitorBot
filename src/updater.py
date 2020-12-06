@@ -144,6 +144,7 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def printer(self): #entrypoint
+        start = time.perf_counter()
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
         self.servers = await makeAsyncRequest('SELECT * FROM servers')
         try:
@@ -161,6 +162,8 @@ class Updater(commands.Cog):
         except BaseException as e: # if any exception
             print(e)
             print(traceback.format_exc()) # print it
+        end = time.perf_counter()
+        await sendToMe(f'It took {end - start} seconds to update all servers!')
 
     @printer.before_loop
     async def before_printer(self):

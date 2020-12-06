@@ -17,7 +17,9 @@ class Automessage(commands.Cog):
         self.updater.start()
     
     async def deleteAutomessage(self,recordId):
-        raise BaseException('DELETE')
+        #raise BaseException('DELETE')
+        record = await makeAsyncRequest('SELECT * FROM automessages WHERE Id=%s',(recordId,))
+        await sendToMe(f'Deleted automessage {record[0][2]} in server guild {record[0][5]}')
         #await makeAsyncRequest('DELETE FROM automessages WHERE Id=%s',(recordId,))
 
     async def makeMessage(self,serverId,guildId,serverIp=''):

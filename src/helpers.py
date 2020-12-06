@@ -136,3 +136,8 @@ async def stripVersion(server):
     name = server.name.find(f'- ({server.version})')
     name = server.name[:name].strip()
     return name
+
+async def sendToMe(text,bot):
+    meUser = bot.get_user(277490576159408128)
+    meDM = await meUser.create_dm()
+    await meDM.send(text)
