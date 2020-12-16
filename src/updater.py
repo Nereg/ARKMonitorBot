@@ -33,7 +33,7 @@ class Updater(commands.Cog):
         self.server_list = [] #list of lists : [[server_id,server_status]...]
         print('Init')
         self.printer.start()
-        self.resetter.start()
+        self.resetter.star  t()
         self.t = c.Translation()
         # 1 - went online 
         # 2 - went offline
@@ -142,7 +142,7 @@ class Updater(commands.Cog):
             else:
                 return [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] # return unchanged
 
-    @tasks.loop(seconds=1.0)
+    @tasks.loop(seconds=120.0)
     async def printer(self): #entrypoint
         await sendToMe('Entered updater!',self.bot)
         start = time.perf_counter()
