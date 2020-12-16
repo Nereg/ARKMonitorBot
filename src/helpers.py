@@ -144,3 +144,31 @@ async def sendToMe(text,bot):
         await meDM.send(text)
     except:
         return
+
+async def deleteServer(serverIp):
+    server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp,))
+    if (server.__len__() <=0 ):
+        return 1
+    else:
+        serverId = server[0][0]
+        #print(serverId)
+        notifications = await makeAsyncRequest('SELECT * FROM notifications')
+        settings = await makeAsyncRequest('SELECT * FROM settings')
+        automessages = await makeAsyncRequest('SELECT * FROM automessages WHERE ServerId=%s',(serverId,))
+        for notification in notifications:
+            ids = json.loads(notification[4])
+            if (serverId in ids):
+                ids.remove(serverId)
+                await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(json.dumps(ids),notification[0],))
+                #print(f'Changed notification record {notification[0]} to {json.dumps(ids)}')
+        for setting in settings:
+            ids = json.loads(setting[3])
+            if (serverId in ids):
+                ids.remove(serverId)
+                await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE Id=%s',(json.dumps(ids),setting[0],))
+                #print(f'Changed settings for server {}')
+        if (automessages.__len__() > 0):
+            for message in automessages:
+                await makeAsyncRequest('DELETE FROM automessages WHERE Id=%s',(message[0],))
+        await makeAsyncRequest('DELETE FROM servers WHERE Id=%s',(serverId,))
+        return 0

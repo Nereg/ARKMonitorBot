@@ -120,7 +120,7 @@ async def on_command_error1(ctx,error):
 
 @bot.event
 async def on_command_error(ctx,error):  
-    debug.debug('Entered error handler')      
+         
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
@@ -150,6 +150,7 @@ Try later.
             except BaseException:
                 return
         return
+    debug.debug('Entered error handler') 
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
     makeRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)',(json.dumps(errors),Time,ctx.author.id,ctx.channel.id,ctx.guild.id,ctx.message.content,))
@@ -190,7 +191,7 @@ async def share(ctx):
 @commands.is_owner()
 @commands.cooldown(1, 60, type=commands.BucketType.user)
 @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
-async def test(ctx):
-    await ctx.send(await getAlias(8,ctx.guild.id))
+async def test(ctx,serverIp):
+    await deleteServer(serverIp)
 
 bot.run(conf.token) # get our discord token and FIRE IT UP !

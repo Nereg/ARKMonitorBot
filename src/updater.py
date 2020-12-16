@@ -35,18 +35,9 @@ class Updater(commands.Cog):
         self.printer.start()
         self.resetter.start()
         self.t = c.Translation()
-        self.cfg = config.Config()
-        #self.SQLConnection = await aiomysql.connect(host=self.cfg.dbHost, port=3306,
-        #                              user=self.cfg.dbUser, password=self.cfg.dbPass,
-        #                              db=self.cfg.DB, loop=asyncio.get_running_loop()) 
-        #self.cursor = cursor
         # 1 - went online 
         # 2 - went offline
         # 3 - unchanged
-
-    async def makeAsyncRequest(self,SQL,params=()):
-
-        return
 
     def cog_unload(self):
         self.printer.cancel()
@@ -151,9 +142,9 @@ class Updater(commands.Cog):
             else:
                 return [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] # return unchanged
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(seconds=1.0)
     async def printer(self): #entrypoint
-        #await sendToMe('Entered updater',self.bot)
+        await sendToMe('Entered updater!',self.bot)
         start = time.perf_counter()
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
         self.servers = await makeAsyncRequest('SELECT * FROM servers')
@@ -169,16 +160,20 @@ class Updater(commands.Cog):
             #print(server_list)
             print('handling notifications')
             await self.notificator(server_list)
+            end = time.perf_counter()
+            await sendToMe(f'It took {end - start} seconds to update all servers!',self.bot)
+        except KeyError:
+            await deleteServer(server[1])
         except BaseException as e: # if any exception
+            print(server)
             print(e)
             print(traceback.format_exc()) # print it
-        end = time.perf_counter()
-        await sendToMe(f'It took {end - start} seconds to update all servers!',self.bot)
 
     @printer.before_loop
     async def before_printer(self):
         print('waiting...')
         await self.bot.wait_until_ready()
+        print('done waiting')
 
     @tasks.loop(seconds=60.0)
     async def resetter(self):
