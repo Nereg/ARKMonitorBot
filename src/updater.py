@@ -175,9 +175,9 @@ class Updater(commands.Cog):
         await self.bot.wait_until_ready()
         print('done waiting')
 
-    @tasks.loop(seconds=60.0)
-    async def resetter(self):
-        await makeAsyncRequest('UPDATE notifications SET Sent = 0')
+    #@tasks.loop(seconds=60.0)
+    #async def resetter(self):
+    #    await makeAsyncRequest('UPDATE notifications SET Sent = 0')
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
