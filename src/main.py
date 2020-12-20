@@ -4,20 +4,21 @@ import config  # config
 import discord # main discord libary
 from discord.ext import commands # import commands extension
 import commands as cmd # import all our commands
-from menus import *
-from server_cmd import *
-from discord.ext import menus
-import json 
-import traceback
-import time
+from menus import * # menus like selector of servers
+from server_cmd import * # !server command
+from discord.ext import menus # unused menus extention (garbage)
+import json # json module
+import traceback # traceback 
+import time # time 
 from datetime import datetime
-import dbl_cog
+import dbl_cog # cog with top.gg updater
 import os 
-import admin_cog
-from discord import permissions
+import admin_cog # cog with admin commands
+from discord import permissions 
 from discord.ext.commands import has_permissions, CheckFailure
-import updater
-import automessage
+import updater # cog with updater of servers in DB (main consern annoying AF)
+import automessage # cog with !automessage command and updater for it 
+
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -25,46 +26,44 @@ import automessage
 
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
-game = discord.Game('ping me to get prefix')
+game = discord.Game('ping me to get prefix') # set custom status for bot
 # ARK:SE app id in discord : 356887282982191114 
 #game = discord.Activity(application_id=713272720053239808,name='test',url='',type=discord.ActivityType.playing,state="state",details='details',timestamps={'start':123456789010,'end':123132143254356},assets={'large_image':'empty_logo','large_text':'test','small_image':'empty_logo','small_text':'test'})
 bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation
 
-bot.loop.set_debug(conf.debug)
+bot.loop.set_debug(conf.debug) # if conf.debug is True asyncio will output additional debug info into logs
 
 @bot.command()
 async def help(ctx):
-    #await ctx.send(t.l['help'].format(prefix=ctx.prefix,version=conf.version)) # ha old small version SUCKS lol 
-    time = datetime(2000,1,1,0,0,0,0)
-    message = discord.Embed(title='List of commands',timestamp=time.utcnow())
-    empty = 'test'
-    prefix = await get_prefix(bot,ctx.message)
-    isInline=False
-    message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
-    serverValue = f'**`{prefix}server info`- select and view info about added server\n`{prefix}server add <IP>:<Query port>`- add server to your list\n`{prefix}server delete`- delete server from your list\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias`- list aliases for your servers\n`{prefix}server alias "<Alias>"`- select and add alias for server\n`{prefix}server alias delete`- delete alias for your server**'
-    message.add_field(name=f'**Server group:**',value=serverValue)
-    #message.add_field(name=f'`{prefix}server info`- select and view info about added server',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}server add <IP>:<Query port>`- add server to your list',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}server delete`- delete server from your list',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}server alias`- list aliases for your servers',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}server alias "<Alias>"`- select and add alias for server',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}server alias delete`- delete alias for your server',value=empty,inline=isInline)
+    time = datetime(2000,1,1,0,0,0,0) # get random time 
+    message = discord.Embed(title='List of commands',timestamp=time.utcnow()) # set title of embed
+    prefix = await get_prefix(bot,ctx.message) # get current prefix
+    isInline=False # junk from tests but still used 
+    message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url) # set default footer 
+    #define value for Server section
+    serverValue = f'''**`{prefix}server info`- select and view info about added server
+`{prefix}server add <IP>:<Query port>`- add server to your list
+`{prefix}server delete`- delete server from your list
+`{prefix}server alias`- list aliases for your servers
+`{prefix}server alias`- list aliases for your servers
+`{prefix}server alias "<Alias>"`- select and add alias for server
+`{prefix}server alias delete`- delete alias for your server**'''
+    message.add_field(name=f'**Server group:**',value=serverValue) # add server section to the embed
+    #define value for notifications section
     notificationsValue = f'''**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel
 `{prefix}unwatch` - undone what `{prefix}watch` command do 
 `{prefix}automessage #any_channel` - bot will send and update message about some server!
 `{prefix}automessage` - list any automessages you have
 `{prefix}automessage delete` - delete all automessages for some server
 **'''
-    message.add_field(name=f'**Notifications:**',value=notificationsValue,inline=isInline)
-    #message.add_field(name=f'`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel',value=empty,inline=isInline)
-    #message.add_field(name=f'`{prefix}unwatch` - undone what `{prefix}watch` command do',value=empty,inline=isInline)
-    miscValue =f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**'
-    message.add_field(name=f'**Miscellaneous:**',value=miscValue,inline=isInline)
-    #message.add_field(name=f'`{prefix}info`- get info about this bot (e.g. support server, github etc.)',value=empty,inline=isInline)
-    await ctx.send(embed=message)
+    message.add_field(name=f'**Notifications:**',value=notificationsValue,inline=isInline) # add notifications section to the embed
+    miscValue =f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**' # define misc sections value
+    message.add_field(name=f'**Miscellaneous:**',value=miscValue,inline=isInline) # add misc section to the embed 
+    await ctx.send(embed=message) # and send it
 
+#add all cogs
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
 bot.add_cog(admin_cog.Admin(bot))
@@ -72,25 +71,26 @@ bot.add_cog(dbl_cog.TopGG(bot))
 bot.add_cog(updater.Updater(bot))
 bot.add_cog(automessage.Automessage(bot))
 
+# response for ping of bot
 @bot.event
-async def on_message(msg):
-    if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>':
-        await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg)))
+async def on_message(msg): # on every message 
+    if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>': # if content contains ping with id of our bot 
+        await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg))) # send message and return
         return
-    await bot.process_commands(msg)
-    
-@commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
+    await bot.process_commands(msg) # if not process commands
+
+# !prefix command 
+@commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True) # default pwrmissions check 
 @bot.command()
 async def prefix(ctx,*args):
-    print(args)
-    if (args.__len__() <= 0):
-        await ctx.send(t.l['curr_prefix'].format(ctx.prefix))
+    if (args.__len__() <= 0): # if no additional parameters 
+        await ctx.send(t.l['curr_prefix'].format(ctx.prefix)) # send current prefix and return 
         return
-    else:
-        Permissions = ctx.author.permissions_in(ctx.channel)
-        needed_perms =  permissions.Permissions(manage_roles=True)
-        if (needed_perms <= Permissions):
-            prefix = args[0]
+    else: # if not
+        Permissions = ctx.author.permissions_in(ctx.channel) # get permissions of caller in current channel 
+        needed_perms =  permissions.Permissions(manage_roles=True) # set needed permissions (manage roles)
+        if (needed_perms <= Permissions): # check permissions 
+            prefix = args[0] # if check succseesed 
             if (ctx.guild == None):
                 await ctx.send(t.l['cant_change_prefix'])
                 return
@@ -104,8 +104,8 @@ async def prefix(ctx,*args):
                 else:
                     makeRequest('INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)',(ctx.guild.id,prefix,))    
                 await  ctx.send(t.l['done']) #https://discordpy.readthedocs.io/en/latest/ext/commands/api.html?highlight=commands#discord.ext.commands.Bot.command_prefix
-        else:
-            await ctx.send('You need manage roles permission to change my prefix!')
+        else: # if check failed 
+            await ctx.send('You need manage roles permission to change my prefix!') # send error message
             return
 
 @bot.event

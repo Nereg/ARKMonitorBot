@@ -44,8 +44,11 @@ async def  makeAsyncRequest(SQL,params=()):
 
 def Debuger(name):
     #create logger
+
     log_obj = logging.getLogger(name)
-    log_obj.setLevel(logging.DEBUG)
+    log_obj.setLevel(logging.DEBUG)    
+    if (log_obj.hasHandlers()):
+        log_obj.handlers.clear()
     #create message formatter
     formatter = logging.Formatter(fmt='%(asctime)s %(module)s,line: %(lineno)d %(levelname)8s | %(message)s', datefmt='%Y/%m/%d %H:%M:%S') 
     # console printer

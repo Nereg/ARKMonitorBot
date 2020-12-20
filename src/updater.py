@@ -33,7 +33,7 @@ class Updater(commands.Cog):
         self.server_list = [] #list of lists : [[server_id,server_status]...]
         print('Init')
         self.printer.start()
-        self.resetter.start()
+        #self.resetter.start()
         self.t = c.Translation()
         # 1 - went online 
         # 2 - went offline
