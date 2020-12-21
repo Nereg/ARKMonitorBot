@@ -159,13 +159,19 @@ async def deleteServer(serverIp):
         settings = await makeAsyncRequest('SELECT * FROM settings')
         automessages = await makeAsyncRequest('SELECT * FROM automessages WHERE ServerId=%s',(serverId,))
         for notification in notifications:
-            ids = json.loads(notification[4])
+            try:
+                ids = json.loads(notification[4])
+            except BaseException:
+                continue
             if (serverId in ids):
                 ids.remove(serverId)
                 await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(json.dumps(ids),notification[0],))
                 #print(f'Changed notification record {notification[0]} to {json.dumps(ids)}')
         for setting in settings:
-            ids = json.loads(setting[3])
+            try:
+                ids = json.loads(setting[3])
+            except BaseException:
+                continue
             if (serverId in ids):
                 ids.remove(serverId)
                 await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE Id=%s',(json.dumps(ids),setting[0],))
