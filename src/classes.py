@@ -53,6 +53,8 @@ class ARKServer(JSON):
             raise ARKServerError('2: DNS resolution error',e)
         except ConnectionRefusedError as e:
             raise ARKServerError('3: Connection was refused',e)
+        except OSError as e: # https://github.com/Yepoleb/python-a2s/issues/23
+            raise ARKServerError('4: OSError',e)
         self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
         version = server.server_name #get name
         first = version.find('(') # split out version
@@ -216,6 +218,8 @@ class PlayersList(JSON):
             raise ARKServerError('2: DNS resolution error',e)
         except ConnectionRefusedError as e:
             raise ARKServerError('3: Connection was refused',e)
+        except OSError as e: # https://github.com/Yepoleb/python-a2s/issues/23
+            raise ARKServerError('4: OSError',e)
         result = [] 
         for player in players: # for each player in data
             name = discord.utils.escape_mentions(player.name)
