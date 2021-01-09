@@ -18,6 +18,7 @@ from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 import updater # cog with updater of servers in DB (main consern annoying AF)
 import automessage # cog with !automessage command and updater for it 
+import nest_asyncio
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -194,4 +195,5 @@ async def share(ctx):
 async def test(ctx,serverIp):
     await deleteServer(serverIp)
 
+nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token) # get our discord token and FIRE IT UP !

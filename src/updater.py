@@ -39,8 +39,26 @@ class Updater(commands.Cog):
         # 2 - went offline
         # 3 - unchanged
 
+    async def initPool(self):
+        print('Started initing pool')
+        cfg = config.Config()
+        self.pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
+                                      user=cfg.dbUser, password=cfg.dbPass,
+                                      db=cfg.DB, loop=asyncio.get_running_loop(), minsize=2)
+        print('Done initing pool!')
+
+    async def makeAsyncRequest(self,SQL, params=()):
+        conn = await self.pool.acquire()
+        async with conn.cursor() as cur:
+            await cur.execute(SQL,params)
+            result = await cur.fetchall()
+            await conn.commit()
+        self.pool.release(conn)
+        return result
+
     def cog_unload(self):
         self.printer.cancel()
+        self.pool.terminate()
 
     async def server_notificator(self,server):
         #print('entered message sender')
@@ -51,7 +69,7 @@ class Updater(commands.Cog):
         #print(channels)
         if (channels.__len__() <= 0):
             return
-        db_server = await makeAsyncRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
+        #db_server = await makeAsyncRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
         if (server[1] == 1 ): # server went online
             ARKServer = server[2]
             for channel in channels:
@@ -173,6 +191,7 @@ class Updater(commands.Cog):
     async def before_printer(self):
         print('waiting...')
         await self.bot.wait_until_ready()
+        await self.initPool()
         print('done waiting')
 
     #@tasks.loop(seconds=60.0)

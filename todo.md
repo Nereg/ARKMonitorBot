@@ -6,6 +6,7 @@ Priority :
 5) Write detailed PDF docs
 6) Get EGS copy of ARK and figure out how to add support for EGS servers
 7) Fix errors in all strings
+8) Add https://pypi.org/project/nest-asyncio/ to allow async tasks in //repl
 Ideas :
 1) Make command to notify user to vote for bot on tops
 3) Make configuration like this : https://github.com/Carberra/Carberretta/blob/master/docker-compose.yml
