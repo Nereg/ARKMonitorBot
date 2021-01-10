@@ -19,6 +19,7 @@ from discord.ext.commands import has_permissions, CheckFailure
 import updater # cog with updater of servers in DB (main consern annoying AF)
 import automessage # cog with !automessage command and updater for it 
 import nest_asyncio
+import campfire
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -71,6 +72,7 @@ bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot))
 bot.add_cog(updater.Updater(bot))
 bot.add_cog(automessage.Automessage(bot))
+bot.add_cog(campfire.Campfire(bot))
 
 # response for ping of bot
 @bot.event
