@@ -81,8 +81,8 @@ class ARKServer(JSON):
         self.password = server.password_protected
         try:
             self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
-        except KeyError:
-            raise ARKServerError('Not an ARK Server!')
+        except KeyError as e:
+            raise ARKServerError('Not an ARK Server!',e)
         try:
             self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
