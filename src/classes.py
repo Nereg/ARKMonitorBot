@@ -79,7 +79,10 @@ class ARKServer(JSON):
         self.maxPlayers = server.max_players
         self.map = discord.utils.escape_mentions(server.map_name)
         self.password = server.password_protected
-        self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+        try:
+            self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+        except KeyError:
+            raise ARKServerError('Not an ARK Server!')
         try:
             self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
@@ -146,7 +149,10 @@ class ARKServer(JSON):
         self.maxPlayers = server.max_players
         self.map = discord.utils.escape_mentions(server.map_name)
         self.password = server.password_protected
-        self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+        try:
+            self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+        except KeyError:
+            raise ARKServerError('Not an ARK Server!')
         try:
             self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
