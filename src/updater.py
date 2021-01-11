@@ -15,6 +15,7 @@ import traceback
 import socket
 import menus as m
 import concurrent.futures._base as base
+import asyncio
 
 #debug = Debuger('updater') # create debuger (see helpers.py)
 #conf = config.Config() # load config
@@ -29,6 +30,8 @@ class Updater(commands.Cog):
     def __init__(self, bot):
         self.index = 0
         self.bot = bot
+        self.cfg = config.Config()
+        self.workersCount = self.cfg.workersCount
         #self.printer.start()
         self.server_list = [] #list of lists : [[server_id,server_status]...]
         print('Init')
@@ -44,7 +47,7 @@ class Updater(commands.Cog):
         cfg = config.Config()
         self.pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
                                       user=cfg.dbUser, password=cfg.dbPass,
-                                      db=cfg.DB, loop=asyncio.get_running_loop(), minsize=2)
+                                      db=cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
         print('Done initing pool!')
 
     async def makeAsyncRequest(self,SQL, params=()):
@@ -166,20 +169,27 @@ class Updater(commands.Cog):
         start = time.perf_counter()
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
         self.servers = await makeAsyncRequest('SELECT * FROM servers')
+        serverCount = self.servers.__len__()
         try:
             print('Entered updater!') # debug
             servers = self.servers
             server_list = [] # empty list
-            for server in servers: # for server in servers
-                print(f'Updating server {server[0]}') # debug
-                result = await self.update_server(server[0]) # update server
-                server_list.append([server[0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
+            for i in range(1,serverCount - self.workersCount,self.workersCount):
+                print(f'Updating servers: {[server[0] for server in  servers[i:i+self.workersCount]]}') # debug
+                tasks = [self.update_server(i[0]) for i in servers[i:i+self.workersCount]]
+                results = await asyncio.gather(*tasks)
+                a = 0
+                for result in results:
+                    #result = await self.update_server(server[0]) # update server
+                    server_list.append([servers[i+a][0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
+                    a += 1
                 #print(f'Updated server! Result is {result}')
             #print(server_list)
+            notif = time.perf_counter()
             print('handling notifications')
             await self.notificator(server_list)
             end = time.perf_counter()
-            await sendToMe(f'It took {end - start} seconds to update all servers!',self.bot)
+            await sendToMe(f'It took {end - start:.4f} seconds to update all servers!',self.bot)
         except KeyError:
             await deleteServer(server[1])
         except BaseException as e: # if any exception
