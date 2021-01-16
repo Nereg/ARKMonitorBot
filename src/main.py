@@ -1,3 +1,4 @@
+from charcoal import Charcoal
 import classes as c # our classes
 from helpers import * # our helpers
 import config  # config
@@ -73,7 +74,7 @@ bot.add_cog(dbl_cog.TopGG(bot))
 bot.add_cog(updater.Updater(bot))
 bot.add_cog(automessage.Automessage(bot))
 bot.add_cog(campfire.Campfire(bot))
-
+bot.add_cog(Charcoal(bot))
 # response for ping of bot
 @bot.event
 async def on_message(msg): # on every message 
@@ -122,8 +123,7 @@ async def on_command_error1(ctx,error):
         debug.debug(e)
 
 @bot.event
-async def on_command_error(ctx,error):  
-         
+async def on_command_error(ctx,error):     
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
