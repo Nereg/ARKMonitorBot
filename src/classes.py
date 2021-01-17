@@ -67,6 +67,7 @@ class ARKServer(JSON):
             index = self.name.find(f'- ({version[first+1:second]})')
             self.stripedName = self.name[:index].strip()
         platform = server.platform # get platform server running on
+        self.serverSteamId = server.steam_id # get steam id of the server
         if (platform == 'w'): # decode
             platform = 'Windows'
         elif (platform == 'l'):
@@ -149,6 +150,7 @@ class ARKServer(JSON):
         self.maxPlayers = server.max_players
         self.map = discord.utils.escape_mentions(server.map_name)
         self.password = server.password_protected
+        self.serverSteamId = server.steam_id # get steam id of the server
         try:
             self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
         except KeyError:
