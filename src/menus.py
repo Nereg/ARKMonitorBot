@@ -47,7 +47,7 @@ class Selector():
         else:
             Servers = json.loads(data[0][3])
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
-        print(statement)
+        #print(statement)
         data = makeRequest(statement)
         try:
             self.msg = await self.ctx.send(self.l.l['server_select'],embed=await self.createEmbed(data,0))

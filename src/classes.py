@@ -1,6 +1,7 @@
 import a2s
 import arrow
 import json
+from helpers import sendToMe
 import jsonpickle
 import requests
 import os
@@ -40,6 +41,25 @@ class ARKServer(JSON):
         self.port = int(self.port) # convert port to int
         pass
     
+    @classmethod
+    async def getBattlemetricsUrl(self,serverClass):
+        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}'
+        async with aiohttp.request("GET", apiURL) as response:
+            if (response.status == 200):
+                json_data = await response.json()
+                for server in json_data['data']:
+                    serverName = server['attributes']['name']
+                    serverIp = server['attributes']['ip']
+                    serverPort = server['attributes']['portQuery']
+                    if (serverClass.name == serverName and serverClass.address == serverIp and serverClass.port == serverPort):
+                        serverId = server['id']
+                        return f'https://www.battlemetrics.com/servers/ark/{serverId}'
+                return False
+            else:
+                await sendToMe('Failed battlemetrics API call!')
+                return False
+        return
+
     async def AGetInfo(self):
         """Function to get info about server
         (To get players list see Playerslist class)

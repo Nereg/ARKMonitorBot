@@ -192,10 +192,14 @@ async def share(ctx):
 
 @bot.command()
 @commands.is_owner()
-@commands.cooldown(1, 60, type=commands.BucketType.user)
 @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
-async def test(ctx,serverIp):
-    await deleteServer(serverIp)
-
+async def test(ctx):
+    selector = Selector(ctx,bot,c.Translation())
+    server = await selector.select()
+    if server == '':
+        return
+    print(server.name)
+    await ctx.send(await server.getBattlemetricsUrl(server))
+    
 nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token) # get our discord token and FIRE IT UP !
