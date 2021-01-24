@@ -9,10 +9,38 @@ import classes as c
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
+        self.cfg = config.Config()
         self.bot = bot
 
+    async def serverInfo(self,server,playersList,online,ctx):
+        time = datetime.datetime(2000,1,1,0,0,0,0)
+        playersList = playersList.list # get list of players
+        aliases = await getAlias(0,self.ctx.guild.id,server.ip)
+        name = server.name if aliases == '' else aliases
+        battleUrl = server.battleURL if hasattr(server, 'battleURL') else await c.ARKServer.getBattlemetricsUrl(server) # if we have battle url stored in class get it else try to get it 
+        url = battleUrl if battleUrl else '' # if we have an url get it if not put '' there
+        playersValue = '' # value for players field
+        timeValue = '' # value for time field 
+        color = randomColor() # pick random color
+        for player in playersList: # for each player in player list
+            playersValue += player.name + '\n' # add it's name to value
+            timeValue += player.time + '\n' # and how much time it played
+        status = ':green_circle:' if online else ':red_circle:' # 
+        emb1 = discord.Embed(title=name+' '+status,url=url,color=color) # first embed
+        emb1.add_field(name='Name',value=playersValue)
+        emb1.add_field(name='Time played',value=timeValue)
+        server.online = server.online if online else 0 # if server offline override online players count
+        emb2 = discord.Embed(color=color,timestamp=time.utcnow()) # second embed
+        emb2.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
+        emb2.add_field(name='IP:',value=server.ip)
+        emb2.add_field(name='Players:',value=f'{server.online}/{server.maxPlayers}')
+        emb2.add_field(name='Map:',value=server.map)
+        emb2.add_field(name='Ping:',value=f'{server.ping} ms.')
+        await ctx.send(embed=emb1)
+        await ctx.send(embed=emb2)
+
     # /server command module
-    async def serverInfo(self,server,playersList,online): # return info about server
+    async def oldserverInfo(self,server,playersList,online): # return info about server
         playersList = playersList.list # get list of players
         i = 1 
         players = '' # list of players
@@ -118,7 +146,7 @@ Ping : {server.ping} ms
                     makeRequest('UPDATE servers SET OfflineTrys=%s, LastOnline=0 WHERE Ip=%s',(trys+1,ip,)) # and update record 
         
             if online: #if server is online
-                await ctx.send(await self.serverInfo(server,playersList,online)) # send info
+                await self.serverInfo(server,playersList,online,ctx) # send info
                 data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data from DB
                 if (data.__len__() > 0): # if we already have record 
                     makeRequest('UPDATE servers SET ServerObj=%s, PlayersObj=%s,LastOnline=1,OfflineTrys=0  WHERE Ip=%s',(server.toJSON(),playersList.toJSON(),ip)) # update it
@@ -129,7 +157,7 @@ Ping : {server.ping} ms
             else: # id server is offline 
                 data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data
                 if (data.__len__() > 0): # if we have  record about this server
-                    await ctx.send(await self.serverInfo(c.ARKServer.fromJSON(data[0][4]),c.PlayersList.fromJSON(data[0][5]),online)) # construct classes and send data
+                    await self.serverInfo(c.ARKServer.fromJSON(data[0][4]),c.PlayersList.fromJSON(data[0][5]),online,ctx) # construct classes and send data
                 else: # else
                     debug.debug(f'server {ip} is offline and we have no data about it!') # debug
                     await ctx.send('Server is offline and we have no data about it!') # send message

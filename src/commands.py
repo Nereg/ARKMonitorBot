@@ -78,7 +78,7 @@ List of added servers :
         RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
         meUser = self.bot.get_user(277490576159408128)
         role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
-        embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow())
+        embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow(),color=randomColor())
         embed.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
         embed.add_field(name='<:Link:739476980004814898> Invite link',value='[Here!](https://bit.ly/ARKTop)',inline=True)
         embed.add_field(name='<:Github:739476979631521886> GitHub',value='[Here!](https://github.com/Nereg/ARKMonitorBot)',inline=True)

@@ -18,7 +18,7 @@ class Selector():
         online = bool(data[number][6])
         aliases = await getAlias(0,self.ctx.guild.id,server.ip)
         name = server.name if aliases == '' else aliases
-        embed = discord.Embed(title=f'{number+1}. {name}')
+        embed = discord.Embed(title=f'{number+1}. {name}',color=randomColor())
         status = ':green_circle: '+ self.l.l['online'] if online else ':red_circle: ' + self.l.l['offline']
         pve = self.l.l['yes'] if server.PVE else self.l.l['no']
         embed.add_field(name='IP',value=server.ip)

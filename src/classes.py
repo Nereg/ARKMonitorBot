@@ -43,7 +43,17 @@ class ARKServer(JSON):
     
     @classmethod
     async def getBattlemetricsUrl(self,serverClass):
-        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}'
+        '''
+        Gets url for given server on battlemetrics.com
+        WARNING! battlemetrics API is slow !
+
+        Parameters: 
+        serverClass : ARKServer - server to search for
+
+        Returns:
+        False ot str : false if url is not found, url if found
+        '''
+        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}' #
         async with aiohttp.request("GET", apiURL) as response:
             if (response.status == 200):
                 json_data = await response.json()
@@ -56,18 +66,33 @@ class ARKServer(JSON):
                         return f'https://www.battlemetrics.com/servers/ark/{serverId}'
                 return False
             else:
-                await sendToMe('Failed battlemetrics API call!')
+                print('Failed battlemetrics API call!')
                 return False
-        return
+
+    async def updateOffline(self):
+        '''Return a class with all new (e.g not present in current class) properties set to default
+        to eliminate difference between updated and not updated servers'''
+        if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
+            self.battleURL = await self.getBattlemetricsUrl(self) # find it 
+        if (not hasattr(self, 'serverSteamId')): # if we don't have server Steam id
+            self.serverSteamId = None 
+        if (not hasattr(self, 'isARK')): # if we don't know if it is ARK server
+            self.isARK = True # let's assume it is ARK server
+        return self
 
     async def AGetInfo(self):
-        """Function to get info about server
-        (To get players list see Playerslist class)
+        """
+        Gets info about ARK server
+        
+        Parameters:
+        none (get's all needed info from self)
+        Returns:
+        self (with updated data)
         """
         try:
             server = await a2s.ainfo((self.address,self.port)) # get server data
             data = await a2s.arules((self.address,self.port)) # custom ARK data
-        except base.TimeoutError as e:
+        except base.TimeoutError as e: 
             raise ARKServerError('1: Timeout',e)
         except socket.gaierror as e:
             raise ARKServerError('2: DNS resolution error',e)
@@ -75,39 +100,38 @@ class ARKServer(JSON):
             raise ARKServerError('3: Connection was refused',e)
         except OSError as e: # https://github.com/Yepoleb/python-a2s/issues/23
             raise ARKServerError('4: OSError',e)
-        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
+        self.name = discord.utils.escape_mentions(server.server_name) # get raw name of the server
         version = server.server_name #get name
         first = version.find('(') # split out version
-        second = version.rfind(')')
-        if (second == -1 or first == -1):
-            self.version = 'No version'
-            self.stripedName = self.name
+        second = version.rfind(')') # read https://ark.gamepedia.com/Server_Browser#Server_Name    
+        if (second == -1 or first == -1): # if version is not found
+            self.version = 'No version' # placeholder
+            self.stripedName = self.name # fill the gap
         else:            
-            self.version = discord.utils.escape_mentions(version[first+1:second]) # read https://ark.gamepedia.com/Server_Browser#Server_Name           
-            index = self.name.find(f'- ({version[first+1:second]})')
-            self.stripedName = self.name[:index].strip()
+            self.version = discord.utils.escape_mentions(version[first+1:second]) # extract version
+            index = self.name.find(f'- ({version[first+1:second]})') # find end of server name
+            self.stripedName = self.name[:index].strip() # put server name without vesrion to the class
         platform = server.platform # get platform server running on
         self.serverSteamId = server.steam_id # get steam id of the server
-        if (platform == 'w'): # decode
+        if (platform == 'w'): # decode platform server is running on
             platform = 'Windows'
         elif (platform == 'l'):
             platform = 'Linux'
         elif (platform == 'm' or platform == 'o'):
             platform = 'Mac' # =/
-        self.platform = platform
-        self.name = discord.utils.escape_mentions(server.server_name) # just extract data 
-        self.online = server.player_count
-        self.maxPlayers = server.max_players
-        self.map = discord.utils.escape_mentions(server.map_name)
-        self.password = server.password_protected
+        self.platform = platform 
+        self.online = server.player_count # get current player count
+        self.maxPlayers = server.max_players # get max players server can accept
+        self.map = discord.utils.escape_mentions(server.map_name) # get name of server's map
+        self.password = server.password_protected # get if server is protected by password
         try:
-            self.PVE = bool(int(data['SESSIONISPVE_i'])) # in data no so much interesting data so let`s parse into class
+            self.PVE = bool(int(data['SESSIONISPVE_i'])) # get if server is PVE
         except KeyError as e:
-            raise ARKServerError('Not an ARK Server!',e)
+            raise ARKServerError('Not an ARK Server!',e) # it is not an ARK server !
         try:
             self.clusterName = discord.utils.escape_mentions(data['ClusterId_s']) # cluster name
         except KeyError:
-            self.clusterName = None
+            self.clusterName = None # it can be 
         # list of mods installed on the server (but currently it is limited to only first 4 of them)
         self.mods = []
         if ('MOD0_s' in data):
@@ -127,12 +151,14 @@ class ARKServer(JSON):
             self.isARK = True
         if (server.game_id == 346110 or server.game_id == 407530): # ARK:SE and ARK:SOTF
             self.isARK = True
+        if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
+            self.battleURL = await self.getBattlemetricsUrl(self) # find it 
         #self.BattleEye = bool(data['SERVERUSESBATTLEYE_b']) # Is BattleEye used ?
         #self.itemDownload = bool(data['ALLOWDOWNLOADITEMS_i'])  # can you download items to this ARK ?
         #self.characterDownload = bool(data['ALLOWDOWNLOADCHARS_i']) # Can you download characters to this ARK ?
         #self.hours = data['DayTime_s'][:2] # current in-game time
         #self.minutes = data['DayTime_s'][2:]
-        self.ping = int(server.ping * 1000)
+        self.ping = int(server.ping * 1000) # ping to the server in ms 
         #HEADERS = {'User-Agent' : "Magic Browser"}
         #async with aiohttp.request("GET", 'http://arkdedicated.com/version', headers=HEADERS) as response:
         #    self.newestVersion = discord.utils.escape_mentions(await response.text()) # just in case ya know

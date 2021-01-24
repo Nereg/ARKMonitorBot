@@ -12,6 +12,7 @@ import asyncio
 from discord.ext import commands 
 import aiomysql
 import json
+import random
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -181,3 +182,8 @@ async def deleteServer(serverIp):
                 await makeAsyncRequest('DELETE FROM automessages WHERE Id=%s',(message[0],))
         await makeAsyncRequest('DELETE FROM servers WHERE Id=%s',(serverId,))
         return 0
+
+def randomColor():
+    '''Picks random colors for embed'''
+    colors = [discord.Color.red(),discord.Color.blue(),discord.Color.from_rgb(255,255,0)] # red blue and yellow
+    return random.choice(colors)

@@ -84,7 +84,6 @@ CREATE TABLE `bot`.`settings` (
 --
 -- Table structure for table `users`
 --
-DROP TABLE users;
 CREATE TABLE `bot`.`users` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordId` BIGINT NOT NULL , `RefreshToken` TEXT NOT NULL , `Locale` TEXT NOT NULL , `DiscordName` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
 
 CREATE TABLE `bot`.`automessages` (
