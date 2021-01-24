@@ -25,6 +25,9 @@ class ServerCmd(commands.Cog):
         for player in playersList: # for each player in player list
             playersValue += player.name + '\n' # add it's name to value
             timeValue += player.time + '\n' # and how much time it played
+        if (not online):
+            playersValue = 'No one is on the server'
+            timeValue = '\u200B'
         status = ':green_circle:' if online else ':red_circle:' # 
         emb1 = discord.Embed(title=name+' '+status,url=url,color=color) # first embed
         emb1.add_field(name='Name',value=playersValue)

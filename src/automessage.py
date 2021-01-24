@@ -55,6 +55,7 @@ class Automessage(commands.Cog):
         return embed
 
     async def checkPermissions(self,channel,channel_id=0): #check for : send,edit messages , use external emojis, ...
+        return True # people mess those up every time and blame it on me ! (and oh wait it can't fail...)
         if (channel_id != 0):
             channel = self.bot.get_channel(channel_id)
             if (channel == None):
@@ -72,9 +73,6 @@ class Automessage(commands.Cog):
         for message in automessages:
             channel = self.bot.get_channel(message[1])
             if (channel == None):
-                await self.deleteAutomessage(message[0])
-                continue
-            if (not await self.checkPermissions(channel)):
                 await self.deleteAutomessage(message[0])
                 continue
             try:
