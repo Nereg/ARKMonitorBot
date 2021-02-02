@@ -6,7 +6,6 @@ import sys
 import ipaddress
 import classes as c
 import config
-from inspect import currentframe
 import mysql.connector
 import asyncio
 from discord.ext import commands 
@@ -89,26 +88,26 @@ async def AddServer(ip,ctx):
     if (IpCheck(ip) != True): # check IP address (see helpers.py)
         debug.debug(f'Wrong IP : {ip}') # debug
         await ctx.send('Something is wrong with **IP**!') # and reply to user
-        return # if ip is correct
+        return # if ip is incorrect
     servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
     if (servers.__len__() > 0):
         return servers[0][0]
     try: 
         server = c.ARKServer(ip) # construct our classes
         playersList = c.PlayersList(ip)
-        playersList.getPlayersList() # and get data
-        server.GetInfo()
+        await playersList.AgetPlayersList() # and get data
+        await server.AGetInfo()
         if (not server.isARK):
             await ctx.send(f'This server is not ARK! Possible Steam AppId: {server.game_id}')
             return
-        debug.debug(f"Server {ip} is up!") # and debug
+        #debug.debug(f"Server {ip} is up!") # and debug
     except Exception as e: # if any exception
         debug.debug(e)
         await ctx.send(f'Server {ip} is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`')
         return
     splitted = ip.split(':')
-    makeRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
-    Id = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
+    await makeAsyncRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
+    Id = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
     debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
     return Id[0][0]
 
@@ -137,11 +136,21 @@ async def getAlias(serverId,guildId,serverIp=''):
             return ''
 
 async def stripVersion(server):
+    '''
+    Return name of server but without server's version
+    Parameters:
+    server - ARKServer object
+    Returns:
+    str - name of the server with stripped version 
+    '''
     name = server.name.find(f'- ({server.version})')
     name = server.name[:name].strip()
     return name
 
 async def sendToMe(text,bot):
+    '''
+    Sends a text to Me the creator of this bot
+    '''
     try:
         meUser = bot.get_user(277490576159408128)
         meDM = await meUser.create_dm()
@@ -150,6 +159,12 @@ async def sendToMe(text,bot):
         return
 
 async def deleteServer(serverIp):
+    ''' 
+    Delets server from DB by it's ip
+    Parameters:
+    serverIp - str - server's ip 
+    returns - int - 1 if failed 0 othervise
+    '''
     server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp,))
     if (server.__len__() <=0 ):
         return 1

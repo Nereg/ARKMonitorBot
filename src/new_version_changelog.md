@@ -1,10 +1,15 @@
-MUST be cleared after pathnotes are relised in discord !
+MUST be cleared after pathnotes are released in discord !
 Internal :
 patched asyncio loop to accept new loops to run async code in !repl command
 patched updater to use aiomysql pool but no spped increase (will test on production)
 MUCH MUCH faster updater! (Finally!!)
-Added getBattlemetricsUrl method to ARKServer class
+Added BattleMetricsAPI class (useless if honest)
 Added updateOffline method to ARKServer class
+Removed discord-ext-menus 
+Rewrote huge part of !server info command
+Added comments to the code
+Fixed rare (very) bug in /setMessage command (admin cog)
+
 External :
 Added !campfire command
 !campfire - just output campfire rates

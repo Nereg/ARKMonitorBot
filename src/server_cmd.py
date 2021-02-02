@@ -17,19 +17,18 @@ class ServerCmd(commands.Cog):
         playersList = playersList.list # get list of players
         aliases = await getAlias(0,self.ctx.guild.id,server.ip)
         name = server.name if aliases == '' else aliases
-        battleUrl = server.battleURL if hasattr(server, 'battleURL') else await c.ARKServer.getBattlemetricsUrl(server) # if we have battle url stored in class get it else try to get it 
-        url = battleUrl if battleUrl else '' # if we have an url get it if not put '' there
+        battleUrl = getattr(server,'battleURL','')
         playersValue = '' # value for players field
         timeValue = '' # value for time field 
         color = randomColor() # pick random color
         for player in playersList: # for each player in player list
             playersValue += player.name + '\n' # add it's name to value
             timeValue += player.time + '\n' # and how much time it played
-        if (not online):
+        if (not online or server.online == 0):
             playersValue = 'No one is on the server'
             timeValue = '\u200B'
         status = ':green_circle:' if online else ':red_circle:' # 
-        emb1 = discord.Embed(title=name+' '+status,url=url,color=color) # first embed
+        emb1 = discord.Embed(title=name+' '+status,url=battleUrl,color=color) # first embed
         emb1.add_field(name='Name',value=playersValue)
         emb1.add_field(name='Time played',value=timeValue)
         server.online = server.online if online else 0 # if server offline override online players count
@@ -83,7 +82,7 @@ Ping : {server.ping} ms
         self.ctx = ctx
         debug = Debuger('Server_command') # create debugger
         lang = c.Translation() # load translation
-        debug.debug(args) # debug
+        #debug.debug(args) # debug
         if (args.__len__() <= 0):
             await ctx.send('No mode selected!')
             return 
@@ -93,77 +92,44 @@ Ping : {server.ping} ms
             if (args.__len__() <= 1): # if no additional args 
                 await ctx.send('No IP!') # send error
                 return # return
-            ip = args[1] # if nwe have ip record it
-            servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
-            if (servers.__len__() > 0):
-                Id = servers[0][0]
+            ip = args[1] 
+            servers = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,)) # get any server with such Ip
+            if (servers.__len__() > 0): # if we have it in DB
+                Id = servers[0][0] # get it's id in DB
             else:
                 Id = await AddServer(ip,ctx) # pass it to function
-                if Id == None or Id == 'null':
-                    return 
+                if Id == None or Id == 'null': # if server is not added 
+                    return # return
             # add if already added check 
-            settings = makeRequest('SELECT * FROM settings WHERE GuildId=%s',(ctx.guild.id,))
-            if (settings.__len__() > 0 and settings[0][3] != None):
-                if (Id in json.loads(settings[0][3])):
-                    await ctx.send('You already added that server!')
-                    return
-            data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,))
-            if data.__len__() <= 0:
-                makeRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),))
+            settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(ctx.guild.id,)) # get all servers added to this guild 
+            if (settings.__len__() > 0 and settings[0][3] != None): # if we have some results and column isn't empty
+                if (Id in json.loads(settings[0][3])): # load ids and check if server is already added
+                    await ctx.send('You already added that server!') # return error
+                    return 
+            data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(ctx.guild.id,)) # get settings of the guild
+            if data.__len__() <= 0: # if we have no settings for that guild
+                await makeAsyncRequest('INSERT INTO settings(GuildId, ServersId, Type) VALUES (%s,%s,0)',(ctx.guild.id,json.dumps([Id]),)) # create it 
                 await ctx.send('Done!')
-            else:
-                if (data[0][3] == None or data[0][3] == 'null'):
-                    ids = []  
+            else: # else
+                if (data[0][3] == None or data[0][3] == 'null'): # if no servers are added
+                    ids = []  # empty array
                 else:
-                    ids = json.loads(data[0][3])
-                ids.append(Id)
-                makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=0',(json.dumps(ids),ctx.guild.id,))
-                await ctx.send('Done!')
+                    ids = json.loads(data[0][3]) # else load ids
+                ids.append(Id) # append current server id to the list
+                await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=0',(json.dumps(ids),ctx.guild.id,)) # update settings for guild 
+                await ctx.send('Done!') # done
 
         elif (mode == 'info'): # if /server info 
-            debug.debug('Entered INFO mode!') # debug
-            selector = Selector(ctx,self.bot,lang)
-            server = await selector.select()
-            if server == '':
-                return
-            ip = server.ip
-            if (IpCheck(ip) != True): # IP check
-                debug.debug(f'Wrong IP : {ip}') # debug
-                await ctx.send('Something is wrong with **IP**!') # and reply
-                return # if IP is correct
-            try: 
-                server = c.ARKServer(ip) # construct our classes
-                playersList = c.PlayersList(ip)
-                playersList.getPlayersList() # and get data
-                server.GetInfo()
-                online = True # set online flage to true
-                debug.debug(f"Server {ip} is up!") # and debug
-            except Exception as e: # if any exception
-                debug.debug(e) # debug
-                #print(ip)
-                debug.debug(f'Server {ip} is offline!') # also debug
-                online = False # set online flag to false
-                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # Select server from DB
-                if (data.__len__() > 0): # id we have record with that IP
-                    trys = data[0][6] # extract offline trys
-                    makeRequest('UPDATE servers SET OfflineTrys=%s, LastOnline=0 WHERE Ip=%s',(trys+1,ip,)) # and update record 
-        
-            if online: #if server is online
-                await self.serverInfo(server,playersList,online,ctx) # send info
-                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data from DB
-                if (data.__len__() > 0): # if we already have record 
-                    makeRequest('UPDATE servers SET ServerObj=%s, PlayersObj=%s,LastOnline=1,OfflineTrys=0  WHERE Ip=%s',(server.toJSON(),playersList.toJSON(),ip)) # update it
-                    debug.debug(f'Updated DB record for {ip} server!') # debug
-                else: # if we doesn`t have record
-                    debug.debug(f'Created DB record for {ip} server!') # debug
-                    makeRequest("INSERT INTO servers (ServerObj,PlayersObj,Ip) VALUES (%s,%s,%s)",[server.toJSON(),playersList.toJSON(),server.ip]) # and add record
-            else: # id server is offline 
-                data = makeRequest('SELECT * FROM servers WHERE Ip = %s',(ip,)) # select data
-                if (data.__len__() > 0): # if we have  record about this server
-                    await self.serverInfo(c.ARKServer.fromJSON(data[0][4]),c.PlayersList.fromJSON(data[0][5]),online,ctx) # construct classes and send data
-                else: # else
-                    debug.debug(f'server {ip} is offline and we have no data about it!') # debug
-                    await ctx.send('Server is offline and we have no data about it!') # send message
+            #debug.debug('Entered INFO mode!') # debug
+            selector = Selector(ctx,self.bot,lang) # create server selector
+            server = await selector.select() # let the user select server
+            if server == '': # if user didn't  selected server
+                return # return
+            ip = server.ip # else get ip
+            servers = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
+            server = servers[0]
+            print(server[6])
+            await self.serverInfo(c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),bool(server[6]),ctx)
         elif (mode == 'delete'): # add !exec "delete from notifications where ServersIds like '%4%'"
             selector = Selector(ctx,self.bot,lang)
             server = await selector.select()
@@ -185,83 +151,79 @@ Ping : {server.ping} ms
             serverIds.remove(serverId)
             makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',(json.dumps(serverIds),GuildId,Type))
             await ctx.send('Done!')
-        elif (mode == 'alias'):    
-            if ('delete' in args):               
+        elif (mode == 'alias'): # if we need to add or delete alias 
+            if ('delete' in args): # delete alias 
                 guildId = ctx.guild.id # make Id of discord guild
-                guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,))                
-                if (guildSettings[0][6] == None or guildSettings[0][6] == ''):
-                    await ctx.send('You have no aliases!')
+                guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,)) # get settings for that guild             
+                if (guildSettings[0][6] == None or guildSettings[0][6] == ''): # if guild have no prefixes
+                    await ctx.send('You have no aliases!') # return
                     return
-                selector = Selector(ctx,self.bot,lang)
-                serverIp = await selector.select()
-                if serverIp == '':
-                    return
+                selector = Selector(ctx,self.bot,lang) # else 
+                serverIp = await selector.select() # let the user select server
+                if serverIp == '': # if doesn't selected
+                    return # return
                 server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp.ip,)) # find needed server
-
-                aliases = json.loads(guildSettings[0][6])
-                if (server[0][0] in aliases):
-                    mainIndex = aliases.index(server[0][0])
-                    aliases.pop(mainIndex)
+                aliases = json.loads(guildSettings[0][6]) # loads aliases 
+                if (server[0][0] in aliases): # if server id is in aliases
+                    mainIndex = aliases.index(server[0][0]) # get index of server
+                    aliases.pop(mainIndex) # delete (pop) index of the server
                     aliases.pop(mainIndex) # after we poped id alias is in the same position as id so pop twice
-                    newAliases = json.dumps(aliases)
-                    await makeAsyncRequest('UPDATE settings SET Aliases=%s WHERE GuildId=%s',(newAliases,guildId,))
-                    #await ctx.send(f'You already have alias `{aliases[aliases.index(server[0][0])+1]}` for this server!')
-                    await ctx.send('Done!')
+                    newAliases = json.dumps(aliases) # dump result  
+                    await makeAsyncRequest('UPDATE settings SET Aliases=%s WHERE GuildId=%s',(newAliases,guildId,)) # update DB
+                    await ctx.send('Done!') # return
                     return
-                else:
-                    await ctx.send('You don`t have alias for this server!')
+                else: # if server is not found
+                    await ctx.send('You don`t have alias for this server!') # return
                     return
             if (args.__len__() <= 1): # if no additional args 
-                guildId = ctx.guild.id
-                guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,))
-                if (guildSettings[0][6] == None or guildSettings[0][6] == ''):
-                    await ctx.send('You have no aliases!')
+                guildId = ctx.guild.id # get guild id
+                guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,)) # get settings of that guild
+                if (guildSettings[0][6] == None or guildSettings[0][6] == ''): # if we have no aliases
+                    await ctx.send('You have no aliases!') # return
                     return
-                else:
-                    aliases = json.loads(guildSettings[0][6])
-                    message = 'List of aliases:\n'
-                    listIndex = 1 
-                    for i in aliases:
-                        if(type(i) == type('')):
-                            continue
-                        else:
-                            server = await makeAsyncRequest('SELECT ServerObj FROM servers WHERE Id=%s',(i,))
-                            if (server.__len__() <=0):
-                                continue
-                            baseIndex = aliases.index(i)
-                            debug.debug(i)
-                            debug.debug(server)
-                            serverObj = c.ARKServer.fromJSON(server[0][0])
-                            name = serverObj.name.find(f'- ({serverObj.version})')
-                            name = serverObj.name[:name].strip()
-                            message += f'{listIndex}. {name} ({serverObj.map}) : {aliases[baseIndex+1]}\n'
-                            listIndex +=1
-                    if (message.__len__()>=2000):
-                        raise Exception('Message is over 2K!')
-                    await ctx.send(message)
+                else: # else
+                    aliases = json.loads(guildSettings[0][6]) # load them
+                    message = 'List of aliases:\n' # header of message
+                    listIndex = 1
+                    for i in aliases: # for each of items
+                        if(type(i) == type('')): # if item isn't string (it is alias)
+                            continue # continue 
+                        else: # else (it is server id)
+                            server = await makeAsyncRequest('SELECT ServerObj FROM servers WHERE Id=%s',(i,)) # get server object from DB
+                            if (server.__len__() <=0): # if we don't have such server 
+                                continue # continue 
+                            baseIndex = aliases.index(i) # search for id in list
+                            serverObj = c.ARKServer.fromJSON(server[0][0]) # decode server object
+                            name = await stripVersion(serverObj) # strip version of the server
+                            message += f'{listIndex}. {name} ({serverObj.map}) : {aliases[baseIndex+1]}\n' # add line to the message 
+                            listIndex +=1 # increase index (yeah i)
+                    if (message.__len__()>=2000): # if too much servers
+                        raise Exception('Message is over 2K!') # raise
+                    await ctx.send(message) # send message
                 #await ctx.send('No alias!') # send error
                 return # return
-            selector = Selector(ctx,self.bot,lang)
-            serverIp = await selector.select()
+            # if we don't have delete and have more then one argument
+            selector = Selector(ctx,self.bot,lang) # let the user select server
+            serverIp = await selector.select() 
             if serverIp == '':
                 return
 
-            alias = discord.utils.escape_mentions(args[1]) #    
+            alias = discord.utils.escape_mentions(args[1]) #escape alias
             server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp.ip,)) # find needed server
             guildId = ctx.guild.id # make Id of discord guild
             guildSettings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(guildId,)) # find guild in settings table (can't be unset because you must add server to select it)
-            if (guildSettings[0][6] == None or guildSettings[0][6] == ''):
-                newAliases = [server[0][0],discord.utils.escape_mentions(alias)]
-                newAliases = json.dumps(newAliases)
-            else:
-                oldAliases = json.loads(guildSettings[0][6])
-                if (server[0][0] in oldAliases):
-                    await ctx.send(f'You already have alias `{oldAliases[oldAliases.index(server[0][0])+1]}` for this server!')
-                    return
-                oldAliases.append(server[0][0])
-                oldAliases.append(discord.utils.escape_mentions(alias))
-                newAliases = json.dumps(oldAliases)
-            await makeAsyncRequest("UPDATE settings SET Aliases=%s WHERE GuildId=%s",(newAliases,guildId))
+            if (guildSettings[0][6] == None or guildSettings[0][6] == ''): # if it is first server to add alias to
+                newAliases = [server[0][0],alias] # make list
+                newAliases = json.dumps(newAliases) # jump it into json
+            else: # else
+                oldAliases = json.loads(guildSettings[0][6]) # load prefixes
+                if (server[0][0] in oldAliases): # if we already have an alias for that server 
+                    await ctx.send(f'You already have alias `{oldAliases[oldAliases.index(server[0][0])+1]}` for this server!') # return
+                    return # else
+                oldAliases.append(server[0][0]) # append server id
+                oldAliases.append(alias) # and prefix to the list 
+                newAliases = json.dumps(oldAliases) # dump the list
+            await makeAsyncRequest("UPDATE settings SET Aliases=%s WHERE GuildId=%s",(newAliases,guildId)) # update record in DB 
             await ctx.send('Done!')
 
             

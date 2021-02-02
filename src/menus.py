@@ -1,4 +1,3 @@
-from discord.ext import menus
 import discord
 from helpers import * # all our helpers
 import classes as c

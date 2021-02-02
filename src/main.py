@@ -7,7 +7,6 @@ from discord.ext import commands # import commands extension
 import commands as cmd # import all our commands
 from menus import * # menus like selector of servers
 from server_cmd import * # !server command
-from discord.ext import menus # unused menus extention (garbage)
 import json # json module
 import traceback # traceback 
 import time # time 
@@ -29,9 +28,7 @@ import campfire
 
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
-game = discord.Game('ping me to get prefix') # set custom status for bot
-# ARK:SE app id in discord : 356887282982191114 
-#game = discord.Activity(application_id=713272720053239808,name='test',url='',type=discord.ActivityType.playing,state="state",details='details',timestamps={'start':123456789010,'end':123132143254356},assets={'large_image':'empty_logo','large_text':'test','small_image':'empty_logo','small_text':'test'})
+game = discord.Game('ping me to get prefix') # set custom status for bot (no it isn;t possible to put buttons like for user's profiles)
 bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation

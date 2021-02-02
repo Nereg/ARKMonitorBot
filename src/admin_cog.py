@@ -323,7 +323,10 @@ class Admin(commands.Cog):
     
     @commands.command()
     async def setMessage(self, ctx, message):
-        makeRequest('UPDATE settings SET Admins=%s WHERE Guildid=1',(message,))
+        result = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
+        if (result.__len__() <= 0):
+            await makeAsyncRequest('INSERT INTO settings(GuildId, Prefix, ServersId, Admins, Type, Aliases) VALUES (1,"","","",0,"")')
+        makeRequest('UPDATE settings SET Admins=%s WHERE GuildId=1',(message,))
         await ctx.send('Done!')
 
     @commands.command()

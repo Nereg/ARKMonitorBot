@@ -1,3 +1,4 @@
+import asyncio
 import a2s
 import arrow
 import json
@@ -10,6 +11,42 @@ import aiohttp
 import concurrent.futures._base as base
 import socket
 import discord
+
+class BattleMetricsAPI():
+    def __init__(self):
+        #self.limiter = AsyncLimiter(60) # https://aiolimiter.readthedocs.io/en/latest/ 
+        pass
+    
+    @classmethod
+    async def getBattlemetricsUrl(self,serverClass):
+        '''
+        Gets url for given server on battlemetrics.com
+
+        Parameters: 
+        serverClass : ARKServer - server to search for
+
+        Returns:
+        False ot str : false if url is not found, url if found
+        '''
+        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}' #
+        async with aiohttp.request("GET", apiURL) as response:
+            if (response.status == 200):
+                json_data = await response.json()
+                for server in json_data['data']:
+                    serverName = server['attributes']['name']
+                    serverIp = server['attributes']['ip']
+                    serverPort = server['attributes']['portQuery']
+                    if (serverClass.name == serverName and serverClass.address == serverIp and serverClass.port == serverPort):
+                        serverId = server['id']
+                        return f'https://www.battlemetrics.com/servers/ark/{serverId}'
+                return False
+            elif (response.status == 429):
+                wait = int(response.headers['Retry-After'])
+                #print(wait)
+                await asyncio.sleep(wait)
+                #print('Failed battlemetrics API call!')
+                #print(response.text())
+                return self.getBattlemetricsUrl(serverClass)
 
 class ARKServerError(Exception):
     def __init__(self,reason, error, *args, **kwargs):
@@ -41,39 +78,12 @@ class ARKServer(JSON):
         self.port = int(self.port) # convert port to int
         pass
     
-    @classmethod
-    async def getBattlemetricsUrl(self,serverClass):
-        '''
-        Gets url for given server on battlemetrics.com
-        WARNING! battlemetrics API is slow !
-
-        Parameters: 
-        serverClass : ARKServer - server to search for
-
-        Returns:
-        False ot str : false if url is not found, url if found
-        '''
-        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}' #
-        async with aiohttp.request("GET", apiURL) as response:
-            if (response.status == 200):
-                json_data = await response.json()
-                for server in json_data['data']:
-                    serverName = server['attributes']['name']
-                    serverIp = server['attributes']['ip']
-                    serverPort = server['attributes']['portQuery']
-                    if (serverClass.name == serverName and serverClass.address == serverIp and serverClass.port == serverPort):
-                        serverId = server['id']
-                        return f'https://www.battlemetrics.com/servers/ark/{serverId}'
-                return False
-            else:
-                print('Failed battlemetrics API call!')
-                return False
 
     async def updateOffline(self):
         '''Return a class with all new (e.g not present in current class) properties set to default
         to eliminate difference between updated and not updated servers'''
         if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
-            self.battleURL = await self.getBattlemetricsUrl(self) # find it 
+            self.battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
         if (not hasattr(self, 'serverSteamId')): # if we don't have server Steam id
             self.serverSteamId = None 
         if (not hasattr(self, 'isARK')): # if we don't know if it is ARK server
@@ -152,7 +162,12 @@ class ARKServer(JSON):
         if (server.game_id == 346110 or server.game_id == 407530): # ARK:SE and ARK:SOTF
             self.isARK = True
         if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
-            self.battleURL = await self.getBattlemetricsUrl(self) # find it 
+            battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
+            if (battleURL): # if we have url 
+                self.battleURL = battleURL
+        #if (hasattr(self, 'battleURL')): # if we don't have battle url already 
+        #    if (self.battleURL == ''):
+        #        delattr(self,'battleURL') 
         #self.BattleEye = bool(data['SERVERUSESBATTLEYE_b']) # Is BattleEye used ?
         #self.itemDownload = bool(data['ALLOWDOWNLOADITEMS_i'])  # can you download items to this ARK ?
         #self.characterDownload = bool(data['ALLOWDOWNLOADCHARS_i']) # Can you download characters to this ARK ?
