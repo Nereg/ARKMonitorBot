@@ -67,6 +67,9 @@ class Updater(commands.Cog):
         self.pool.terminate() # terminate pool of connections
 
     async def server_notificator(self,server):
+        '''
+        Function to notify about server events like server wrnt up or down 
+        '''
         print('entered message sender')
         #print(server)
         channels = self.notificationsList

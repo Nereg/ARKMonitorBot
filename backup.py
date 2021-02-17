@@ -1,18 +1,17 @@
 import datetime
 import os
-
+from src import config
+cfg = config.Config() # load config
 time = datetime.datetime(2000,1,1,0,0,0,0)
 time = time.utcnow()
 months = time.strftime('%b-%m')
-day = time.strftime('%d-%H')
-container_name = 'arkmonitorbot_db_1'
-password = 'YOUR_PASSWORD'
-backup = f'docker exec {container_name} bash -c "touch /var/lib/mysql/{day}.sql && mysqldump -u root -p{password} bot > /var/lib/mysql/{day}.sql"'
-copy = f'mkdir -p ~/backup/{months} && docker cp {container_name}:/var/lib/mysql/{day}.sql ~/backup/{months}'
-send = f'cd ~/backup/ && git add ~/backup/{months}/{day}.sql && git commit . -m "Backup from main server ({time.strftime("%Y.%m.%d.%H")})" && git push --set-upstream origin master'
-#call(['docker', 'exec', container_name, 'bash', '-c', f'"touch /var/lib/mysql/{day}.sql && mysqldump -u root -p{password} bot > /var/lib/mysql/{day}.sql"'] )
-#call(['mkdir', f'~/backup/{months}', '&&', 'docker', 'cp', f'{container_name}:/var/lib/mysql/{day}.sql', f'~/backup/{months}'])
-#call(['git', 'commit', '.', '-m', f'"Backup from main server ({time.strftime("%Y.%m.%d.%H")})"', '&&', 'git', 'push'])
-os.system(backup)
+day = time.strftime('%d-%H') # get and format time
+container_name = 'arkdiscordbot_db_1' # set container name to use in commands
+password = cfg.dbPass # get DB password and user
+user = cfg.dbUser
+backup = f'docker exec {container_name} bash -c "touch /var/lib/mysql/{day}.sql && mysqldump -u {user} -p{password} bot > /var/lib/mysql/{day}.sql"' # dumps all tables of bot DB in {day.sql}
+copy = f'mkdir -p ~/backup/{months} && docker cp {container_name}:/var/lib/mysql/{day}.sql ~/backup/{months}' # makes backup folder and copyes backup from container to that folder
+send = f'cd ~/backup/ && git add ~/backup/{months}/{day}.sql && git commit . -m "Backup from main server ({time.strftime("%Y.%m.%d.%H")})" && git push --set-upstream origin master' # commints and pushes backed up copy of DB
+os.system(backup) # run constucted commands
 os.system(copy)
 os.system(send)
