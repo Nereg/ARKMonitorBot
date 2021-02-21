@@ -142,7 +142,7 @@ Try later.
         return
     if (type(error) == discord.ext.commands.BotMissingPermissions):
         missing = error.missing_perms # to not type l  o  n  g name 
-        map = ['manage_messages','Manage messages','external_emojis','Use external emoji'] # replacement list
+        map = ['manage_messages','Manage messages','external_emojis','Use external emojis','add_reactions', 'Add reactions'] # replacement list
         needed = [] # replaced list
         for perm in missing: # for each permission
             if perm in map: # if permission is in list
