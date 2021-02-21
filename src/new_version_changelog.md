@@ -9,6 +9,7 @@ Removed discord-ext-menus
 Rewrote huge part of !server info command
 Added comments to the code
 Fixed rare (very) bug in /setMessage command (admin cog)
+Now backup script (backup.py) gets it's credentials to DB from bot's config
 
 External :
 #This is a comment (won't be included in discord patchnotes)

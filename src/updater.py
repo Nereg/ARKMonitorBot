@@ -17,15 +17,6 @@ import menus as m
 import concurrent.futures._base as base
 import asyncio
 
-#debug = Debuger('updater') # create debuger (see helpers.py)
-#conf = config.Config() # load config
-#game = discord.Game('ping me to get prefix')
-#bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
-#debug.debug('Inited DB and Bot!') # debug into console !
-#t = c.Translation() # load default english translation
-
-#bot.loop.set_debug(conf.debug)
-
 class Updater(commands.Cog):
     '''
     Updates record for server in DB
@@ -68,42 +59,37 @@ class Updater(commands.Cog):
 
     async def server_notificator(self,server):
         '''
-        Function to notify about server events like server wrnt up or down 
+        Function to notify about server events like server went up or down 
         '''
         print('entered message sender')
-        #print(server)
-        channels = self.notificationsList
-        channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList))
-        #print('channels')
-        #print(channels)
-        if (channels.__len__() <= 0):
-            return
-        #db_server = await makeAsyncRequest('SELECT OfflineTrys FROM servers WHERE Id=%s',(server[0],))
-        if (server[1] == 1 ): # server went online
-            ARKServer = server[2]
-            for channel in channels:
-                discordChannel = self.bot.get_channel(channel[1])
-                if (discordChannel == None):
-                    continue
-                    #print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
-                else:
-                    aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
-                    if (aliases == ''):
-                        name = ARKServer.name.find(f'- ({ARKServer.version})')
-                        name = ARKServer.name[:name].strip()
+        channels = self.notificationsList # all notification records
+        channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList)) # find any channels that must receive notifications ????
+        if (channels.__len__() <= 0): # if we have no channels to send notifications to
+            return # return
+        if (server[1] == 1 ): # if server went online
+            ARKServer = server[2] # get server object
+            for channel in channels: # for each channel we got from DB
+                discordChannel = self.bot.get_channel(channel[1]) # get that channel
+                if (discordChannel == None): # if channel not found
+                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}') # debug it
+                    continue # and continue
+                else: # if channel is found
+                    aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip) # get an alias for that server
+                    if (aliases == ''): # if no alias exist
+                        name = await stripVersion(ARKServer) # name is striped name 
                     else:
-                        name = aliases
-                    await discordChannel.send(f'Server {name} ({ARKServer.map}) went online!')
-                    #print(f'sent message for went online for server {server[0]}')
-        if (server[1] == 2): # may be fucked up sometimes but it won't notify servial times 
-            ARKServer = server[2]
-            for channel in channels:
-                if (channel[3] == 1):
-                    break
-                discordChannel = self.bot.get_channel(channel[1])
-                if (discordChannel == None):
+                        name = aliases # else name is server's alias 
+                    await discordChannel.send(f'Server {name} ({ARKServer.map}) went online!') # send notification
+                    print(f'sent message for went online for server {server[0]}')
+        if (server[1] == 2): # if server went offline
+            ARKServer = server[2] # get server object (taken from DB)
+            for channel in channels: # for each channel we need to send notification to 
+                if (channel[3] == 1): # if we already sent notification (I wander how this would happen?)
                     continue
-                    #print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}')
+                discordChannel = self.bot.get_channel(channel[1]) # get channel stored in DB
+                if (discordChannel == None): # if channel is not found
+                    print(f'Channel not found for server : {server[0]} Channel id :{channel[1]}') # debug it
+                    continue # and continue
                 else:
                     aliases = await getAlias(0,discordChannel.guild.id,ARKServer.ip)
                     if (aliases == ''):
@@ -112,7 +98,7 @@ class Updater(commands.Cog):
                     else:
                         name = aliases
                     await discordChannel.send(f'Server {name} ({ARKServer.map}) went offline!')
-                    #print(f'sent message for went offline for server {server[0]}')
+                    print(f'sent message for went offline for server {server[0]}')
                     await makeAsyncRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(channel[0],))
 
         #if (server[1] == 2 ): # server went offline
@@ -133,12 +119,10 @@ class Updater(commands.Cog):
         print('Entered notificator!')
         for server in serverList:
             await self.server_notificator(server)
-            print(f'Sent server notifications for server : {server[0]}!')
+            #print(f'Sent server notifications for server : {server[0]}!')
             #player_notificator()
 
     async def update_server(self,serverId): # universal server upgrader 
-        #server = makeRequest('SELECT * FROM servers WHERE Id=%s',(serverId,)) #get current server
-        #server = server[0] # set var to first found result
         server = list(filter(lambda x:x[0] == serverId,self.servers)) # select from local cache (self.servers)
         server = server[0] # select first result 
         ip = server[1] # get server's ip
@@ -182,15 +166,13 @@ class Updater(commands.Cog):
                 results = await asyncio.gather(*tasks) # run all generated tasks in paralel 
                 a = 0 # in stead of traditional i lol 
                 for result in results: # loop throuh results
-                    #result = await self.update_server(server[0]) # update server
                     server_list.append([servers[i+a][0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
                     a += 1
-                #print(f'Updated server! Result is {result}')
-            #print(server_list)
             print('handling notifications')
+            updater_end = time.perf_counter()
             await self.notificator(server_list) # pass the list with servers and their statuses to the function
             end = time.perf_counter() # end performance timer
-            await sendToMe(f'It took {end - start:.4f} seconds to update all servers!',self.bot) # debug
+            await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
         except KeyError:
             await deleteServer(server[1])
         except BaseException as e: # if any exception

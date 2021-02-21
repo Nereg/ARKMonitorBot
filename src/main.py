@@ -140,8 +140,20 @@ Try later.
         '''
         await ctx.send(message)
         return
-    if (type(error) == discord.ext.commands.errors.BotMissingPermissions or type(error) == discord.errors.Forbidden): # hey wtf some reason (missing permissions) and two exeptions!
-        needed_perms = "```Add reactions\nUse external reactions\nSend and read messages\nManage messages```"
+    if (type(error) == discord.ext.commands.BotMissingPermissions):
+        missing = error.missing_perms # to not type l  o  n  g name 
+        map = ['manage_messages','Manage messages','external_emojis','Use external emoji'] # replacement list
+        needed = [] # replaced list
+        for perm in missing: # for each permission
+            if perm in map: # if permission is in list
+                needed.append(map[map.index(perm)+1]) # put it's replacement 
+            else:
+                needed.append(perm) # if not put it as is
+        # and send message
+        await ctx.send(f"Bot can't work in current channel without those permissions: `{' , '.join(needed)}`. Please check if bot have this permissions in current channel and try again.")
+        return
+    if (type(error) == discord.errors.Forbidden):
+        needed_perms = "```Add reactions\nUse external emojis\nSend and read messages\nManage messages```"
         try:
             await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')
         except discord.Forbidden:
