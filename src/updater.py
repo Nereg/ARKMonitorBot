@@ -61,7 +61,7 @@ class Updater(commands.Cog):
         '''
         Function to notify about server events like server went up or down 
         '''
-        print('entered message sender')
+        #print('entered message sender')
         channels = self.notificationsList # all notification records
         channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList)) # find any channels that must receive notifications ????
         if (channels.__len__() <= 0): # if we have no channels to send notifications to

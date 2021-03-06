@@ -11,6 +11,7 @@ Added comments to the code
 Fixed rare (very) bug in /setMessage command (admin cog)
 Now backup script (backup.py) gets it's credentials to DB from bot's config
 Now if bot is missing permissions it responds with message about that not with error
+Added commands counting
 External :
 #This is a comment (won't be included in discord patchnotes)
 #Added !campfire command

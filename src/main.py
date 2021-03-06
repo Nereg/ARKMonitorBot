@@ -63,6 +63,21 @@ async def help(ctx):
     message.add_field(name=f'**Miscellaneous:**',value=miscValue,inline=isInline) # add misc section to the embed 
     await ctx.send(embed=message) # and send it
 
+@bot.event
+async def on_command_completion(ctx):
+    name = ctx.command.name # extract name of command
+    if (name == 'server'): # if it is a server command (I am too lzy to chop the into subcommands or smth like that)
+        command = ctx.args[2] # get the "subcommand"
+        correctCommands = ['add','info','delete','alias'] # list of valid "subcommands"
+        if (command not in correctCommands): # if it isn't correct
+            return # return
+        else: # else
+            name += ' ' + command # append name of "subcommand" to main name
+    #CREATE TABLE `bot`.`commandsused` ( `Id` INT NOT NULL AUTO_INCREMENT , `Name` VARCHAR(100) NOT NULL , `Uses` INT NOT NULL DEFAULT '0' , PRIMARY KEY (`Id`), UNIQUE `Id` (`Name`)) ENGINE = InnoDB; 
+    #INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1 - SQL to update table (+1 to uses value) and insert if not in table 
+    await makeAsyncRequest('INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1',(name)) # update or insert record into DB
+    # see admin_cog.py for how this data is used
+
 #add all cogs
 bot.add_cog(ServerCmd(bot))
 bot.add_cog(cmd.BulkCommands(bot))
@@ -72,6 +87,7 @@ bot.add_cog(updater.Updater(bot))
 bot.add_cog(automessage.Automessage(bot))
 bot.add_cog(campfire.Campfire(bot))
 bot.add_cog(Charcoal(bot))
+
 # response for ping of bot
 @bot.event
 async def on_message(msg): # on every message 
@@ -197,7 +213,6 @@ Try later.
 @bot.command()
 async def share(ctx):
     await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
-
 
 @bot.command()
 @commands.is_owner()
