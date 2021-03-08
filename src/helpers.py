@@ -155,7 +155,9 @@ async def sendToMe(text,bot):
         meUser = bot.get_user(277490576159408128)
         meDM = await meUser.create_dm()
         await meDM.send(text)
-    except:
+    except BaseException as e:
+        print('exeption in sendToMe')
+        print(e)
         return
 
 async def deleteServer(serverIp):

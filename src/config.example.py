@@ -1,17 +1,18 @@
 class Config:
     def __init__(self):
-        self.dbHost = 'db'
-        self.dbUser = 'root'
-        self.dbPass = 'secret' #secret
-        self.DB = 'bot'
-        self.adminId = ''
-        self.token = '' # discord token of the bot
+        self.dbHost = 'db' # host of the DB
+        self.dbUser = 'root' # user to the DB
+        self.dbPass = 'secret' # password to the DB
+        self.DB = 'bot' # DB to use in bot
+        self.adminId = '' # not used right now
+        self.token = '' # token of the bot
         self.defaultPrefix = '!' # default prefix
-        self.DBLToken = '' # top.gg API token to submit count of server 
-        self.inviteUrl = 'https://cutt.ly/ARKBot' # invite URL
-        self.debug = True # more logging output
-        self.client_id = 713272720053239808 # client id
-        self.client_secret = '12131' # client secret
-        self.redirect_url = 'http://ark.fvds.ru/' # redirect URL
-        self.version = 'DEBUG!' # version
-        self.workersCount = 5 # and workers count (more -> faster updates -> more load)
+        self.DBLToken = '' # API token for https://top.gg
+        self.inviteUrl = 'https://cutt.ly/ARKBot' # invite URL to use in bot 
+        self.debug = True # if output debug messages
+        self.client_id = 12131313 # client id of the bot
+        self.client_secret = '12131' # client secret from discord's oauth page
+        self.redirect_url = '' # redirect url to log all users
+        self.version = 'DEBUG!' # version displayed
+        self.workersCount = 5 # x update workers per interation
+        self.updateFrequency = 120 # 1 update loop in x seconds

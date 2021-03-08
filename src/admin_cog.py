@@ -256,7 +256,7 @@ class Admin(commands.Cog):
         msg.author = channel.guild.get_member(who.id) or who
         msg.content = ctx.prefix + command
         new_ctx = await self.bot.get_context(msg, cls=type(ctx))
-        new_ctx._db = ctx._db
+        #new_ctx._db = ctx._db
         await self.bot.invoke(new_ctx)
 
     @commands.command(hidden=True)
@@ -266,7 +266,7 @@ class Admin(commands.Cog):
         msg.content = ctx.prefix + command
 
         new_ctx = await self.bot.get_context(msg, cls=type(ctx))
-        new_ctx._db = ctx._db
+        #new_ctx._db = ctx._db
 
         for i in range(times):
             await new_ctx.reinvoke()
@@ -359,7 +359,7 @@ class Admin(commands.Cog):
         await deleteServer(serverIp)
     
     @commands.command()
-    async def setCmdCountChannel(self, ctx, value : str = None, channel : discord.TextChannel = None):
+    async def setCmdCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
         '''
         Sets channel to update count of commands used
         supports formatting of value string wich will be put into channel's name
@@ -368,7 +368,7 @@ class Admin(commands.Cog):
         CREATE TABLE `bot`.`manager` ( `Id` INT NOT NULL AUTO_INCREMENT , `Type` INT NOT NULL , `Data` VARCHAR(9999) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
         '''
         if (channel == None):
-            await ctx.send('Channel is not selecet or wrong!')
+            await ctx.send('Channel is not selected or wrong!')
             return
         if (value == None):
             await ctx.send('You passed an empty string!')
@@ -386,6 +386,29 @@ class Admin(commands.Cog):
         await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (0,%s)',(json.dumps(record),))
         await ctx.send('Done!')
         return
+
+    @commands.command()
+    async def setServersCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
+        if (channel == None):
+            await ctx.send('Channel is not selected or wrong!')
+            return
+        if (value == None):
+            await ctx.send('You passed an empty string!')
+            return
+        if (not '{' in value):
+            await ctx.send('Do you realy want to pass string witout format place?')
+            return
+        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=1')
+        for channelRecord in channels:
+            data = json.loads(channelRecord[2])
+            if int(data[0]) == channel.id:
+                await ctx.send(f'You already have a message for that channel with id {channelRecord[0]}!')
+                return 
+        record = [int(channel.id),value]
+        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (1,%s)',(json.dumps(record),))
+        await ctx.send('Done!')
+        return
+        
 
     @tasks.loop(seconds=20.0) 
     async def cmdCountUpdater(self):
@@ -407,6 +430,7 @@ class Admin(commands.Cog):
             if (discordChannel == None): # if channel is not found
                 continue # skip 
             await discordChannel.edit(reason='Auto edit',name=data[1].format(cmd[1],int(cmd[2]),total)) # else edit name of the channel
+            print('edited')
             i += 1 # increase i 
 
     @cmdCountUpdater.before_loop

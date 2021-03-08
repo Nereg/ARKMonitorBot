@@ -161,7 +161,7 @@ class Updater(commands.Cog):
             servers = self.servers 
             server_list = [] # empty list
             for i in range(1,serverCount - self.workersCount,self.workersCount): # from 1 to server count with step of number of workers 
-                print(f'Updating servers: {[server[0] for server in  servers[i:i+self.workersCount]]}') # debug
+                #print(f'Updating servers: {[server[0] for server in  servers[i:i+self.workersCount]]}') # debug
                 tasks = [self.update_server(i[0]) for i in servers[i:i+self.workersCount]] # generate tasks to complete (update servers)
                 results = await asyncio.gather(*tasks) # run all generated tasks in paralel 
                 a = 0 # in stead of traditional i lol 
@@ -186,10 +186,6 @@ class Updater(commands.Cog):
         await self.bot.wait_until_ready()
         await self.initPool()
         print('done waiting')
-
-    #@tasks.loop(seconds=60.0)
-    #async def resetter(self):
-    #    await makeAsyncRequest('UPDATE notifications SET Sent = 0')
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
