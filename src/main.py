@@ -139,6 +139,7 @@ async def on_command_error1(ctx,error):
 async def on_command_error(ctx,error):     
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
+    origError = getattr(error, "original", error)
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
         await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
         return
@@ -156,8 +157,11 @@ Try later.
         '''
         await ctx.send(message)
         return
-    if (type(error) == discord.ext.commands.BotMissingPermissions):
-        missing = error.missing_perms # to not type l  o  n  g name 
+    if (type(error) == discord.ext.commands.BotMissingPermissions or type(origError) ==  discord.ext.commands.BotMissingPermissions):
+        try:
+            missing = error.missing_perms # to not type l  o  n  g name 
+        except AttributeError: # TODO test this
+            missing = origError.missing_perms
         map = ['manage_messages','Manage messages','external_emojis','Use external emojis','add_reactions', 'Add reactions'] # replacement list
         needed = [] # replaced list
         for perm in missing: # for each permission
@@ -168,7 +172,7 @@ Try later.
         # and send message
         await ctx.send(f"Bot can't work in current channel without those permissions: `{' , '.join(needed)}`. Please check if bot have this permissions in current channel and try again.")
         return
-    if (type(error) == discord.errors.Forbidden):
+    if (type(error) == discord.errors.Forbidden or type(origError) == discord.errors.Forbidden):
         needed_perms = "```Add reactions\nUse external emojis\nSend and read messages\nManage messages```"
         try:
             await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')

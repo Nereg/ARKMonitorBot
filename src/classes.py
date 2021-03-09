@@ -46,7 +46,7 @@ class BattleMetricsAPI():
                 await asyncio.sleep(wait) # wait it out
                 #print('Failed battlemetrics API call!')
                 #print(response.text())
-                return self.getBattlemetricsUrl(serverClass) # remake request 
+                return await self.getBattlemetricsUrl(serverClass) # remake request 
 
 class ARKServerError(Exception): # ARK server error
     def __init__(self,reason, error, *args, **kwargs) :
@@ -171,6 +171,9 @@ class ARKServer(JSON):
             battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
             if (battleURL): # if we have url 
                 self.battleURL = battleURL
+        else:
+            if ('coroutine' in self.battleURL): # see line 49 to find why not awaited corutine was passed to the DB
+                self.battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self)
         #if (hasattr(self, 'battleURL')): # if we don't have battle url already 
         #    if (self.battleURL == ''):
         #        delattr(self,'battleURL') 
