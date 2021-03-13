@@ -136,6 +136,11 @@ async def on_command_error1(ctx,error):
         debug.debug(e)
 
 @bot.event
+async def on_error(event,*args,**kwargs): 
+    exeption_pack = sys.exc_info() # get tuple with exeption and traceback https://docs.python.org/3/library/sys.html#sys.exc_info
+    errors = traceback.format_exception()
+
+@bot.event
 async def on_command_error(ctx,error):     
     meUser = bot.get_user(277490576159408128)
     meDM = await meUser.create_dm()
