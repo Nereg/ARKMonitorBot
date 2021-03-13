@@ -138,7 +138,15 @@ async def on_command_error1(ctx,error):
 @bot.event
 async def on_error(event,*args,**kwargs): 
     exeption_pack = sys.exc_info() # get tuple with exeption and traceback https://docs.python.org/3/library/sys.html#sys.exc_info
-    errors = traceback.format_exception()
+    errors = traceback.format_exception(exeption_pack[0],exeption_pack[1],exeption_pack[2])
+    errors_str = ''.join(errors)
+    msg = f'Error happened in `{event}` event\n```{errors_str}```'
+    if (msg >= 2000):
+        await sendToMe(f'Error message for `{event}` event is bigger that 2k!')
+        return
+    else:
+        await sendToMe(msg)
+        return
 
 @bot.event
 async def on_command_error(ctx,error):     
@@ -190,14 +198,13 @@ Try later.
     debug.debug('Entered error handler') 
     errors = traceback.format_exception(type(error), error, error.__traceback__)
     Time = int(time.time())
-    makeRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)',(json.dumps(errors),Time,ctx.author.id,ctx.channel.id,ctx.guild.id,ctx.message.content,))
+    await makeAsyncRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)',(json.dumps(errors),Time,ctx.author.id,ctx.channel.id,ctx.guild.id,ctx.message.content,))
     debug.debug('Made SQL')
-    data = makeRequest('SELECT * FROM errors WHERE Time=%s',(Time,))
+    data = await makeAsyncRequest('SELECT * FROM errors WHERE Time=%s',(Time,))
     Id = data[0][0]
     meUser = bot.get_user(277490576159408128)
     await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
     debug.debug('Sent channel message')
-    meDM = await meUser.create_dm()
     errors_str = ''.join(errors)
     date = datetime.utcfromtimestamp(Time).strftime('%Y-%m-%d %H:%M:%S')
     message = f'''

@@ -187,6 +187,21 @@ class Updater(commands.Cog):
         await self.initPool()
         print('done waiting')
 
+    @printer.error
+    async def on_error(self,error):
+        errors = traceback.format_exception(type(error), error, error.__traceback__)
+        time = int(time.time())
+        date = datetime.utcfromtimestamp(time).strftime('%Y-%m-%d %H:%M:%S')
+        errors_str = ''.join(errors)
+        message = f'Error in updater loop!\n It happend at `{date}`\n```{errors_str}```'
+        if (errors_str >= 2000):
+            try:
+                await sendToMe(message[:1975] + '`\nEnd of first part')
+                await sendToMe(message[1975:-1])
+            except BaseException as e:
+                await sendToMe('Lenth of error message is over 4k!')
+                await sendToMe(e)
+
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def watch(self,ctx):
