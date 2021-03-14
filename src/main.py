@@ -142,10 +142,10 @@ async def on_error(event,*args,**kwargs):
     errors_str = ''.join(errors)
     msg = f'Error happened in `{event}` event\n```{errors_str}```'
     if (msg >= 2000):
-        await sendToMe(f'Error message for `{event}` event is bigger that 2k!')
+        await sendToMe(f'Error message for `{event}` event is bigger that 2k!',bot)
         return
     else:
-        await sendToMe(msg)
+        await sendToMe(msg,bot)
         return
 
 @bot.event

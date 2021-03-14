@@ -173,21 +173,13 @@ class Updater(commands.Cog):
             await self.notificator(server_list) # pass the list with servers and their statuses to the function
             end = time.perf_counter() # end performance timer
             await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
-        except KeyError:
-            await deleteServer(server[1])
-        except BaseException as e: # if any exception
-            print(server)
-            print(e)
-            print(traceback.format_exc()) # print it
-
-    @printer.before_loop
-    async def before_printer(self):
-        print('waiting...')
-        await self.bot.wait_until_ready()
-        await self.initPool()
-        print('done waiting')
-
-    @printer.error
+        except KeyError as error:
+            await self.on_error(error)
+            #await deleteServer(server[1])
+        except BaseException as error: # if any exception
+            await self.on_error(error)
+            
+    #@printer.error
     async def on_error(self,error):
         errors = traceback.format_exception(type(error), error, error.__traceback__)
         time = int(time.time())
@@ -196,11 +188,20 @@ class Updater(commands.Cog):
         message = f'Error in updater loop!\n It happend at `{date}`\n```{errors_str}```'
         if (errors_str >= 2000):
             try:
-                await sendToMe(message[:1975] + '`\nEnd of first part')
-                await sendToMe(message[1975:-1])
+                await sendToMe(message[:1975] + '`\nEnd of first part',self.bot)
+                await sendToMe(message[1975:-1],self.bot)
             except BaseException as e:
-                await sendToMe('Lenth of error message is over 4k!')
-                await sendToMe(e)
+                await sendToMe('Lenth of error message is over 4k!',self.bot)
+                await sendToMe(e,self.bot)
+
+    @printer.before_loop
+    async def before_printer(self):
+        print('waiting...')
+        await self.bot.wait_until_ready()
+        await self.initPool()
+        print('done waiting')
+
+
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
