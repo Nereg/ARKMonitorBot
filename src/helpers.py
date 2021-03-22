@@ -204,3 +204,22 @@ def randomColor():
     '''Picks random colors for embed'''
     colors = [discord.Color.red(),discord.Color.blue(),discord.Color.from_rgb(255,255,0)] # red blue and yellow
     return random.choice(colors)
+
+def split2K(message,newLine=False):
+    '''
+    Splits a string over 2k symbols to less that 2k chunks to send them (discord emoji aware)
+    If newLine is True it splits only on newlines
+    Returns array with strings to send one ofter another
+    '''
+    length = message.__len__() # get length of message
+    if(length < 2000): # if it is under 2k
+        return [message] # just send it
+    else:
+        
+    return
+
+def sendOver2K(bot,ctx,message):
+    '''
+    Sends message over 2k symbols with current ctx using split2K function
+    '''
+    return
