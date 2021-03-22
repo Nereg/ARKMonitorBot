@@ -215,6 +215,7 @@ Try later.
 Сообщение : `{ctx.message.content}`
 Ошибка произошла : `{date}`
 Имя гильдии : `{ctx.guild.name}`
+Айди гильдии: `{ctx.guild.id}`
     '''
     if (message.__len__() >= 2000):
         try:
