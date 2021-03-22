@@ -29,22 +29,22 @@ class Selector():
         return embed
 
     async def select(self):
-        reactions = ['⏮️','\u2B05','\u2705','\u27A1','⏭️','\u23F9']
-        if self.ctx.guild == None : 
+        reactions = ['⏮️','\u2B05','\u2705','\u27A1','⏭️','\u23F9'] # array with buttons
+        if self.ctx.guild == None :  # old code 
             GuildId = self.ctx.channel.id
             Type = 1
         else:
             GuildId = self.ctx.guild.id
             Type = 0
-        data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
-        if (data.__len__() == 0):
-            await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
-            return ''
-        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[null]'):
-            await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
-            return ''
-        else:
-            Servers = json.loads(data[0][3])
+        data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0',(GuildId,)) # select settings from DB
+        if (data.__len__() == 0): # if no servers are added
+            await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix)) # send error message
+            return '' # return 
+        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[null]'): # if no servers are added 
+            await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix)) # send error message
+            return '' # return
+        else: # if we have servers added
+            Servers = json.loads(data[0][3]) # load them
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
         #print(statement)
         data = makeRequest(statement)

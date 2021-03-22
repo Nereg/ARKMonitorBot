@@ -141,7 +141,7 @@ async def on_error(event,*args,**kwargs):
     errors = traceback.format_exception(exeption_pack[0],exeption_pack[1],exeption_pack[2])
     errors_str = ''.join(errors)
     msg = f'Error happened in `{event}` event\n```{errors_str}```'
-    if (msg >= 2000):
+    if (msg.__len__() >= 2000):
         await sendToMe(f'Error message for `{event}` event is bigger that 2k!',bot)
         return
     else:
