@@ -213,9 +213,7 @@ def split2K(message,newLine=False):
     '''
     length = message.__len__() # get length of message
     if(length < 2000): # if it is under 2k
-        return [message] # just send it
-    else:
-        
+        return [message] # just send it       
     return
 
 def sendOver2K(bot,ctx,message):
