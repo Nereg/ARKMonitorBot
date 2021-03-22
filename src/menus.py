@@ -46,8 +46,12 @@ class Selector():
         else: # if we have servers added
             Servers = json.loads(data[0][3]) # load them
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
-        #print(statement)
-        data = makeRequest(statement)
+        print(statement)
+        try:
+            data = makeRequest(statement)
+        except BaseException as e:
+            await sendToMe(statement,self.bot)
+            raise e
         try:
             self.msg = await self.ctx.send(self.l.l['server_select'],embed=await self.createEmbed(data,0))
         except IndexError:
