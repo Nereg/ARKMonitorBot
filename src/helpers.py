@@ -147,14 +147,17 @@ async def stripVersion(server):
     name = server.name[:name].strip()
     return name
 
-async def sendToMe(text,bot):
+async def sendToMe(text,bot,ping=False):
     '''
     Sends a text to Me the creator of this bot
+    If ping is True it will ping me
     '''
     try:
         meUser = bot.get_user(277490576159408128)
         meDM = await meUser.create_dm()
         await meDM.send(text)
+        if(ping):
+            await meDM.send(meUser.mention)
     except BaseException as e:
         print('exeption in sendToMe')
         print(e)

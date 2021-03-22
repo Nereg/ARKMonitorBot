@@ -50,7 +50,7 @@ class Selector():
         try:
             data = makeRequest(statement)
         except BaseException as e:
-            await sendToMe(statement,self.bot)
+            await sendToMe(statement,self.bot,True)
             raise e
         try:
             self.msg = await self.ctx.send(self.l.l['server_select'],embed=await self.createEmbed(data,0))
