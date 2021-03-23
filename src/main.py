@@ -223,6 +223,11 @@ Try later.
             await meDM.send(message[1975:-1])
         except BaseException as e:
             await meDM.send('Lenth of error message is over 4k!')
+            await meDM.send('''Айдишник еррора : `{Id}`
+Сообщение : `{ctx.message.content}`
+Ошибка произошла : `{date}`
+Имя гильдии : `{ctx.guild.name}`
+Айди гильдии: `{ctx.guild.id}`''')
             await meDM.send(e)
     else:
         await meDM.send(message)

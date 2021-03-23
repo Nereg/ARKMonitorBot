@@ -40,7 +40,7 @@ class Selector():
         if (data.__len__() == 0): # if no servers are added
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix)) # send error message
             return '' # return 
-        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[null]'): # if no servers are added 
+        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[null]' or data[0][3] == '[]'): # if no servers are added 
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix)) # send error message
             return '' # return
         else: # if we have servers added
