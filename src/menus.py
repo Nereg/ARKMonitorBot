@@ -71,7 +71,7 @@ class Selector():
                     await self.msg.clear_reactions()
                     await self.msg.edit(content='The interactive menu was closed.',embed=None)
                 except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!  
-                    return
+                    return ''
             else :
                 if (str(reaction.emoji) == reactions[0]):
                     await reaction.remove(self.ctx.author)
