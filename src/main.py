@@ -91,7 +91,7 @@ bot.add_cog(Charcoal(bot))
 # response for ping of bot
 @bot.event
 async def on_message(msg): # on every message 
-    if msg.guild == None: # if we in DMs 
+    if msg.guild == None and msg.author != bot.user: # if we in DMs  AND it isn't our message (it was spaming me AF in dm lol)
         try:
             await msg.channel.send("Sorry you can't use this bot in DMs! You can add me to some server by this link: https://bit.ly/ARKTop") # send error message
         except BaseException as e: # catch error 
