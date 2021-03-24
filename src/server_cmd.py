@@ -267,7 +267,7 @@ List of detected servers on that ip by steam:
                 await ctx.send('No games found on that IP by steam.')
                 return
             message += 'Use those ip to add server to bot!'
-            if (message.__len_() >= 2000):
+            if (message.__len__() >= 2000):
                 await ctx.send(message[:1999])
                 await ctx.send(message[2000:2999]) # would be replaced with functions from helpers.py
 
