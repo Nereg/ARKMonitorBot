@@ -208,7 +208,8 @@ def randomColor():
     colors = [discord.Color.red(),discord.Color.blue(),discord.Color.from_rgb(255,255,0)] # red blue and yellow
     return random.choice(colors)
 
-def split2K(message,newLine=False):
+
+def split2K(message,newLine=False): #TODO : test this 
     '''
     Splits a string over 2k symbols to less that 2k chunks to send them (discord emoji aware)
     If newLine is True it splits only on newlines
@@ -217,7 +218,39 @@ def split2K(message,newLine=False):
     length = message.__len__() # get length of message
     if(length < 2000): # if it is under 2k
         return [message] # just send it       
-    return
+    else: # that's where the FUN begins !
+        result = []
+        if (newLine):
+            chunks = message.split('\n')
+            megachunk = '' # will hold so many chunks before it is over 2k
+            for chunk in chunks:
+                if chunk.__len__() >= 2000: # oh shit
+                    subresult = split2K(chunk) # 100% it would go into infinite recursion sometimes
+                    for bit in subresult: # add every bit from subresult in our result
+                        result.append(bit) # add 
+                        continue
+                else: # this chunk is under 2k 
+                    testMegachunk = megachunk + chunk # we will add it to iur mega chunk 
+                    if (testMegachunk.__len__() >= 2000): # if our test super chunk is over 2k 
+                        result.append(megachunk) # add to result 
+                        megachunk = '' #empty mega chunk
+                        continue
+                    else:
+                        megachunk = testMegachunk # test chunk is our new megachunk
+                        continue                   
+        else: #just split however code decides
+            i = 0 
+            n = 1999
+            while i < len(message):
+                if i+n < len(message):
+                    result.append(message[i:i+n])
+                else:
+                    result.append(message[i:len(message)])
+                i += n
+        return result
+
+
+                
 
 def sendOver2K(bot,ctx,message):
     '''

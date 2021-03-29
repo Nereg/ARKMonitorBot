@@ -91,14 +91,17 @@ bot.add_cog(Charcoal(bot))
 # response for ping of bot
 @bot.event
 async def on_message(msg): # on every message 
-    if msg.guild == None and msg.author != bot.user: # if we in DMs  AND it isn't our message (it was spaming me AF in dm lol)
+    if msg.guild == None and msg.author != bot.user and msg.author.id != 277490576159408128: # if we in DMs  AND it isn't our message (it was spaming me AF in dm lol) and it isn't me 
         try:
             await msg.channel.send("Sorry you can't use this bot in DMs! You can add me to some server by this link: https://bit.ly/ARKTop") # send error message
         except BaseException as e: # catch error 
             return
         return # ignore it we have no way to notify the user anyway
     if msg.content == f'<@!{bot.user.id}>' or  msg.content == f'<@{bot.user.id}>': # if content contains ping with id of our bot 
-        await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg))) # send message and return
+        try:
+            await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot,msg))) # send message and return
+        except discord.errors.Forbidden: # it was spaming me in DM's lol
+            return
         return
     await bot.process_commands(msg) # if not process commands
 
