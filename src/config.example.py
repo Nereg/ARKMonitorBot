@@ -16,3 +16,4 @@ class Config:
         self.version = 'DEBUG!' # version displayed
         self.workersCount = 5 # x update workers per interation
         self.updateFrequency = 120 # 1 update loop in x seconds
+        self.backupWebhookUrl = '' # discord webhook url to use in backup script
