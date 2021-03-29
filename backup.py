@@ -16,7 +16,7 @@ async def sendToWebhook(text,url):
 
 def runCommand(cmd):
     try:
-        result = subprocess.check_output(cmd)
+        result = subprocess.check_output(cmd, shell=True)
     except subprocess.CalledProcessError as e:
         asyncio.run(sendToWebhook(f'Something went wrong!\n```{e}```',cfg.backupWebhookUrl))
 
@@ -30,7 +30,8 @@ day = time.strftime('%d-%H') # get and format time
 container_name = 'arkmonitorbot_db_1' # set container name to use in commands
 password = cfg.dbPass # get DB password and user
 user = cfg.dbUser
-backup = f'docker exec {container_name} bash -c "touch /var/lib/mysql/{day}.sql && mysqldump -u {user} -p{password} bot > /var/lib/mysql/{day}.sql --protocol=TCP"' # dumps all tables of bot DB in {day.sql}
+backup = f"docker exec {container_name} bash -c 'touch /var/lib/mysql/{day}.sql && mysqldump -u {user} -p{password} bot > /var/lib/mysql/{day}.sql --protocol=TCP'" # dumps all tables of bot DB in {day.sql}
+#backup = ['docker', 'exec', f'{container_name}', 'bash', '-c', f"'touch /var/lib/mysql/{day}.sql'", '&&', 'mysqldump', '-u', f'{user}', f'-p{password}', 'bot', '>', f'/var/lib/mysql/{day}.sql', "--protocol=TCP'"]
 copy = f'mkdir -p ~/backup/{months} && docker cp {container_name}:/var/lib/mysql/{day}.sql ~/backup/{months}' # makes backup folder and copyes backup from container to that folder
 send = f'cd ~/backup/ && git add ~/backup/{months}/{day}.sql && git commit . -m "Backup from main server ({time.strftime("%Y.%m.%d.%H")})" && git push --set-upstream origin master' # commints and pushes backed up copy of DB
 runCommand(backup) # run constucted commands
