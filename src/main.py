@@ -67,7 +67,10 @@ async def help(ctx):
 async def on_command_completion(ctx):
     name = ctx.command.name # extract name of command
     if (name == 'server'): # if it is a server command (I am too lzy to chop the into subcommands or smth like that)
-        command = ctx.args[2] # get the "subcommand"
+        try:
+            command = ctx.args[2] # get the "subcommand"
+        except IndexError: # that happens if we write just //server
+            return
         correctCommands = ['add','info','delete','alias'] # list of valid "subcommands"
         if (command not in correctCommands): # if it isn't correct
             return # return
@@ -163,7 +166,10 @@ async def on_command_error(ctx,error):
     meDM = await meUser.create_dm()
     origError = getattr(error, "original", error)
     if (type(error) == discord.ext.commands.errors.CommandNotFound):
-        await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
+        try:
+            await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
+        except discord.errors.Forbidden: # again spam in DM
+            return
         return
     if (type(error) == discord.ext.commands.errors.CheckFailure):
         return
