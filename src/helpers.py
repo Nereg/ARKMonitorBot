@@ -86,6 +86,9 @@ def IpCheck(Ip):
 async def AddServer(ip,ctx):
     debug = Debuger('AddServer')
     if (IpCheck(ip) != True): # check IP address (see helpers.py)
+        if ('>' in ip or '<' in ip):
+            await ctx.send('You don`t need those <>!')
+            return
         debug.debug(f'Wrong IP : {ip}') # debug
         await ctx.send('Something is wrong with **IP**!') # and reply to user
         return # if ip is incorrect
