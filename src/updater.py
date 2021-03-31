@@ -168,11 +168,15 @@ class Updater(commands.Cog):
                 for result in results: # loop throuh results
                     server_list.append([servers[i+a][0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
                     a += 1
-            print('handling notifications')
-            updater_end = time.perf_counter()
-            await self.notificator(server_list) # pass the list with servers and their statuses to the function
-            end = time.perf_counter() # end performance timer
-            await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
+            if (self.bot.is_ready()): # if bot's cache is ready
+                print('handling notifications') # handle notifictaions
+                updater_end = time.perf_counter()
+                await self.notificator(server_list) # pass the list with servers and their statuses to the function
+                end = time.perf_counter() # end performance timer
+                await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
+            else: # if not
+                end = time.perf_counter() # end performance timer
+                await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
         except KeyError as error:
             await self.on_error(error)
             #await deleteServer(server[1])
@@ -197,7 +201,7 @@ class Updater(commands.Cog):
     @printer.before_loop
     async def before_printer(self):
         print('waiting...')
-        await self.bot.wait_until_ready()
+        # await self.bot.wait_until_ready() why waiste all this time when we can update DB while cache is updating? 
         await self.initPool()
         print('done waiting')
 
