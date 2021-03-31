@@ -1,6 +1,7 @@
 MUST be cleared after pathnotes are released in discord !
 Internal :
-
+Added check for <> in ips
+Added new //purgeServers command to reduce number os servers in DB
 External :
 #This is a comment (won't be included in discord patchnotes)
 #Added !campfire command

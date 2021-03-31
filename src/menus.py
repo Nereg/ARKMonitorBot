@@ -48,7 +48,7 @@ class Selector():
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
         print(statement)
         try:
-            data = makeRequest(statement)
+            data = await makeAsyncRequest(statement)
         except BaseException as e:
             await sendToMe(statement,self.bot,True)
             raise e

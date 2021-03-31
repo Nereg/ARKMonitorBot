@@ -387,6 +387,35 @@ class Admin(commands.Cog):
         await ctx.send('Done!')
         return
 
+    async def purge(self,ctx,value:int):
+        servers = await makeAsyncRequest('SELECT Id FROM servers WHERE OfflineTrys >= %s',(value,))
+        for server in servers:
+            id = server[0]
+            result = await deleteServer('',id)
+            if(result != 0):
+                await ctx.send(f'Smt went wrong with server {id}!')
+        await ctx.send('Deleted servers!')
+        return
+
+    @commands.command()
+    async def purgeServers(self, ctx, value:int):
+        machedServers = await makeAsyncRequest('SELECT COUNT(*) FROM `servers` WHERE OfflineTrys >= %s',(value,))
+        self.msg = await ctx.send(f'Do you really want to delete {machedServers[0][0]} servers?')
+        await self.msg.add_reaction('✅')
+        try:
+            reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
+        except asyncio.TimeoutError:
+            try:
+                await self.msg.clear_reactions()
+                await self.msg.edit(content='The interactive menu was closed.',embed=None)
+            except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!  
+                return ''
+        else:
+            if (str(reaction.emoji) == '✅'):
+                await ctx.send('Ok! Deleting!')
+                await self.msg.clear_reactions()
+                await self.purge(ctx,value)
+
     @commands.command()
     async def setServersCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
         if (channel == None):
