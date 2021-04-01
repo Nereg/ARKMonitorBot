@@ -35,13 +35,16 @@ class Updater(commands.Cog):
         init a pool of sql connections to DB
         '''
         #print('Started initing pool')
-        cfg = config.Config()
-        self.pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
-                                      user=cfg.dbUser, password=cfg.dbPass,
-                                      db=cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
-        print('Done initing pool!')
+        #cfg = config.Config()
+        #self.pool = await aiomysql.create_pool(host=cfg.dbHost, port=3306,
+        #                              user=cfg.dbUser, password=cfg.dbPass,
+        #                              db=cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+        print('Done initing pool (stub)!')
 
     async def makeAsyncRequest(self,SQL, params=()):
+        return await makeAsyncRequest(SQL,params)
+
+    async def makeAsyncRequestOld(self,SQL, params=()):
         '''
         Async method to make SQL requests using connections from pool inited in initPool()
         '''
