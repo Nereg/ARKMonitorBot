@@ -243,9 +243,11 @@ Ping : {server.ping} ms
         if (IpCheck(ip) != True): # IP check
             await ctx.send('Something is wrong with **IP**!') # and reply
             return 
+        
         HEADERS = {
     'User-Agent' : "Magic Browser"
         }
+        await ctx.trigger_typing()
         async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
             text = await resp.text()
             text = json.loads(text)
@@ -253,11 +255,17 @@ Ping : {server.ping} ms
 List of detected servers on that ip by steam:
 
 '''
-            if (bool(text['response']['success']) or text['response']['servers'].__len__() <= 0):
+            await ctx.trigger_typing() # it is junkiest way I know but I can't speed up (or can I ?) fetching of the info
+            # idea 1 : search in Db for those servers ?
+            # idea 2 : steam master server queries ? (nope)
+            # idea 3 : query only name not whole class worth of data 
+            # also I can integrate thst in server adding process if we know game port (but it still won't help if we don't knwo any port of the server so I won't depricate this command)
+            if (bool(text['response']['success']) and text['response']['servers'].__len__() > 0):
                 i = 1
                 for server in text['response']['servers']:
                     ip = server['addr']
                     try:
+                        await ctx.trigger_typing() # will trigger typing on each iteration
                         serverClass = await c.ARKServer(ip).AGetInfo()
                         message += f'{i}. {ip} - {serverClass.name} (Online) \n'
                     except:
@@ -270,4 +278,6 @@ List of detected servers on that ip by steam:
             if (message.__len__() >= 2000):
                 await ctx.send(message[:1999])
                 await ctx.send(message[2000:2999]) # would be replaced with functions from helpers.py
+            else:
+                await ctx.send(message)
 
