@@ -2,6 +2,9 @@ MUST be cleared after pathnotes are released in discord !
 Internal :
 Added check for <> in ips
 Added new //purgeServers command to reduce number os servers in DB
+Added a check in sendToMe function is bot isn't ready (and won't send anything to me)
+Tryig to use native C implementation of asyncio instead of nest_asyncio Python one
+Updated requirements.txt and bot.sql 
 External :
 #This is a comment (won't be included in discord patchnotes)
 #Added !campfire command

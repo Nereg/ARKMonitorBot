@@ -69,6 +69,7 @@ class Updater(commands.Cog):
         channels = list(filter(lambda x:str(server[0]) in [i.strip() for i in x[4][1:-1].split(',')],self.notificationsList)) # find any channels that must receive notifications ????
         if (channels.__len__() <= 0): # if we have no channels to send notifications to
             return # return
+        print(f'Found a notification record for {server[0]} server!')
         if (server[1] == 1 ): # if server went online
             ARKServer = server[2] # get server object
             for channel in channels: # for each channel we got from DB
@@ -119,7 +120,7 @@ class Updater(commands.Cog):
 
 
     async def notificator(self,serverList):
-        print('Entered notificator!')
+        #print('Entered notificator!')
         for server in serverList:
             await self.server_notificator(server)
             #print(f'Sent server notifications for server : {server[0]}!')
@@ -129,15 +130,16 @@ class Updater(commands.Cog):
         server = list(filter(lambda x:x[0] == serverId,self.servers)) # select from local cache (self.servers)
         server = server[0] # select first result 
         ip = server[1] # get server's ip
+        result = []
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',
             (serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
-                return [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
+                result = [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
-                return [3,serverObj,playersList,0] # return unchanged (return status 3 and two new objects)
+                result = [3,serverObj,playersList,0] # return unchanged (return status 3 and two new objects)
         except c.ARKServerError as error: # catch my own error 
             if (type(error) != c.ARKServerError): # if not my error 
                 errors = traceback.format_exception(type(error), error, error.__traceback__)
@@ -145,17 +147,21 @@ class Updater(commands.Cog):
                 date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
                 ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
                 await sendToMe(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}',self.bot)
-                return [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
+                result = [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
             await makeAsyncRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB (add one to OfflineTrys and set LastOnline to 0)
             if (bool(server[6]) == True): # if server was online
-                return [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
+                result = [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
             else:
-                return [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return unchanged
+                result = [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return unchanged
+        # change in notifications : send them as soon as possible so updates would be faster
+        await self.server_notificator(result) # send notifications 
+        return result
 
     @tasks.loop(seconds=120.0)
     async def printer(self): #entrypoint
         await sendToMe('Entered updater!',self.bot) # debug
         start = time.perf_counter() # start timer
+        chunksTime = [] # list to old time it takes to process each chunk
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3') # fetch all notifications records
         self.servers = await makeAsyncRequest('SELECT * FROM servers') # fetch all servers (it must be heavy ?)
         serverCount = self.servers.__len__() # get current count of servers
@@ -164,6 +170,7 @@ class Updater(commands.Cog):
             servers = self.servers 
             server_list = [] # empty list
             for i in range(1,serverCount - self.workersCount,self.workersCount): # from 1 to server count with step of number of workers 
+                localStart = time.perf_counter()
                 #print(f'Updating servers: {[server[0] for server in  servers[i:i+self.workersCount]]}') # debug
                 tasks = [self.update_server(i[0]) for i in servers[i:i+self.workersCount]] # generate tasks to complete (update servers)
                 results = await asyncio.gather(*tasks) # run all generated tasks in paralel 
@@ -171,15 +178,18 @@ class Updater(commands.Cog):
                 for result in results: # loop throuh results
                     server_list.append([servers[i+a][0],result[0],result[1],result[2]]) # append to server list it id,and result from update function (status, two object and offlinetrys)
                     a += 1
-            if (self.bot.is_ready()): # if bot's cache is ready
-                print('handling notifications') # handle notifictaions
-                updater_end = time.perf_counter()
-                await self.notificator(server_list) # pass the list with servers and their statuses to the function
-                end = time.perf_counter() # end performance timer
-                await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
-            else: # if not
-                end = time.perf_counter() # end performance timer
-                await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
+                localEnd = time.perf_counter()
+                chunksTime.append(localEnd - localStart)
+            #if (self.bot.is_ready()): # if bot's cache is ready
+            #    print('handling notifications') # handle notifictaions
+            #    updater_end = time.perf_counter()
+            #    await self.notificator(server_list) # pass the list with servers and their statuses to the function
+            #    end = time.perf_counter() # end performance timer
+            #    await sendToMe(f'It took {updater_end - start:.4f} seconds to update all servers!\n{end - updater_end:.4f} sec. to send all notifications.\n{end - start:.4f} sec. in total',self.bot) # debug
+            #else: # if not
+            end = time.perf_counter() # end performance timer
+            await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
+            await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}',self.bot)
         except KeyError as error:
             await self.on_error(error)
             #await deleteServer(server[1])

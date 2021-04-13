@@ -154,7 +154,8 @@ async def on_error(event,*args,**kwargs):
     errors_str = ''.join(errors)
     msg = f'Error happened in `{event}` event\n```{errors_str}```'
     if (msg.__len__() >= 2000):
-        await sendToMe(f'Error message for `{event}` event is bigger that 2k!',bot)
+        await sendToMe(errors_str[:1975] + '`\nEnd of first part')
+        await sendToMe(errors_str[1975:-1])
         return
     else:
         await sendToMe(msg,bot)
@@ -261,6 +262,6 @@ async def test(ctx):
         return
     print(server.name)
     await ctx.send(await server.getBattlemetricsUrl(server))
-    
-nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
+# was causing problems and was using python implementation of asyncio instead of C one (which is faster)
+#nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token) # get our discord token and FIRE IT UP !

@@ -1,14 +1,13 @@
 -- phpMyAdmin SQL Dump
--- version 5.0.1
+-- version 5.1.0
 -- https://www.phpmyadmin.net/
 --
--- Host: mysql-server
--- Generation Time: Jun 23, 2020 at 07:09 PM
+-- Host: db
+-- Generation Time: Apr 09, 2021 at 05:44 PM
 -- Server version: 8.0.19
--- PHP Version: 7.4.1
+-- PHP Version: 7.4.16
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -25,10 +24,45 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `automessages`
+--
+
+CREATE TABLE `automessages` (
+  `Id` int NOT NULL,
+  `DiscordChannelId` bigint NOT NULL,
+  `DiscordMsgId` bigint NOT NULL,
+  `ServerId` bigint NOT NULL,
+  `Comment` text,
+  `DiscordGuildId` bigint NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `commandsused`
+--
+
+CREATE TABLE `commandsused` (
+  `Id` int NOT NULL,
+  `Name` varchar(100) NOT NULL,
+  `Uses` int NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `commandsused`
+--
+
+INSERT INTO `commandsused` (`Id`, `Name`, `Uses`) VALUES
+(1, 'info', 1),
+(2, 'prefix', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `errors`
 --
 
-CREATE TABLE `bot`.`errors` (
+CREATE TABLE `errors` (
   `Id` int NOT NULL,
   `Error` text NOT NULL,
   `Time` bigint NOT NULL,
@@ -41,10 +75,29 @@ CREATE TABLE `bot`.`errors` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `manager`
+--
+
+CREATE TABLE `manager` (
+  `Id` int NOT NULL,
+  `Type` int NOT NULL,
+  `Data` varchar(9999) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `notifications`
 --
 
-CREATE TABLE `bot`.`notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordChannelId` BIGINT NOT NULL , `Type` INT NOT NULL , `Sent` INT NOT NULL , `ServersIds` TEXT NOT NULL , `Data` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
+CREATE TABLE `notifications` (
+  `Id` int NOT NULL,
+  `DiscordChannelId` bigint NOT NULL,
+  `Type` int NOT NULL,
+  `Sent` int NOT NULL,
+  `ServersIds` text NOT NULL,
+  `Data` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -52,10 +105,10 @@ CREATE TABLE `bot`.`notifications` ( `Id` INT NOT NULL AUTO_INCREMENT , `Discord
 -- Table structure for table `servers`
 --
 
-CREATE TABLE `bot`.`servers` (
+CREATE TABLE `servers` (
   `Id` int NOT NULL,
   `Ip` text NOT NULL,
-  `Port` int DEFAULT NULL, 
+  `Port` int DEFAULT NULL,
   `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci,
   `ServerObj` text NOT NULL,
   `PlayersObj` text NOT NULL,
@@ -69,7 +122,7 @@ CREATE TABLE `bot`.`servers` (
 -- Table structure for table `settings`
 --
 
-CREATE TABLE `bot`.`settings` (
+CREATE TABLE `settings` (
   `Id` int NOT NULL,
   `GuildId` bigint NOT NULL,
   `Prefix` text CHARACTER SET utf8 COLLATE utf8_general_ci,
@@ -79,25 +132,17 @@ CREATE TABLE `bot`.`settings` (
   `Aliases` text CHARACTER SET utf8 COLLATE utf8_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
 --
 -- Table structure for table `users`
 --
-CREATE TABLE `bot`.`users` ( `Id` INT NOT NULL AUTO_INCREMENT , `DiscordId` BIGINT NOT NULL , `RefreshToken` TEXT NOT NULL , `Locale` TEXT NOT NULL , `DiscordName` TEXT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;
 
-CREATE TABLE `bot`.`automessages` (
+CREATE TABLE `users` (
   `Id` int NOT NULL,
-  `DiscordChannelId` bigint NOT NULL,
-  `DiscordMsgId` bigint NOT NULL,
-  `ServerId` bigint NOT NULL,
-  `Comment` text
+  `DiscordId` bigint NOT NULL,
+  `RefreshToken` text NOT NULL,
+  `Locale` text NOT NULL,
+  `DiscordName` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- I hope this won't break in production
-CREATE TABLE `bot`.`commandsused` ( `Id` INT NOT NULL AUTO_INCREMENT , `Name` VARCHAR(100) NOT NULL , `Uses` INT NOT NULL DEFAULT '0' , PRIMARY KEY (`Id`), UNIQUE `Id` (`Name`)) ENGINE = InnoDB;
-
-CREATE TABLE `bot`.`manager` ( `Id` INT NOT NULL AUTO_INCREMENT , `Type` INT NOT NULL , `Data` VARCHAR(9999) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
 
 --
 -- Indexes for dumped tables
@@ -106,30 +151,32 @@ CREATE TABLE `bot`.`manager` ( `Id` INT NOT NULL AUTO_INCREMENT , `Type` INT NOT
 --
 -- Indexes for table `automessages`
 --
-ALTER TABLE `bot`.`automessages`
+ALTER TABLE `automessages`
   ADD PRIMARY KEY (`Id`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- Indexes for table `commandsused`
 --
-
---
--- AUTO_INCREMENT for table `automessages`
---
-ALTER TABLE `bot`.`automessages`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-COMMIT;
-
-ALTER TABLE `bot`.`automessages` ADD `DiscordGuildId` BIGINT NOT NULL AFTER `Comment`; 
-
---
--- Indexes for dumped tables
---
+ALTER TABLE `commandsused`
+  ADD PRIMARY KEY (`Id`),
+  ADD UNIQUE KEY `Id` (`Name`);
 
 --
 -- Indexes for table `errors`
 --
 ALTER TABLE `errors`
+  ADD PRIMARY KEY (`Id`);
+
+--
+-- Indexes for table `manager`
+--
+ALTER TABLE `manager`
+  ADD PRIMARY KEY (`Id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
   ADD PRIMARY KEY (`Id`);
 
 --
@@ -155,23 +202,47 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `automessages`
+--
+ALTER TABLE `automessages`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `commandsused`
+--
+ALTER TABLE `commandsused`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `errors`
 --
 ALTER TABLE `errors`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-COMMIT;
+
+--
+-- AUTO_INCREMENT for table `manager`
+--
+ALTER TABLE `manager`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+
 --
 -- AUTO_INCREMENT for table `servers`
 --
 ALTER TABLE `servers`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-COMMIT;
+
 --
 -- AUTO_INCREMENT for table `settings`
 --
 ALTER TABLE `settings`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
-COMMIT;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
 --
 -- AUTO_INCREMENT for table `users`
 --

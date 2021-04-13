@@ -161,6 +161,10 @@ async def sendToMe(text,bot,ping=False):
         await meDM.send(text)
         if(ping):
             await meDM.send(meUser.mention)
+    except AttributeError:
+        print("Send to me but bot isn't ready:")
+        print(text)
+        return
     except BaseException as e:
         print('exeption in sendToMe')
         print(e)
