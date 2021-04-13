@@ -138,7 +138,7 @@ async def getAlias(serverId,guildId,serverIp=''):
         else:
             return ''
 
-async def stripVersion(server):
+async def stripVersion(server,name=''):
     '''
     Return name of server but without server's version
     Parameters:
@@ -146,9 +146,17 @@ async def stripVersion(server):
     Returns:
     str - name of the server with stripped version 
     '''
-    name = server.name.find(f'- ({server.version})')
-    name = server.name[:name].strip()
-    return name
+    if(name == ''): # if we have no name to work with
+        name = server.name.find(f'- ({server.version})') # get index of - (version) part with data from class
+        name = server.name[:name].strip() # set stripped version
+    else: # if we have just server's name
+        first = name.find('(') # split out version
+        second = name.rfind(')')
+        if (second == -1 or first == -1): # if version is not found
+            name = name # return just name
+        else: # if version is found
+            name = name[:first-2].strip() # set stripped name
+    return name # return stripped name
 
 async def sendToMe(text,bot,ping=False):
     '''

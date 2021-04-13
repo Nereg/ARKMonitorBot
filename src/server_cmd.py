@@ -6,6 +6,8 @@ from discord.ext import commands # import commands extension
 import json
 import aiohttp
 import classes as c
+import a2s
+import time
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
@@ -235,6 +237,7 @@ Ping : {server.ping} ms
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
     async def ipfix(self,ctx,*args):
+        start = time.perf_counter() # start timer
         if (args == ()):
             await ctx.send('No IP!')
             return
@@ -256,28 +259,35 @@ List of detected servers on that ip by steam:
 
 '''
             await ctx.trigger_typing() # it is junkiest way I know but I can't speed up (or can I ?) fetching of the info
-            # idea 1 : search in Db for those servers ?
-            # idea 2 : steam master server queries ? (nope)
+            # idea 1 : search in DB for those servers ?
+            # idea 2 : steam master server queries ? (nope there is no such data there)
             # idea 3 : query only name not whole class worth of data 
-            # also I can integrate thst in server adding process if we know game port (but it still won't help if we don't knwo any port of the server so I won't depricate this command)
+            # also I can integrate this in server adding process if we know game port (but it still won't help if we don't know any port of the server so I won't depricate this command)
             if (bool(text['response']['success']) and text['response']['servers'].__len__() > 0):
                 i = 1
                 for server in text['response']['servers']:
                     ip = server['addr']
+                    addr = ip.split(':')[0] # extract ip from 'ip:port' pair
+                    port = ip.split(':')[1] # extract port from 'ip:port' pair
                     try:
                         await ctx.trigger_typing() # will trigger typing on each iteration
-                        serverClass = await c.ARKServer(ip).AGetInfo()
-                        message += f'{i}. {ip} - {serverClass.name} (Online) \n'
+                        response = await a2s.ainfo((addr,port))
+                        name = await stripVersion(0,discord.utils.escape_mentions(response.server_name))
+                        #serverClass = await c.ARKServer(ip).AGetInfo()
+                        message += f'{i}. {discord.utils.escape_mentions(ip)} - {name} (Online) \n'
                     except:
-                        message += f'{i}. {ip} - ??? (Offline) \n'
+                        message += f'{i}. {discord.utils.escape_mentions(ip)} - ??? (Offline) \n'
                     i += 1
             else:
                 await ctx.send('No games found on that IP by steam.')
                 return
             message += 'Use those ip to add server to bot!'
+            
             if (message.__len__() >= 2000):
                 await ctx.send(message[:1999])
                 await ctx.send(message[2000:2999]) # would be replaced with functions from helpers.py
             else:
                 await ctx.send(message)
+            end = time.perf_counter() # start timer
+            print(f'/ipfix exec time:{end - start:.4} sec.')
 

@@ -43,7 +43,7 @@ class BattleMetricsAPI():
             elif (response.status == 429): # if we hit rate limit
                 wait = int(response.headers['Retry-After']) # get for how much we must wait
                 #print(wait)
-                await sendToMe(f'We need to wait for {wait} to get battlemetrics url!')
+                print(f'We need to wait for {wait} to get battlemetrics url!')
                 await asyncio.sleep(wait) # wait it out
                 #print('Failed battlemetrics API call!')
                 #print(response.text())
