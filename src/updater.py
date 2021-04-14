@@ -135,13 +135,12 @@ class Updater(commands.Cog):
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL')): # if we don't have battle url already 
+            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL') and bool(server[6])): # if we don't have battle url already and server is online
                 #print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
                 battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
                 if (battleURL): # if we getched the url
                     serverObj.battleURL = battleURL # put it in
-            await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',
-            (serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
+            await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
                 result = [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
