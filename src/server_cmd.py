@@ -238,22 +238,22 @@ Ping : {server.ping} ms
     @commands.command()
     async def ipfix(self,ctx,*args):
         start = time.perf_counter() # start timer
-        if (args == ()):
-            await ctx.send('No IP!')
-            return
-        ip = args[0]
-        splitted = ip.split(':')
-        if (IpCheck(ip) != True): # IP check
-            await ctx.send('Something is wrong with **IP**!') # and reply
+        if (args == ()): # if no additional args
+            await ctx.send('No IP!') # send error message
             return 
-        
-        HEADERS = {
+        ip = args[0] # else get the ip  
+        if (IpCheck(ip) != True): # IP check
+            await ctx.send('Something is wrong with **IP**!') # and send error
+            return 
+        splitted = ip.split(':') # split the ip to port and IP
+        HEADERS = { 
     'User-Agent' : "Magic Browser"
         }
-        await ctx.trigger_typing()
-        async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp:
-            text = await resp.text()
-            text = json.loads(text)
+        await ctx.trigger_typing() # it will be long 
+        async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}', headers=HEADERS) as resp: # get data from steam API
+            text = await resp.text() # get 
+            text = json.loads(text) # and decode JSON data
+            # start of message we will send
             message = '''
 List of detected servers on that ip by steam:
 
@@ -263,31 +263,38 @@ List of detected servers on that ip by steam:
             # idea 2 : steam master server queries ? (nope there is no such data there)
             # idea 3 : query only name not whole class worth of data 
             # also I can integrate this in server adding process if we know game port (but it still won't help if we don't know any port of the server so I won't depricate this command)
-            if (bool(text['response']['success']) and text['response']['servers'].__len__() > 0):
+            if (bool(text['response']['success']) and text['response']['servers'].__len__() > 0): # if request is successful and we have more that 0 servers
                 i = 1
-                for server in text['response']['servers']:
-                    ip = server['addr']
-                    addr = ip.split(':')[0] # extract ip from 'ip:port' pair
-                    port = ip.split(':')[1] # extract port from 'ip:port' pair
-                    try:
-                        await ctx.trigger_typing() # will trigger typing on each iteration
-                        response = await a2s.ainfo((addr,port))
-                        name = await stripVersion(0,discord.utils.escape_mentions(response.server_name))
-                        #serverClass = await c.ARKServer(ip).AGetInfo()
-                        message += f'{i}. {discord.utils.escape_mentions(ip)} - {name} (Online) \n'
-                    except:
-                        message += f'{i}. {discord.utils.escape_mentions(ip)} - ??? (Offline) \n'
-                    i += 1
-            else:
-                await ctx.send('No games found on that IP by steam.')
+                for server in text['response']['servers']: # for each server in response 
+                    ip = server['addr'] # get ip
+                    search = await makeAsyncRequest('SELECT ServerObj,LastOnline FROM servers WHERE Ip=%s',(ip,)) # try to search for it in DB
+                    if (search.__len__() <= 0): # if server isn't in DB
+                        addr = ip.split(':')[0] # extract ip from 'ip:port' pair
+                        port = ip.split(':')[1] # extract port from 'ip:port' pair
+                        try: 
+                            await ctx.trigger_typing() # will trigger typing on each iteration
+                            response = await a2s.ainfo((addr,port)) # get only name of the server (not whole class worth of data)
+                            name = await stripVersion(0,discord.utils.escape_mentions(response.server_name)) # strip version from server's name 
+                            message += f'{i}. {discord.utils.escape_mentions(ip)} - {name} (Online) \n' # append to the message
+                        except: # if smt goes wrong 
+                            message += f'{i}. {discord.utils.escape_mentions(ip)} - ??? (Offline) \n' # the server is offline
+                        i += 1 # increase counter
+                    else: # if server is found in DB
+                        serverObj = c.ARKServer.fromJSON(search[0][0]) # constuct our class from DB
+                        if(bool(search[0][1])): # if server was online 
+                            message += f'{i}. {discord.utils.escape_mentions(ip)} - {serverObj.name} (Online) \n' # append to the message
+                        else:
+                            message += f'{i}. {discord.utils.escape_mentions(ip)} - {serverObj.name} (Offline) \n' # append to the message
+            else: # we have no games detected by steam
+                await ctx.send('No games found on that IP by steam.') # send error message
                 return
-            message += 'Use those ip to add server to bot!'
+            message += 'Use those ip to add server to bot!' # append last line to the message
             
-            if (message.__len__() >= 2000):
+            if (message.__len__() >= 2000): # junk code to send smth over 2k 
                 await ctx.send(message[:1999])
                 await ctx.send(message[2000:2999]) # would be replaced with functions from helpers.py
             else:
                 await ctx.send(message)
-            end = time.perf_counter() # start timer
-            print(f'/ipfix exec time:{end - start:.4} sec.')
+            end = time.perf_counter() # end timer
+            await sendToMe(f'/ipfix exec time: {end - start:.4} sec.\n There was {i-1} servers to fetch',self.bot) # debug
 

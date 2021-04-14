@@ -189,7 +189,7 @@ class Updater(commands.Cog):
             #else: # if not
             end = time.perf_counter() # end performance timer
             await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
-            await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}',self.bot)
+            await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}\nUpdate queue lenth is: {self.servers.__len__()}',self.bot)
         except KeyError as error:
             await self.on_error(error)
             #await deleteServer(server[1])
