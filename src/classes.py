@@ -11,13 +11,14 @@ import aiohttp
 import concurrent.futures._base as base
 import socket
 import discord
+import time
 
 class BattleMetricsAPI():
-    def __init__(self):
-        #self.limiter = AsyncLimiter(60) # https://aiolimiter.readthedocs.io/en/latest/ 
+    def __init__(self, session):
+        self.session = session
         pass
     
-    @classmethod
+
     async def getBattlemetricsUrl(self,serverClass):
         '''
         Gets url for given server on battlemetrics.com
@@ -29,7 +30,7 @@ class BattleMetricsAPI():
         False ot str : false if url is not found, url if found
         '''
         apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}' # contruct API url
-        async with aiohttp.request("GET", apiURL) as response: # make request 
+        async with self.session.get(apiURL) as response: # make request 
             if (response.status == 200): # if 200 
                 json_data = await response.json() # decode body
                 for server in json_data['data']: # for each server
@@ -80,17 +81,6 @@ class ARKServer(JSON):
         pass
     
 
-    async def updateOffline(self):
-        '''Return a class with all new (e.g not present in current class) properties set to default
-        to eliminate difference between updated and not updated servers'''
-        if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
-            self.battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
-        if (not hasattr(self, 'serverSteamId')): # if we don't have server Steam id
-            self.serverSteamId = None 
-        if (not hasattr(self, 'isARK')): # if we don't know if it is ARK server
-            self.isARK = True # let's assume it is ARK server
-        return self
-
     async def AGetInfo(self):
         """
         Gets info about ARK server
@@ -101,8 +91,11 @@ class ARKServer(JSON):
         self (with updated data)
         """
         try:
+            #start = time.perf_counter()
             server = await a2s.ainfo((self.address,self.port)) # get server data
             data = await a2s.arules((self.address,self.port)) # custom ARK data
+            #end = time.perf_counter()
+            #print(f'Raw async get time: {end - start:.4}')
         except base.TimeoutError as e: 
             raise ARKServerError('1: Timeout',e)
         except socket.gaierror as e:
@@ -168,13 +161,15 @@ class ARKServer(JSON):
             self.isARK = True
         if (server.game_id == 346110 or server.game_id == 407530): # ARK:SE and ARK:SOTF
             self.isARK = True
-        if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
-            battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
-            if (battleURL): # if we have url 
-                self.battleURL = battleURL
-        else:
-            if ('coroutine' in self.battleURL): # see line 49 to find why not awaited corutine was passed to the DB
-                self.battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self)
+        # this was slowing down everything ! It was getting the URl EVERY time regardles if we have URL in DB
+        #if (not hasattr(self, 'battleURL')): # if we don't have battle url already 
+        #    print(f'We don`t have battle URl for server {self.ip} {getattr(self,"battleURL","nothing")}')
+        #    battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self) # find it 
+        #    if (battleURL): # if we have url 
+        #        self.battleURL = battleURL
+        #else:
+        #    if ('coroutine' in self.battleURL): # see line 49 to find why not awaited corutine was passed to the DB
+        #        self.battleURL = await BattleMetricsAPI.getBattlemetricsUrl(self)
         #if (hasattr(self, 'battleURL')): # if we don't have battle url already 
         #    if (self.battleURL == ''):
         #        delattr(self,'battleURL') 

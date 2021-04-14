@@ -16,6 +16,7 @@ import socket
 import menus as m
 import concurrent.futures._base as base
 import asyncio
+import aiohttp 
 
 class Updater(commands.Cog):
     '''
@@ -134,6 +135,11 @@ class Updater(commands.Cog):
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
+            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL')): # if we don't have battle url already 
+                #print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
+                battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
+                if (battleURL): # if we getched the url
+                    serverObj.battleURL = battleURL # put it in
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',
             (serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
@@ -215,6 +221,8 @@ class Updater(commands.Cog):
     async def before_printer(self):
         print('waiting...')
         # await self.bot.wait_until_ready() why waiste all this time when we can update DB while cache is updating? 
+        self.session = aiohttp.ClientSession() # get aiohttps's session 
+        self.battleAPI = c.BattleMetricsAPI(self.session) # contrict API class 
         await self.initPool()
         print('done waiting')
 
