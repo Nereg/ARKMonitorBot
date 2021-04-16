@@ -27,6 +27,7 @@ class Updater(commands.Cog):
         self.cfg = config.Config()
         self.workersCount = self.cfg.workersCount # count of concurrent functions to tun
         self.server_list = [] #list of lists : [[server_id,server_status]...]
+        self.fetchedUrls = 0
         print('Init')
         self.printer.start()
         self.t = c.Translation()
@@ -138,7 +139,8 @@ class Updater(commands.Cog):
             if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL') and bool(server[6])): # if we don't have battle url already and server is online
                 #print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
                 battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
-                if (battleURL): # if we getched the url
+                self.fetchedUrls += 1
+                if (battleURL): # if we fetched the url
                     serverObj.battleURL = battleURL # put it in
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
@@ -195,6 +197,7 @@ class Updater(commands.Cog):
             end = time.perf_counter() # end performance timer
             await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
             await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}\nUpdate queue lenth is: {self.servers.__len__()}',self.bot)
+            await sendToMe(f'Fetched {self.fetchedUrls} urls!',self.bot)
         except KeyError as error:
             await self.on_error(error)
             #await deleteServer(server[1])
