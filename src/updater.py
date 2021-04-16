@@ -129,6 +129,7 @@ class Updater(commands.Cog):
             #player_notificator()
 
     async def update_server(self,serverId): # universal server upgrader 
+        self.fetchedUrls = 0
         server = list(filter(lambda x:x[0] == serverId,self.servers)) # select from local cache (self.servers)
         server = server[0] # select first result 
         ip = server[1] # get server's ip
