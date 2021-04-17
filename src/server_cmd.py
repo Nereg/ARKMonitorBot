@@ -55,7 +55,7 @@ class ServerCmd(commands.Cog):
         emoji = ':green_circle:' if online else ':red_circle:' # if server online green circle else red
         server.online = server.online if online else 0 # if server offline override online players count
         aliases = await getAlias(0,self.ctx.guild.id,server.ip)
-        print(aliases)
+        #print(aliases)
         name = server.name if aliases == '' else aliases
         name = f' {name} {emoji} '.center(50,'=') # construct first line
         # construct this BIG MAIN MESSAGE

@@ -129,7 +129,6 @@ class Updater(commands.Cog):
             #player_notificator()
 
     async def update_server(self,serverId): # universal server upgrader 
-        self.fetchedUrls = 0
         server = list(filter(lambda x:x[0] == serverId,self.servers)) # select from local cache (self.servers)
         server = server[0] # select first result 
         ip = server[1] # get server's ip
@@ -137,12 +136,13 @@ class Updater(commands.Cog):
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL') and bool(server[6])): # if we don't have battle url already and server is online
-                #print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
+            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL')): # if we don't have battle url already
+                print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
                 battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
                 self.fetchedUrls += 1
                 if (battleURL): # if we fetched the url
-                    serverObj.battleURL = battleURL # put it in
+                    #serverObj.battleURL = battleURL # put it in
+                    setattr(serverObj,'battleURL',battleURL)
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
                 result = [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
@@ -167,6 +167,7 @@ class Updater(commands.Cog):
 
     @tasks.loop(seconds=120.0)
     async def printer(self): #entrypoint
+        self.fetchedUrls = 0 # it was resetting the variable in the wrong place !
         await sendToMe('Entered updater!',self.bot) # debug
         start = time.perf_counter() # start timer
         chunksTime = [] # list to old time it takes to process each chunk
@@ -228,8 +229,6 @@ class Updater(commands.Cog):
         self.battleAPI = c.BattleMetricsAPI(self.session) # contrict API class 
         await self.initPool()
         print('done waiting')
-
-
 
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
