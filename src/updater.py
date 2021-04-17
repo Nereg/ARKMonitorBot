@@ -273,7 +273,7 @@ class Updater(commands.Cog):
         serverId = serverId[0][0]
         notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE DiscordChannelId=%s AND Type=3 AND ServersIds LIKE %s',(ctx.channel.id, f'%{serverId}%',))
         if (notifications.__len__() <= 0):
-            await ctx.send('You is not subscribed to that server!')
+            await ctx.send("You don't have any notifications for this server!")
             return
         else:
             newServerlist = json.loads(notifications[0][4])
