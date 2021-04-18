@@ -136,31 +136,39 @@ class Updater(commands.Cog):
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            if (not hasattr(c.ARKServer.fromJSON(server[4]), 'battleURL')): # if we don't have battle url already
+            oldObj = c.ARKServer.fromJSON(server[4])
+            if (not hasattr(oldObj, 'battleURL')): # if we don't have battle url already
                 print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
                 battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
                 self.fetchedUrls += 1
                 if (battleURL): # if we fetched the url
                     #serverObj.battleURL = battleURL # put it in
                     setattr(serverObj,'battleURL',battleURL)
+                    if not hasattr(serverObj, 'battleURL'):
+                        await sendToMe(f'There is a bug in setattr! server id is {serverId}')
+            else:
+                setattr(serverObj,'battleURL',oldObj.battleURL)
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
                 result = [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
                 result = [3,serverObj,playersList,0] # return unchanged (return status 3 and two new objects)
-        except c.ARKServerError as error: # catch my own error 
-            if (type(error) != c.ARKServerError): # if not my error 
-                errors = traceback.format_exception(type(error), error, error.__traceback__)
-                errors_str = ''.join(errors)
-                date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-                ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
-                await sendToMe(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}',self.bot)
-                result = [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
+        except c.ARKServerError: # catch my own error 
+            #if (type(error) != c.ARKServerError): # if not my error 
+            #    errors = traceback.format_exception(type(error), error, error.__traceback__)
+            #    errors_str = ''.join(errors)
+            #    date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
+            #    ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
+            #    await sendToMe(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}',self.bot)
+            #    result = [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
             await makeAsyncRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB (add one to OfflineTrys and set LastOnline to 0)
             if (bool(server[6]) == True): # if server was online
                 result = [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
             else:
                 result = [3,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return unchanged
+        except BaseException as e:
+            await sendToMe(e,self.bot)
+            result = [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
         # change in notifications : send them as soon as possible so updates would be faster
         await self.server_notificator(result) # send notifications 
         return result
