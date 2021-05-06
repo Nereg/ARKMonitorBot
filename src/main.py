@@ -43,7 +43,7 @@ async def help(ctx):
     isInline=False # junk from tests but still used 
     message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',icon_url=ctx.author.avatar_url) # set default footer 
     #define value for Server section
-    serverValue = f'''**`{prefix}server info`- select and view info about added server
+    serverValue = f'''**`{prefix}server info`- select and view info about added server (only Steam servers both official and not)
 `{prefix}server add <IP>:<Query port>`- add server to your list
 `{prefix}server delete`- delete server from your list
 `{prefix}server alias`- list aliases for your servers
@@ -154,8 +154,8 @@ async def on_error(event,*args,**kwargs):
     errors_str = ''.join(errors)
     msg = f'Error happened in `{event}` event\n```{errors_str}```'
     if (msg.__len__() >= 2000):
-        await sendToMe(errors_str[:1975] + '`\nEnd of first part')
-        await sendToMe(errors_str[1975:-1])
+        await sendToMe(errors_str[:1975] + '`\nEnd of first part',bot)
+        await sendToMe(errors_str[1975:-1],bot)
         return
     else:
         await sendToMe(msg,bot)
