@@ -4,3 +4,4 @@ config.py
 sql
 Lib
 temp
+pyvenv.cfg

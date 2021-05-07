@@ -12,6 +12,7 @@ from discord.ext import commands
 import aiomysql
 import json
 import random
+import aiohttp
 
 def  makeRequest(SQL,params=()):
     cfg = config.Config()
@@ -83,45 +84,98 @@ def IpCheck(Ip):
         return False # if any error retunr false
 
 
+async def fixIp(ip:str):
+    '''
+    Replaces wrong ip:port pair with correct ip:port pair
+    (If original port is a game port of a server on that ip)
+    Else returns false 
+    '''
+    splitted = ip.split(':') # split ip:port pair
+    ip = splitted[0] # set ip to first chunk of ip string
+    port = int(splitted[1]) # set port to second chunk of ip string
+    HEADERS = { 
+    'User-Agent' : "Magic Browser"
+    }
+    # https://stackoverflow.com/questions/27340334/how-to-request-steam-api-over-10000-times-with-php-or-javascript let's hope that we wouldn't hit any ratelimits
+    async with aiohttp.request("GET", f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={ip}', headers=HEADERS) as resp: # get data from steam API
+        response = await resp.json() # get and parse JSON data from Steam
+        #print(response)
+        #print(f'http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={ip}')
+        if (bool(response['response']['success']) and response['response']['servers'].__len__() > 0): # if request is successful and we have more that 0 servers
+            # here we will match game port we have to query port the rest of the bot needs 
+            for server in response['response']['servers']: # for each server in response 
+                if (server['gameport'] == port): # if game port matches of that in the response 
+                    return server['addr'] # return address of the server (and pray that it is the server user intended to add)
+            return False # if no servers matched return false 
+        else: # if failed 
+            return False # return false
+
+
 async def AddServer(ip,ctx):
+    '''
+    Adds a server to the DB. 
+    Checks for common error and, if possible, fixes them or notifies user
+    If succesful returns id of added server else returns None
+    '''
     debug = Debuger('AddServer')
-    if (IpCheck(ip) != True): # check IP address (see helpers.py)
-        if ('>' in ip or '<' in ip):
-            await ctx.send('You don`t need those <>!')
-            return
-        debug.debug(f'Wrong IP : {ip}') # debug
+    await ctx.trigger_typing()
+    if (IpCheck(ip) != True): # check IP address 
+        if ('>' in ip or '<' in ip): # if we have < or > in string 
+            await ctx.send('You don`t need those <>!') # tell the user that they aren't needed
+            return # return
+        #debug.debug(f'Wrong IP : {ip}') # debug
         await ctx.send('Something is wrong with **IP**!') # and reply to user
-        return # if ip is incorrect
-    servers = makeRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
-    if (servers.__len__() > 0):
-        return servers[0][0]
-    try: 
+        return # return because ip is incorrect 
+    servers = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,)) # search for already added server in DB
+    if (servers.__len__() > 0): # if we found one 
+        return servers[0][0] # return it's id 
+    try: # else
         server = c.ARKServer(ip) # construct our classes
-        playersList = c.PlayersList(ip)
+        playersList = c.PlayersList(ip) 
         await playersList.AgetPlayersList() # and get data
         await server.AGetInfo()
-        if (not server.isARK):
-            await ctx.send(f'This server is not ARK! Possible Steam AppId: {server.game_id}')
-            return
+        if (not server.isARK): # if the server isn't an ARK server
+            await ctx.send(f'This server is not ARK! Possible Steam AppId: {server.game_id}') # send an error about it 
+            return # and return
         #debug.debug(f"Server {ip} is up!") # and debug
     except Exception as e: # if any exception
-        debug.debug(e)
-        await ctx.send(f'Server {ip} is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`')
-        return
-    splitted = ip.split(':')
+        #debug.debug(e)
+        # let's try smth different
+        newIp = await fixIp(ip) # let's try to fix the ip 
+        #print(bool(newIp))
+        if (newIp): # if we fixed the ip
+            try: # try to add it one more time
+                server = c.ARKServer(newIp) # construct our classes
+                playersList = c.PlayersList(newIp) 
+                await playersList.AgetPlayersList() # and get data
+                await server.AGetInfo()
+                if (not server.isARK): # if the server isn't an ARK server
+                    await ctx.send(f'This server is not ARK! Possible Steam AppId: {server.game_id}') # send an error about it 
+                    return # and return
+                ip = newIp # I don't want to mess with the rest of the code
+            except: # if exeption
+                await ctx.send(f'Server `{discord.utils.escape_mentions(newIp)}` is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`') # send an error message 
+                return
+        else:
+            await ctx.send(f'Server `{discord.utils.escape_mentions(ip)}` is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`') # send an error message 
+            return
+    splitted = ip.split(':') # if we got all the data and ip is correct
     await makeAsyncRequest('INSERT INTO servers(Ip,ServerObj,PlayersObj,Port) VALUES (%s,%s,%s,%s)',[ip,server.toJSON(),playersList.toJSON(),splitted[1]])  # insert it into DB 
-    Id = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,))
+    Id = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(ip,)) # search it's id 
     debug.debug(f'added server : {ip} with id : {Id[0][0]}!') # debug
-    return Id[0][0]
+    return Id[0][0] # and return id of a new server
 
 async def get_prefix(bot,message):
-    conf = config.Config()
-    guildId = message.guild.id
-    data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),))
-    if (data.__len__() <= 0 or data[0][2] == None):
-        return conf.defaultPrefix
-    else:
-        return data[0][2]
+    '''
+    returns prefix for a guild
+    '''
+    conf = config.Config() # load our config
+    guildId = message.guild.id # get id of the guild
+    data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s',(int(guildId),)) # search in DB for settings of the guild
+    if (data.__len__() <= 0 or data[0][2] == None): # if settings of server aren't found or prefix is none
+        return conf.defaultPrefix # return default prefix
+    else: 
+        return data[0][2] # return prefix of the guild
 
 async def getAlias(serverId,guildId,serverIp=''):
     if(serverIp != ''):

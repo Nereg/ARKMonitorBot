@@ -6,6 +6,8 @@ Added a check in sendToMe function is bot isn't ready (and won't send anything t
 Tryig to use native C implementation of asyncio instead of nest_asyncio Python one
 Updated requirements.txt and bot.sql 
 Changed stripVersion to accept and work with bare names
+Updated discord.py to 1.4 # let's hope that doesn't brake anything
+Fixed requirements conflicts
 External :
 #This is a comment (won't be included in discord patchnotes)
 #Added !campfire command
@@ -14,3 +16,5 @@ External :
 #!campfire <meat count> <campfire count> - same as above but now we have servial campfires so it would be faster
 
 Added typing indicator to !ipfix command
+Integrated !ipfix command into !server add command (it now can change game port for query port using steam API)
+Added typing indicator to !server add command

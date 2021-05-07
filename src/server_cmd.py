@@ -42,40 +42,6 @@ class ServerCmd(commands.Cog):
         emb2.add_field(name='Ping:',value=f'{server.ping} ms.')
         await ctx.send(embed=emb1)
         await ctx.send(embed=emb2)
-
-    # /server command module
-    async def oldserverInfo(self,server,playersList,online): # return info about server
-        playersList = playersList.list # get list of players
-        i = 1 
-        players = '' # list of players
-        for player in playersList: # for each player in list
-            players += '{}. {} {}\n'.format(i,player.name,player.time) # construct string
-            i += 1 
-        players = 'No one is on the server' if playersList.__len__() <= 0 else players # if no players override our players list
-        emoji = ':green_circle:' if online else ':red_circle:' # if server online green circle else red
-        server.online = server.online if online else 0 # if server offline override online players count
-        aliases = await getAlias(0,self.ctx.guild.id,server.ip)
-        #print(aliases)
-        name = server.name if aliases == '' else aliases
-        name = f' {name} {emoji} '.center(50,'=') # construct first line
-        # construct this BIG MAIN MESSAGE
-        message = f''' 
-**{name}**
-IP : {server.ip}
-Status : {'Online' if online else 'Offline'}
-Players : {server.online}/{server.maxPlayers}
-Map : {server.map}
-PVE ? : {server.PVE}
-Version : {server.version}
-Ping : {server.ping} ms
-**Players list**
-```
-{players}
-```
-        '''
-        if (message.__len__() >= 1999):
-            message = f'Hello! ARK is so bugged and it returned player list that is bigger than 2k characters which is limit of discord. Pls report this to my support guild. Also there was {i} player on the list.'
-        return message # and return it 
     
     @commands.bot_has_permissions(add_reactions=True,read_messages=True,send_messages=True,manage_messages=True,external_emojis=True)
     @commands.command()
