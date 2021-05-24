@@ -17,6 +17,7 @@ async def sendToWebhook(text,url):
 def runCommand(cmd):
     try:
         result = subprocess.check_output(cmd, shell=True)
+        return result
     except subprocess.CalledProcessError as e:
         asyncio.run(sendToWebhook(f'Something went wrong!\n```{e}```',cfg.backupWebhookUrl))
 
@@ -37,4 +38,5 @@ send = f'cd ~/backup/ && git add ~/backup/{months}/{day}.sql && git commit . -m 
 runCommand(backup) # run constucted commands
 runCommand(copy)
 runCommand(send)
+asyncio.run(sendToWebhook(f'`Df` output:\n{runCommand("df -h").decode("UTF-8")}',cfg.backupWebhookUrl))
 asyncio.run(sendToWebhook('Backed up!',cfg.backupWebhookUrl))
