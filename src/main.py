@@ -29,7 +29,7 @@ import campfire
 debug = Debuger('main') # create debuger (see helpers.py)
 conf = config.Config() # load config
 game = discord.Game('ping me to get prefix') # set custom status for bot (no it isn;t possible to put buttons like for user's profiles)
-bot = commands.Bot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
+bot = commands.AutoShardedBot(command_prefix=get_prefix,help_command=None,activity=game) # create bot with default prefix and no help command
 debug.debug('Inited DB and Bot!') # debug into console !
 t = c.Translation() # load default english translation
 
