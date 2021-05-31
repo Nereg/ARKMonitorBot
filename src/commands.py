@@ -21,21 +21,17 @@ class BulkCommands(commands.Cog):
     @commands.command()
     async def list(self, ctx):
         servers = '' # string with list of servers
-        l = c.Translation()
-        if ctx.guild == None : 
-            GuildId = ctx.channel.id
-            Type = 1
-        else:
-            GuildId = ctx.guild.id
-            Type = 0
-        data = makeRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type))
-        notifications = makeRequest('SELECT * FROM notifications WHERE Type=3')
-        channels = ctx.guild.channels
-        watchedServers = []
-        for notification in notifications:
-            if (notification[1] ==  ctx.channel.id):
-                watchedServers.append(json.loads(notification[4]))
-        if (data.__len__() == 0):
+        l = c.Translation() # load translation
+        GuildId = ctx.guild.id
+        Type = 0 # lefovers of old code (supposed support for DM's)
+        data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s',(GuildId,Type)) # get srttings of current guild
+        notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3') # select server notifications
+        watchedServers = [] # list of watched servers
+        # most bugged and required part of the bot AFAIK
+        for notification in notifications: # for notifications 
+            if (notification[1] ==  ctx.channel.id): # if bot will notify in current channel (not in some channel of the guild and it is a new feature to make)
+                watchedServers.append(json.loads(notification[4])) # # append server id in list
+        if (data.__len__() == 0): # if
             await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
             return 
         if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[]'):
@@ -78,7 +74,7 @@ List of added servers :
         RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
         meUser = self.bot.get_user(277490576159408128)
         role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
-        embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow())
+        embed = discord.Embed(title=f'Info about {self.bot.user.name}',timestamp=time.utcnow(),color=randomColor())
         embed.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
         embed.add_field(name='<:Link:739476980004814898> Invite link',value='[Here!](https://bit.ly/ARKTop)',inline=True)
         embed.add_field(name='<:Github:739476979631521886> GitHub',value='[Here!](https://github.com/Nereg/ARKMonitorBot)',inline=True)
@@ -99,11 +95,6 @@ List of added servers :
             message = message[0][4]
         embed.add_field(name='Message from creator',value=message)
         await ctx.send(embed=embed)
-    
-    @commands.command()
-    @commands.is_owner()
-    async def count(self,ctx):
-        await ctx.send(f'Total guilds count:`{len(self.bot.guilds)}`\nTotal members in that guilds:`{len(self.bot.users)}`')
 
 
 

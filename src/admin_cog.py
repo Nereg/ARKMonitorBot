@@ -19,6 +19,7 @@ import json
 # to expose to the eval command
 import datetime
 from collections import Counter
+from discord.ext import tasks
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -86,6 +87,9 @@ class Admin(commands.Cog):
         self.bot = bot
         self._last_result = None
         self.sessions = set()
+        self.cmdCountUpdater.start()
+        print('started cmd updater')
+
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author) or ctx.author.id == 277490576159408128
     async def run_process(self, command):
@@ -252,7 +256,7 @@ class Admin(commands.Cog):
         msg.author = channel.guild.get_member(who.id) or who
         msg.content = ctx.prefix + command
         new_ctx = await self.bot.get_context(msg, cls=type(ctx))
-        new_ctx._db = ctx._db
+        #new_ctx._db = ctx._db
         await self.bot.invoke(new_ctx)
 
     @commands.command(hidden=True)
@@ -262,7 +266,7 @@ class Admin(commands.Cog):
         msg.content = ctx.prefix + command
 
         new_ctx = await self.bot.get_context(msg, cls=type(ctx))
-        new_ctx._db = ctx._db
+        #new_ctx._db = ctx._db
 
         for i in range(times):
             await new_ctx.reinvoke()
@@ -323,7 +327,10 @@ class Admin(commands.Cog):
     
     @commands.command()
     async def setMessage(self, ctx, message):
-        makeRequest('UPDATE settings SET Admins=%s WHERE Guildid=1',(message,))
+        result = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
+        if (result.__len__() <= 0):
+            await makeAsyncRequest('INSERT INTO settings(GuildId, Prefix, ServersId, Admins, Type, Aliases) VALUES (1,"","","",0,"")')
+        makeRequest('UPDATE settings SET Admins=%s WHERE GuildId=1',(message,))
         await ctx.send('Done!')
 
     @commands.command()
@@ -337,35 +344,125 @@ class Admin(commands.Cog):
             except BaseException as e:
                 await ctx.send('error')
                 await ctx.send(e)
+                return
             await message.delete()
             await ctx.send('Done !')
 
     @commands.command()
+    async def restart(self, ctx):
+        await ctx.send('Good bye my friend!')
+        exit(12121312)
+        return
+
+    @commands.command()
     async def deleteServer(self, ctx, serverIp : str):
-        server = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s',(serverIp,))
-        if (server.__len__() <=0 ):
-            await ctx.send('No server found!')
+        await deleteServer(serverIp)
+    
+    @commands.command()
+    async def setCmdCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
+        '''
+        Sets channel to update count of commands used
+        supports formatting of value string wich will be put into channel's name
+        where the heck I will store this data ? i am so lazy to make another table and I hate sql and how it is painful to migrate to production
+        why not create misc table lol and here it is :
+        CREATE TABLE `bot`.`manager` ( `Id` INT NOT NULL AUTO_INCREMENT , `Type` INT NOT NULL , `Data` VARCHAR(9999) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB; 
+        '''
+        if (channel == None):
+            await ctx.send('Channel is not selected or wrong!')
+            return
+        if (value == None):
+            await ctx.send('You passed an empty string!')
+            return
+        if (not '{' in value):
+            await ctx.send('Do you realy want to pass string witout format place?')
+            return
+        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=0')
+        for channelRecord in channels:
+            data = json.loads(channelRecord[2])
+            if int(data[0]) == channel.id:
+                await ctx.send(f'You already have a message for that channel with id {channelRecord[0]}!')
+                return 
+        record = [int(channel.id),value]
+        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (0,%s)',(json.dumps(record),))
+        await ctx.send('Done!')
+        return
+
+    async def purge(self,ctx,value:int):
+        servers = await makeAsyncRequest('SELECT Id FROM servers WHERE OfflineTrys >= %s',(value,))
+        for server in servers:
+            id = server[0]
+            result = await deleteServer('',id)
+            if(result != 0):
+                await ctx.send(f'Smt went wrong with server {id}!')
+        await ctx.send('Deleted servers!')
+        return
+
+    @commands.command()
+    async def purgeServers(self, ctx, value:int):
+        machedServers = await makeAsyncRequest('SELECT COUNT(*) FROM `servers` WHERE OfflineTrys >= %s',(value,))
+        self.msg = await ctx.send(f'Do you really want to delete {machedServers[0][0]} servers?')
+        await self.msg.add_reaction('✅')
+        try:
+            reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
+        except asyncio.TimeoutError:
+            try:
+                await self.msg.clear_reactions()
+                await self.msg.edit(content='The interactive menu was closed.',embed=None)
+            except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!  
+                return ''
         else:
-            serverId = server[0][0]
-            notifications = await makeAsyncRequest('SELECT * FROM notifications')
-            settings = await makeAsyncRequest('SELECT * FROM settings')
-            removed = 0
-            for notification in notifications:
-                ids = json.loads(notification[4])
-                if (serverId in ids):
-                    ids.remove(serverId)
-                    await makeAsyncRequest('UPDATE notifications SET ServersIds=%s WHERE Id=%s',(json.dumps(ids),server[0][0],))
-                    removed += 1
-            await ctx.send(f'Removed server from notifications! Affected {removed} records')
-            removed = 0
-            for setting in settings:
-                ids = json.loads(setting[3])
-                if (serverId in ids):
-                    ids.remove(serverId)
-                    await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE Id=%s',(json.dumps(ids),server[0][0],))
-                    removed += 1
-            await ctx.send(f'Removed server from settings! Affected {removed} records')
-            await makeAsyncRequest('DELETE FROM servers WHERE Id=%s',(serverId,))
-            await ctx.send('Done!')
+            if (str(reaction.emoji) == '✅'):
+                await ctx.send('Ok! Deleting!')
+                await self.msg.clear_reactions()
+                await self.purge(ctx,value)
 
+    @commands.command()
+    async def setServersCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
+        if (channel == None):
+            await ctx.send('Channel is not selected or wrong!')
+            return
+        if (value == None):
+            await ctx.send('You passed an empty string!')
+            return
+        if (not '{' in value):
+            await ctx.send('Do you realy want to pass string witout format place?')
+            return
+        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=1')
+        for channelRecord in channels:
+            data = json.loads(channelRecord[2])
+            if int(data[0]) == channel.id:
+                await ctx.send(f'You already have a message for that channel with id {channelRecord[0]}!')
+                return 
+        record = [int(channel.id),value]
+        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (1,%s)',(json.dumps(record),))
+        await ctx.send('Done!')
+        return
+        
 
+    @tasks.loop(seconds=20.0) 
+    async def cmdCountUpdater(self):
+        '''
+        Well no excluding of commands and no order but I'll do with that
+        '''
+        print('entered cmd updater')
+        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=0') # get all record about channels we need to update
+        commands = await makeAsyncRequest('SELECT * FROM commandsused') # get commands 
+        total = await makeAsyncRequest('SELECT SUM(Uses) FROM commandsused') # get how much all commands are used
+        total = total[0][0] # extract count of all commands used
+        i=0 
+        for channel in channels: # for each channel in DB
+            cmd = commands[i] # get command
+            data = json.loads(channel[2]) # load data
+            print(data) # debug
+            discordChannel = self.bot.get_channel(data[0]) # get channel 
+            print(discordChannel) # debug
+            if (discordChannel == None): # if channel is not found
+                continue # skip 
+            await discordChannel.edit(reason='Auto edit',name=data[1].format(cmd[1],int(cmd[2]),total)) # else edit name of the channel
+            print('edited')
+            i += 1 # increase i 
+
+    @cmdCountUpdater.before_loop
+    async def before_printer(self):
+        print('waiting...')
+        await self.bot.wait_until_ready() # wait until cache of bot is ready

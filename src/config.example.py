@@ -1,15 +1,19 @@
 class Config:
     def __init__(self):
-        self.dbHost = 'db'
-        self.dbUser = 'root'
-        self.dbPass = 'secret'
-        self.DB = 'bot'
-        self.adminId = ''
-        self.token = ''
-        self.defaultPrefix = '!'
-        self.DBLToken = ''
-        self.inviteUrl = 'https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot&permissions=8' #fix permisions!
-        self.debug = True
-        self.client_id = 1
-        self.client_secret = ''
-        self.redirect_url = ''
+        self.dbHost = 'db' # host of the DB
+        self.dbUser = 'root' # user to the DB
+        self.dbPass = 'secret' # password to the DB
+        self.DB = 'bot' # DB to use in bot
+        self.adminId = '' # not used right now
+        self.token = '' # token of the bot
+        self.defaultPrefix = '!' # default prefix
+        self.DBLToken = '' # API token for https://top.gg
+        self.inviteUrl = 'https://cutt.ly/ARKBot' # invite URL to use in bot 
+        self.debug = True # if output debug messages
+        self.client_id = 12131313 # client id of the bot
+        self.client_secret = '12131' # client secret from discord's oauth page
+        self.redirect_url = '' # redirect url to log all users
+        self.version = 'DEBUG!' # version displayed
+        self.workersCount = 5 # x update workers per interation
+        self.updateFrequency = 120 # 1 update loop in x seconds
+        self.backupWebhookUrl = '' # discord webhook url to use in backup script
