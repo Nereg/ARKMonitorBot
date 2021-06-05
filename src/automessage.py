@@ -69,13 +69,13 @@ class Automessage(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def updater(self):
-        automessages = await makeAsyncRequest('SELECT * FROM automessages')
-        for message in automessages:
-            channel = self.bot.get_channel(message[1])
-            if (channel == None):
-                await self.deleteAutomessage(message[0])
-                continue
-            try:
+        automessages = await makeAsyncRequest('SELECT * FROM automessages') # get all automessages we need to send 
+        for message in automessages: # for every message in db
+            channel = self.bot.get_channel(message[1]) # let's try to get the channel 
+            if (channel == None): # if channel is not found
+                await self.deleteAutomessage(message[0]) # delete the record
+                continue 
+            try: # else 
                 discordMessage = await channel.fetch_message(message[2])
             except discord.NotFound:
                 await self.deleteAutomessage(message[0])

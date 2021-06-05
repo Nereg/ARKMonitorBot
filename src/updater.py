@@ -132,35 +132,26 @@ class Updater(commands.Cog):
         server = list(filter(lambda x:x[0] == serverId,self.servers)) # select from local cache (self.servers)
         server = server[0] # select first result 
         ip = server[1] # get server's ip
-        result = []
+        result = [] # where we store the result of the function
         try: # standart online/offline check 
             serverObj = await c.ARKServer(ip).AGetInfo() # get info about server 
             playersList = await c.PlayersList(ip).AgetPlayersList() # get players list
-            oldObj = c.ARKServer.fromJSON(server[4])
-            if (not hasattr(oldObj, 'battleURL')): # if we don't have battle url already
-                print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
+            oldObj = c.ARKServer.fromJSON(server[4]) # get server object from DB 
+            if (not hasattr(oldObj, 'battleURL')): # if we don't have battle url already in the DB object
+                #print(f'We don`t have battle URl for server {ip} {getattr(c.ARKServer.fromJSON(server[4]),"battleURL","nothing")}')
                 battleURL = await self.battleAPI.getBattlemetricsUrl(serverObj) # get it
-                self.fetchedUrls += 1
+                self.fetchedUrls += 1 # increase debug counter
                 if (battleURL): # if we fetched the url
                     #serverObj.battleURL = battleURL # put it in
-                    setattr(serverObj,'battleURL',battleURL)
-                    if not hasattr(serverObj, 'battleURL'):
-                        await sendToMe(f'There is a bug in setattr! server id is {serverId}')
+                    setattr(serverObj,'battleURL',battleURL) # push it into the object
             else:
-                setattr(serverObj,'battleURL',oldObj.battleURL)
+                setattr(serverObj,'battleURL',oldObj.battleURL) # magic code probably to fix an old bug
             await makeAsyncRequest('UPDATE servers SET ServerObj=%s , PlayersObj=%s , LastOnline=1 , OfflineTrys=0 WHERE Ip =%s',(serverObj.toJSON(),playersList.toJSON(),ip)) # update DB record
             if (bool(server[6]) == False): # if previously server was offline (check LastOnline column)
                 result = [1,serverObj,playersList,0] # return server went online (return status 1 and two new objects)
             else:
                 result = [3,serverObj,playersList,0] # return unchanged (return status 3 and two new objects)
         except c.ARKServerError: # catch my own error 
-            #if (type(error) != c.ARKServerError): # if not my error 
-            #    errors = traceback.format_exception(type(error), error, error.__traceback__)
-            #    errors_str = ''.join(errors)
-            #    date = datetime.utcfromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-            #    ip = await makeAsyncRequest('SELECT Ip FROM servers WHERE Id=%s',(server[0],))
-            #    await sendToMe(f'{errors_str}\nDate: {date}\n Server id: {server[0]}\nServer ip:{ip[0][0]}',self.bot)
-            #    result = [1,c.ARKServer('1.1.1.1:1234'),c.PlayersList('1.1.1.1:1234')]
             await makeAsyncRequest('UPDATE servers SET LastOnline=0,OfflineTrys=%s WHERE Ip=%s',(server[7]+1,ip,)) # update DB (add one to OfflineTrys and set LastOnline to 0)
             if (bool(server[6]) == True): # if server was online
                 result = [2,c.ARKServer.fromJSON(server[4]),c.PlayersList.fromJSON(server[5]),server[7]+1] #return server went offline
@@ -173,12 +164,12 @@ class Updater(commands.Cog):
         await self.server_notificator(result) # send notifications 
         return result
 
-    @tasks.loop(seconds=120.0)
+    @tasks.loop(seconds=110.0)
     async def printer(self): #entrypoint
         self.fetchedUrls = 0 # it was resetting the variable in the wrong place !
         await sendToMe('Entered updater!',self.bot) # debug
         start = time.perf_counter() # start timer
-        chunksTime = [] # list to old time it takes to process each chunk
+        chunksTime = [] # list to hold times it takes to process each chunk
         self.notificationsList = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3') # fetch all notifications records
         self.servers = await makeAsyncRequest('SELECT * FROM servers') # fetch all servers (it must be heavy ?)
         serverCount = self.servers.__len__() # get current count of servers
@@ -206,7 +197,10 @@ class Updater(commands.Cog):
             #else: # if not
             end = time.perf_counter() # end performance timer
             await sendToMe(f"It took {end - start:.4f} seconds to update all servers!\nNotifications weren`t sent because bot isn't ready\n{end - start:.4f} sec. in total",self.bot) # debug
-            await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}\nUpdate queue lenth is: {self.servers.__len__()}',self.bot)
+            if (len(chunksTime) <= 0):
+                await sendToMe(f'Max chunk time is: {0:.4f}\nMin chunk time: {0:.4f}\nAverage time is:{0:.4f}\nChunk lenth is: {self.workersCount}\nUpdate queue lenth is: {self.servers.__len__()}\nWARNING: `chunksTime.__len__()` <= 0! chunksTime: `{chunksTime}`',self.bot)
+            else:
+                await sendToMe(f'Max chunk time is: {max(chunksTime):.4f}\nMin chunk time: {min(chunksTime):.4f}\nAverage time is:{sum(chunksTime)/len(chunksTime):.4f}\nChunk lenth is: {self.workersCount}\nUpdate queue lenth is: {self.servers.__len__()}',self.bot)
             await sendToMe(f'Fetched {self.fetchedUrls} urls!',self.bot)
         except KeyError as error:
             await self.on_error(error)
