@@ -322,7 +322,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     async def exec(self,ctx,sql):
-        data = makeRequest(sql)
+        data = await makeAsyncRequest(sql)
         await ctx.send(data)
     
     @commands.command()
@@ -330,7 +330,7 @@ class Admin(commands.Cog):
         result = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
         if (result.__len__() <= 0):
             await makeAsyncRequest('INSERT INTO settings(GuildId, Prefix, ServersId, Admins, Type, Aliases) VALUES (1,"","","",0,"")')
-        makeRequest('UPDATE settings SET Admins=%s WHERE GuildId=1',(message,))
+        await makeAsyncRequest('UPDATE settings SET Admins=%s WHERE GuildId=1',(message,))
         await ctx.send('Done!')
 
     @commands.command()
@@ -398,7 +398,15 @@ class Admin(commands.Cog):
         return
 
     @commands.command()
-    async def purgeServers(self, ctx, value:int):
+    async def purgeServers(self, ctx, *argv):
+        if (argv.__len__() <= 0):
+            await ctx.send("Not every parameter was supplied!")
+            return
+        elif (str.isdigit(argv[0])):
+            value = int(argv[0])
+        else:
+            await ctx.send(f"`{ argv[0]}` isn't a number!")
+            return
         machedServers = await makeAsyncRequest('SELECT COUNT(*) FROM `servers` WHERE OfflineTrys >= %s',(value,))
         self.msg = await ctx.send(f'Do you really want to delete {machedServers[0][0]} servers?')
         await self.msg.add_reaction('✅')
@@ -408,7 +416,7 @@ class Admin(commands.Cog):
             try:
                 await self.msg.clear_reactions()
                 await self.msg.edit(content='The interactive menu was closed.',embed=None)
-            except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!  
+            except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON! (yeah I pasted this code from user space why not)
                 return ''
         else:
             if (str(reaction.emoji) == '✅'):
