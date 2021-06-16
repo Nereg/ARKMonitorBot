@@ -20,7 +20,7 @@ import json
 import datetime
 from collections import Counter
 from discord.ext import tasks
-
+import location
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -480,6 +480,14 @@ class Admin(commands.Cog):
             await discordChannel.edit(reason='Auto edit', name=data[1].format(cmd[1], int(cmd[2]), total))
             print('edited')
             i += 1  # increase i
+
+    @commands.command()
+    async def getIpLocation(self, ctx, ip: str):
+        session = aiohttp.ClientSession()
+        loc = location.Location(session)
+        code = await loc.get(ip)
+        emoji = await loc.getEmoji(code)
+        await ctx.send(f'Ip: `{ip}`\nCountry code: `{code}`\nCountry emoji: {emoji}')
 
     @cmdCountUpdater.before_loop
     async def before_printer(self):
