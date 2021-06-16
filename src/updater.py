@@ -268,7 +268,7 @@ class Updater(commands.Cog):
         print('waiting...')
         # await self.bot.wait_until_ready() why waiste all this time when we can update DB while cache is updating?
         self.session = aiohttp.ClientSession()  # get aiohttps's session
-        self.battleAPI = c.BattleMetricsAPI(self.session)  # contrict API class
+        self.battleAPI = c.BattleMetricsAPI(self.session)  # construct API class
         await self.initPool()
         print('done waiting')
 
