@@ -19,6 +19,61 @@ import asyncio
 import aiohttp
 
 
+class UpdateResult(c.JSON):
+    def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList, id: int):
+        self.result = result
+        self.serverObj = serverObj
+        self.playersObj = playersObj
+        self.id = id
+        self.ip = self.serverObj.ip
+
+    def isSuccessful(self):
+        return self.result
+
+
+class NeoUpdater(commands.Cog):
+    def __init__(self, bot) -> None:
+        self.bot = bot
+        self.cfg = config.Config()
+        # count of concurrent functions to run
+        self.workersCount = self.cfg.workersCount
+        self.handlers = []  # array of handler classes which would handle results
+        self.additions = []  # array of additional classes which would update some info
+        #asyncio.run(self.init())
+        # gives a ton of errors somehow
+
+    async def makeAsyncRequest(self, SQL, params=()):
+        conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
+        async with conn.cursor() as cur:  # with cursor as cur
+            await cur.execute(SQL, params)  # execute SQL with parameters
+            result = await cur.fetchall()  # fetch all results
+            await conn.commit()  # commit changes
+        self.sqlPool.release(conn)  # release current connection to the pool
+        return result  # return result
+
+    def cog_unload(self):  # on unload
+        self.updaterLoop.cancel()  # cancel the task
+        self.sqlPool.close()  # terminate pool of connections
+        asyncio.run(self.httpSession.close()) # close http pool
+
+    # let's do anything normal __init__ can't do 
+    async def init(self): 
+        self.httpSession = aiohttp.ClientSession()  # for use in http API's
+        self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
+                                                  # https://github.com/aio-libs/aiomysql/issues/574
+                                                  user=self.cfg.dbUser, password=self.cfg.dbPass,
+                                                  db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+
+    @commands.command()
+    async def NeoTest(self,ctx,sql):
+        await self.init()
+        await ctx.send(await self.makeAsyncRequest("SELECT 123"))
+
+    async def updaterLoop(self):
+        print(await self.makeAsyncRequest('SELECT 1'))
+        pass
+
+
 class Updater(commands.Cog):
     '''
     Updates record for server in DB
@@ -27,9 +82,9 @@ class Updater(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cfg = config.Config()
-        # count of concurrent functions to tun
+        # count of concurrent functions to run
         self.workersCount = self.cfg.workersCount
-        self.server_list = []  # list of lists : [[server_id,server_status]...]
+        self.server_list = []  # list of objects (UpdateResults)
         self.fetchedUrls = 0
         print('Init')
         self.printer.start()
@@ -268,7 +323,8 @@ class Updater(commands.Cog):
         print('waiting...')
         # await self.bot.wait_until_ready() why waiste all this time when we can update DB while cache is updating?
         self.session = aiohttp.ClientSession()  # get aiohttps's session
-        self.battleAPI = c.BattleMetricsAPI(self.session)  # construct API class
+        self.battleAPI = c.BattleMetricsAPI(
+            self.session)  # construct API class
         await self.initPool()
         print('done waiting')
 
