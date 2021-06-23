@@ -28,7 +28,7 @@ class UpdateResult(c.JSON):
         self.ip = self.serverObj.ip
         self.reason = reason
 
-    def isSuccessful(self):
+    def successful(self):
         return self.result
 
 
@@ -98,7 +98,30 @@ class NeoUpdater(commands.Cog):
         return UpdateResult(True, results[0], results[1], Id) # else return success
 
     async def save(self,results):
-
+        tasks = [] # list of tasks to run concurrently
+        # for each server on list
+        for result in results:
+            # if update is successful
+            if (result.successful()):
+                # make request
+                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=1, OfflineTrys=0, ServerObj=%s, PlayersObj=%s WHERE Id=%s",
+                result.serverObj.toJSON(), result.playersObj.toJSON(), result.id)
+            else:
+                # find the server in cache
+                cachedServer = await self.searchCache(result.id)
+                # if server is found
+                if (cachedServer != None):
+                    # make request
+                    task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s WHERE Id=%s",
+                                                cachedServer[7] + 1, cachedServer[0])
+                # if server is not found
+                else:
+                    # make request (won't track how many times it was offline when we checked)
+                    task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=1 WHERE Id=%s",
+                                                cachedServer[0])
+        # after each task generated
+        # run them concurrently
+        await asyncio.gather(*tasks)
 
     # main updater loop
     @tasks.loop(seconds=100.0)
@@ -108,7 +131,6 @@ class NeoUpdater(commands.Cog):
         self.serversIds = await self.flattenCache() # make array with ids only     
         serversCount = self.servers.__len__() # get how many servers we need to update
 
-        preparedTasks = 0 # how much tasks are prepared
         tasks = [] # list of tasks to run concurrently
         # for each server
         for i in range(1,serversCount):
