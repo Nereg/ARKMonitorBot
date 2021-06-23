@@ -20,12 +20,13 @@ import aiohttp
 
 
 class UpdateResult(c.JSON):
-    def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList, id: int):
+    def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList, id: int, reason: c.ARKServerError = None):
         self.result = result
         self.serverObj = serverObj
         self.playersObj = playersObj
         self.id = id
         self.ip = self.serverObj.ip
+        self.reason = reason
 
     def isSuccessful(self):
         return self.result
@@ -39,9 +40,31 @@ class NeoUpdater(commands.Cog):
         self.workersCount = self.cfg.workersCount
         self.handlers = []  # array of handler classes which would handle results
         self.additions = []  # array of additional classes which would update some info
-        #asyncio.run(self.init())
-        # gives a ton of errors somehow
+        self.servers = None # local cache of all servers from DB. Updated on every iteration
+        self.serversIds = None # list of ids of the servers from local cache for faster searching
 
+    def cog_unload(self):  # on unload
+        self.updaterLoop.cancel()  # cancel the task
+                                # self.destroy will run anything to destroy 
+
+    # generates array of ids of servers from local cache
+    async def flattenCache(self):
+        # list comprehension is faster
+        return [i[0] for i in self.servers] 
+
+    # searches for an id in local cache (self.servers)
+    async def searchCache(self, id: int):
+        try:
+            # search for that id in flattened locla cache 
+            position = self.serversIds.index(id)
+        # if not found
+        except ValueError:
+            # return none
+            return None
+        # return server record from found position
+        return self.servers[position]
+        
+    # performs SQL request using aiomysql pool instead of regular function
     async def makeAsyncRequest(self, SQL, params=()):
         conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
         async with conn.cursor() as cur:  # with cursor as cur
@@ -51,11 +74,6 @@ class NeoUpdater(commands.Cog):
         self.sqlPool.release(conn)  # release current connection to the pool
         return result  # return result
 
-    def cog_unload(self):  # on unload
-        self.updaterLoop.cancel()  # cancel the task
-        self.sqlPool.close()  # terminate pool of connections
-        asyncio.run(self.httpSession.close()) # close http pool
-
     # let's do anything normal __init__ can't do 
     async def init(self): 
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
@@ -63,16 +81,77 @@ class NeoUpdater(commands.Cog):
                                                   # https://github.com/aio-libs/aiomysql/issues/574
                                                   user=self.cfg.dbUser, password=self.cfg.dbPass,
                                                   db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+    
+    # function that updates some server
+    async def updateServer(self, Ip: str, Id: int):
+        server = c.ARKServer(Ip) # construct classes 
+        players = c.PlayersList(Ip)
+        updateServer = server.AGetInfo() # make coroutines
+        updatePlayers = players.AgetPlayersList()
+        
+        try:
+            # run coroutines concurrently
+            results = await asyncio.gather(updateServer, updatePlayers)
+        except c.ARKServerError as e: # if fails
+            return UpdateResult(False, None, None, Id, e) # return fail and reason
+        
+        return UpdateResult(True, results[0], results[1], Id) # else return success
 
-    @commands.command()
-    async def NeoTest(self,ctx,sql):
+    async def save(self,results):
+
+
+    # main updater loop
+    @tasks.loop(seconds=100.0)
+    async def update(self):
+        print("Entered updater loop!")
+        self.servers = await self.makeAsyncRequest("SELECT * FROM servers") # update local cache
+        self.serversIds = await self.flattenCache() # make array with ids only     
+        serversCount = self.servers.__len__() # get how many servers we need to update
+
+        preparedTasks = 0 # how much tasks are prepared
+        tasks = [] # list of tasks to run concurrently
+        # for each server
+        for i in range(1,serversCount):
+            # make coroutine
+            task = self.updateServer(i)
+            # append new task to task list
+            tasks[:0] = task 
+            # if enough tasks generated 
+            if (tasks.__len__() >= self.workersCount):
+                # run them concurrently
+                results = await asyncio.gather(*tasks)
+                # empty the list of tasks
+                tasks = []
+                #########
+                # Space for more functions
+                #########
+                # save results in DB
+                await self.save(results)
+        # if there is some tasks left 
+        if (tasks.__len__() != 0):
+            # run them concurrently
+            results = await asyncio.gather(*tasks)
+            # empty the list of tasks
+            tasks = []
+            # save results in DB
+            await self.save(results)
+
+
+
+
+
+    # will be executed before main loop starts
+    @update.before_loop
+    async def before_update(self):
         await self.init()
-        await ctx.send(await self.makeAsyncRequest("SELECT 123"))
+        print("Inited updater loop!")
 
-    async def updaterLoop(self):
-        print(await self.makeAsyncRequest('SELECT 1'))
-        pass
-
+    # will be executed before main loop will be destroyed
+    @update.after_loop
+    async def destroy(self):
+        self.sqlPool.close()
+        await self.httpSession.close()
+        print("Destroyed updater loop!")
 
 class Updater(commands.Cog):
     '''
