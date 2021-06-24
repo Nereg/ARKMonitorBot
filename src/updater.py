@@ -170,7 +170,7 @@ class NeoUpdater(commands.Cog):
         errors = traceback.format_exception(
         type(error), error, error.__traceback__)
         errors_str = ''.join(errors)
-        await sendToMe(errors_str,True)
+        await sendToMe(errors_str,self.bot,True)
 
     # will be executed before main loop will be destroyed
     @update.after_loop
