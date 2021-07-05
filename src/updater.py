@@ -34,6 +34,7 @@ class UpdateResult(c.JSON):
 
 class NeoUpdater(commands.Cog):
     def __init__(self, bot) -> None:
+        print("entered neo updater init")
         self.bot = bot
         self.cfg = config.Config()
         # count of concurrent functions to run
@@ -42,10 +43,11 @@ class NeoUpdater(commands.Cog):
         self.additions = []  # array of additional classes which would update some info
         self.servers = None # local cache of all servers from DB. Updated on every iteration
         self.serversIds = None # list of ids of the servers from local cache for faster searching
+        self.update.start() # start main loop 
 
     def cog_unload(self):  # on unload
-        self.updaterLoop.cancel()  # cancel the task
-                                # self.destroy will run anything to destroy 
+        self.update.cancel()  # cancel the task
+                              # self.destroy will run anything to destroy 
 
     # generates array of ids of servers from local cache
     async def flattenCache(self):
@@ -54,8 +56,12 @@ class NeoUpdater(commands.Cog):
 
     # searches for an id in local cache (self.servers)
     async def searchCache(self, id: int):
+        '''
+        Searches for a server in local cache.
+        If found returns the server if not returns None
+        '''
         try:
-            # search for that id in flattened locla cache 
+            # search for that id in flattened local cache 
             position = self.serversIds.index(id)
         # if not found
         except ValueError:
@@ -76,11 +82,13 @@ class NeoUpdater(commands.Cog):
 
     # let's do anything normal __init__ can't do 
     async def init(self): 
+        print("Started async init")
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
         self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
                                                   # https://github.com/aio-libs/aiomysql/issues/574
                                                   user=self.cfg.dbUser, password=self.cfg.dbPass,
                                                   db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+        print("Finished async init")
     
     # function that updates some server
     async def updateServer(self, Ip: str, Id: int):
@@ -97,6 +105,15 @@ class NeoUpdater(commands.Cog):
         
         return UpdateResult(True, results[0], results[1], Id) # else return success
 
+    async def performance(self,globalStart,globalStop,localStart,chunkTimes):
+        # calculate global time 
+        globalTime = globalStop - globalStart
+        avgChunk = sum(chunkTimes) / len(chunkTimes) 
+        minChunk = min(chunkTimes)
+        maxChunk = max(chunkTimes)
+        await sendToMe(f"New updater took {globalTime:.4f} sec. to update {self.serversIds.__len__()} servers.", self.bot)
+        await sendToMe(f"Min chunk time: {minChunk:.4f}.\nAvg chunk time: {avgChunk:.4f}\nMax chunk time: {maxChunk:.4f}",self.bot)
+
     async def save(self,results):
         tasks = [] # list of tasks to run concurrently
         # for each server on list
@@ -105,7 +122,9 @@ class NeoUpdater(commands.Cog):
             if (result.successful()):
                 # make request
                 task = self.makeAsyncRequest("UPDATE servers SET LastOnline=1, OfflineTrys=0, ServerObj=%s, PlayersObj=%s WHERE Id=%s",
-                result.serverObj.toJSON(), result.playersObj.toJSON(), result.id)
+                (result.serverObj.toJSON(), result.playersObj.toJSON(), result.id,))
+                # append it to list of tasks
+                tasks.append(task)
             else:
                 # find the server in cache
                 cachedServer = await self.searchCache(result.id)
@@ -113,12 +132,16 @@ class NeoUpdater(commands.Cog):
                 if (cachedServer != None):
                     # make request
                     task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s WHERE Id=%s",
-                                                cachedServer[7] + 1, cachedServer[0])
+                                                (cachedServer[7] + 1, cachedServer[0],))
+                    # append it to list of tasks
+                    tasks.append(task)
                 # if server is not found
                 else:
                     # make request (won't track how many times it was offline when we checked)
                     task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=1 WHERE Id=%s",
-                                                cachedServer[0])
+                                                (cachedServer[0],))
+                    # append it to list of tasks
+                    tasks.append(task)
         # after each task generated
         # run them concurrently
         await asyncio.gather(*tasks)
@@ -126,18 +149,27 @@ class NeoUpdater(commands.Cog):
     # main updater loop
     @tasks.loop(seconds=100.0)
     async def update(self):
-        print("Entered updater loop!")
+        await sendToMe("Entered updater loop!",self.bot)
+        globalStart = time.perf_counter() # start performance timer
+        chunksTime = [] # array to hold time each chunk took to process
         self.servers = await self.makeAsyncRequest("SELECT * FROM servers") # update local cache
         self.serversIds = await self.flattenCache() # make array with ids only     
         serversCount = self.servers.__len__() # get how many servers we need to update
 
         tasks = [] # list of tasks to run concurrently
+        localStart = time.perf_counter() # start performance timer for this chunk
         # for each server
         for i in range(1,serversCount):
+            # search for current server
+            currentServer = await self.searchCache(i)
+            # if server not found
+            if (not currentServer):
+                # skip this server
+                continue
             # make coroutine
-            task = self.updateServer(i)
+            task = self.updateServer(currentServer[1],i)
             # append new task to task list
-            tasks[:0] = task 
+            tasks.append(task)
             # if enough tasks generated 
             if (tasks.__len__() >= self.workersCount):
                 # run them concurrently
@@ -149,6 +181,10 @@ class NeoUpdater(commands.Cog):
                 #########
                 # save results in DB
                 await self.save(results)
+                # add chunk time to array
+                chunksTime.append(time.perf_counter() - localStart)
+                # reset timer 
+                localStart = time.perf_counter()
         # if there is some tasks left 
         if (tasks.__len__() != 0):
             # run them concurrently
@@ -157,6 +193,9 @@ class NeoUpdater(commands.Cog):
             tasks = []
             # save results in DB
             await self.save(results)
+        globalStop = time.perf_counter()
+        # send performance data to me
+        await self.performance(globalStart,globalStop,localStart,chunksTime)
 
     # will be executed before main loop starts
     @update.before_loop
@@ -485,5 +524,5 @@ class Updater(commands.Cog):
             await ctx.send('Done !')
 
 
-def setup(bot):
-    bot.add_cog(Updater(bot))
+#def setup(bot):
+    #bot.add_cog(Updater(bot))
