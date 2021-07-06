@@ -7,7 +7,7 @@
 * `cd ..` - go to main bot's directory
 * `sudo docker-compose up -d --build` - start bot (you can lear how to install docker and docker-compose [here](https://calendarific.com/blog/how-to-install-docker-and-docker-compose-on-ubuntu-20-04-lts-focal-fossa))
 
-## Usefull links
+## Useful links
 * https://github.com/Yepoleb/python-a2s/ - library I am using to get info about ARK servers (MIT License Copyright (c) 2020 Gabriel Huber)
 * https://github.com/Yepoleb/python-a2s/issues/11 - if server cannot be added to bot because it is offline but in reality it is online
 * https://github.com/Yepoleb/python-a2s/issues/9 - async version of library I am using to get inforation about ARK servers
