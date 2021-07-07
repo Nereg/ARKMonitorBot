@@ -11,7 +11,7 @@ Fixed requirements conflicts
 Altered server table definition:
 ```sql
 ALTER TABLE `servers` ADD `Info` TEXT NOT NULL COMMENT 'Additional JSON info about server' AFTER `OfflineTrys`, ADD `LastUpdated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp that updates every time the record is updated' AFTER `Info`; 
-ALTER TABLE `servers` CHANGE `Info` `Info` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '{}' COMMENT 'Additional JSON info about server'; 
+ALTER TABLE `servers` CHANGE `Info` `Info` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT ('{}') COMMENT 'Additional JSON info about server'; 
 ```
 External :
 #This is a comment (won't be included in discord patchnotes)

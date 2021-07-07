@@ -489,6 +489,13 @@ class Admin(commands.Cog):
         emoji = await loc.getEmoji(code)
         await ctx.send(f'Ip: `{ip}`\nCountry code: `{code}`\nCountry emoji: {emoji}')
 
+    @commands.command()
+    async def bulkServerAdd(self, ctx, servers: str):
+        array = servers.split('\n') # split by newline
+        for ip in array:
+            await AddServer(ip, ctx)
+        await ctx.send('Done!')
+
     @cmdCountUpdater.before_loop
     async def before_printer(self):
         print('waiting...')
