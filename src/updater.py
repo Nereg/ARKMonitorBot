@@ -25,7 +25,7 @@ class UpdateResult(c.JSON):
         self.result = result # true - update is successful, false - not successful 
         self.serverObj = serverObj # updated server object (can be None if unsuccessful)
         self.playersObj = playersObj # updated players object (can be None if unsuccessful)
-        self.ip = self.serverObj.ip # get ip of that server
+        self.ip = self.serverRecord[2] # get ip of that server
         self.reason = reason # reason update failed 
         self.serverRecord = serverRecord # record in DB about that server
         self.cachedServer = c.ARKServer.fromJSON(serverRecord[4]) # make classes out of JSON
