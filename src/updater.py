@@ -18,6 +18,29 @@ import concurrent.futures._base as base
 import asyncio
 import aiohttp
 
+class DebugAddition():
+
+    def __init__(self,updater,httpPool,sqlPool) -> None:
+        print('Initing debug plugin!')
+        # if true than the plugin will modify the record
+        # for DB so all mutable plugins will be ran one-by-one and not concurrently
+        # (cuz I don't want to mess with syncing of all changes)
+        self.mutable = True 
+        # http pool for APIs
+        self.httpPool = httpPool
+        # sql pool 
+        self.sqlPool = sqlPool
+        # main updater class 
+        self.updater = updater
+        pass
+
+    # will be ran by main updater just like regular __init__
+    async def init(self):
+        pass
+
+    # will handle a batch of server uodates
+    async def handle(self,updateResults):
+        pass
 
 class UpdateResult(c.JSON):
     def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList,
@@ -25,7 +48,7 @@ class UpdateResult(c.JSON):
         self.result = result # true - update is successful, false - not successful 
         self.serverObj = serverObj # updated server object (can be None if unsuccessful)
         self.playersObj = playersObj # updated players object (can be None if unsuccessful)
-        self.ip = self.serverRecord[2] # get ip of that server
+        self.ip = serverRecord[2] # get ip of that server
         self.reason = reason # reason update failed 
         self.serverRecord = serverRecord # record in DB about that server
         self.cachedServer = c.ARKServer.fromJSON(serverRecord[4]) # make classes out of JSON
