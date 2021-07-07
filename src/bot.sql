@@ -106,14 +106,16 @@ CREATE TABLE `notifications` (
 --
 
 CREATE TABLE `servers` (
-  `Id` int NOT NULL,
-  `Ip` text NOT NULL,
-  `Port` int DEFAULT NULL,
-  `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci,
-  `ServerObj` text NOT NULL,
-  `PlayersObj` text NOT NULL,
-  `LastOnline` int NOT NULL DEFAULT '1',
-  `OfflineTrys` int NOT NULL DEFAULT '0'
+  `Id` int NOT NULL COMMENT 'Id of a server. Auto increases',
+  `Ip` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'Ip of a server in format: IP:Query port',
+  `Port` int DEFAULT NULL COMMENT 'Query port of a server',
+  `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci COMMENT 'Ip of a server',
+  `ServerObj` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'JSON dump of server object. See: /src/classes.py:72',
+  `PlayersObj` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'JSON dump of players object. See: /src/classes.py:268',
+  `LastOnline` int NOT NULL DEFAULT '1' COMMENT '0 or 1 indicating if the server was online or not last time we checked it.',
+  `OfflineTrys` int NOT NULL DEFAULT '0' COMMENT 'Counts how many attempts were made to reach server.',
+  `Info` text NOT NULL COMMENT 'Additional JSON info about server',
+  `LastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp that updates every time the record is updated'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------

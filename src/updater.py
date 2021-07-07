@@ -20,16 +20,22 @@ import aiohttp
 
 
 class UpdateResult(c.JSON):
-    def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList, id: int, reason: c.ARKServerError = None):
-        self.result = result
-        self.serverObj = serverObj
-        self.playersObj = playersObj
-        self.id = id
-        self.ip = self.serverObj.ip
-        self.reason = reason
+    def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList,
+                serverRecord, reason: c.ARKServerError = None):
+        self.result = result # true - update is successful, false - not successful 
+        self.serverObj = serverObj # updated server object (can be None if unsuccessful)
+        self.playersObj = playersObj # updated players object (can be None if unsuccessful)
+        self.ip = self.serverObj.ip # get ip of that server
+        self.reason = reason # reason update failed 
+        self.serverRecord = serverRecord # record in DB about that server
+        self.cachedServer = c.ARKServer.fromJSON(serverRecord[4]) # make classes out of JSON
+        self.cachedPlayers = c.PlayersList.fromJSON(serverRecord[5])
+        self.Id = serverRecord[0] # id of the server in DB
 
     def successful(self):
         return self.result
+    
+    
 
 
 class NeoUpdater(commands.Cog):
@@ -57,8 +63,8 @@ class NeoUpdater(commands.Cog):
     # searches for an id in local cache (self.servers)
     async def searchCache(self, id: int):
         '''
-        Searches for a server in local cache.
-        If found returns the server if not returns None
+        Searches for a server record in local cache.
+        If found returns the server record if not returns None
         '''
         try:
             # search for that id in flattened local cache 
@@ -82,7 +88,6 @@ class NeoUpdater(commands.Cog):
 
     # let's do anything normal __init__ can't do 
     async def init(self): 
-        print("Started async init")
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
         self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
                                                   # https://github.com/aio-libs/aiomysql/issues/574
@@ -91,7 +96,8 @@ class NeoUpdater(commands.Cog):
         print("Finished async init")
     
     # function that updates some server
-    async def updateServer(self, Ip: str, Id: int):
+    async def updateServer(self, serverRecord, Id:int):
+        Ip = serverRecord[1] # get IP of the server 
         server = c.ARKServer(Ip) # construct classes 
         players = c.PlayersList(Ip)
         updateServer = server.AGetInfo() # make coroutines
@@ -101,9 +107,9 @@ class NeoUpdater(commands.Cog):
             # run coroutines concurrently
             results = await asyncio.gather(updateServer, updatePlayers)
         except c.ARKServerError as e: # if fails
-            return UpdateResult(False, None, None, Id, e) # return fail and reason
+            return UpdateResult(False, None, None, serverRecord, e) # return fail and reason
         
-        return UpdateResult(True, results[0], results[1], Id) # else return success
+        return UpdateResult(True, results[0], results[1], serverRecord) # else return success
 
     async def performance(self,globalStart,globalStop,localStart,chunkTimes):
         # calculate global time 
@@ -112,7 +118,7 @@ class NeoUpdater(commands.Cog):
         minChunk = min(chunkTimes)
         maxChunk = max(chunkTimes)
         await sendToMe(f"New updater took {globalTime:.4f} sec. to update {self.serversIds.__len__()} servers.", self.bot)
-        await sendToMe(f"Min chunk time: {minChunk:.4f}.\nAvg chunk time: {avgChunk:.4f}\nMax chunk time: {maxChunk:.4f}",self.bot)
+        await sendToMe(f"Min chunk time: {minChunk:.4f}\nAvg chunk time: {avgChunk:.4f}\nMax chunk time: {maxChunk:.4f}",self.bot)
 
     async def save(self,results):
         tasks = [] # list of tasks to run concurrently
@@ -122,26 +128,15 @@ class NeoUpdater(commands.Cog):
             if (result.successful()):
                 # make request
                 task = self.makeAsyncRequest("UPDATE servers SET LastOnline=1, OfflineTrys=0, ServerObj=%s, PlayersObj=%s WHERE Id=%s",
-                (result.serverObj.toJSON(), result.playersObj.toJSON(), result.id,))
+                (result.serverObj.toJSON(), result.playersObj.toJSON(), result.Id,))
                 # append it to list of tasks
                 tasks.append(task)
             else:
-                # find the server in cache
-                cachedServer = await self.searchCache(result.id)
-                # if server is found
-                if (cachedServer != None):
-                    # make request
-                    task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s WHERE Id=%s",
-                                                (cachedServer[7] + 1, cachedServer[0],))
-                    # append it to list of tasks
-                    tasks.append(task)
-                # if server is not found
-                else:
-                    # make request (won't track how many times it was offline when we checked)
-                    task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=1 WHERE Id=%s",
-                                                (cachedServer[0],))
-                    # append it to list of tasks
-                    tasks.append(task)
+                # make request
+                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s WHERE Id=%s",
+                                            (result.serverRecord[7] + 1, result.Id,))
+                # append it to list of tasks
+                tasks.append(task)
         # after each task generated
         # run them concurrently
         await asyncio.gather(*tasks)
@@ -167,7 +162,7 @@ class NeoUpdater(commands.Cog):
                 # skip this server
                 continue
             # make coroutine
-            task = self.updateServer(currentServer[1],i)
+            task = self.updateServer(currentServer,i)
             # append new task to task list
             tasks.append(task)
             # if enough tasks generated 
@@ -217,6 +212,6 @@ class NeoUpdater(commands.Cog):
         self.sqlPool.close()
         await self.httpSession.close()
         print("Destroyed updater loop!")
-        
+
 #def setup(bot):
     #bot.add_cog(Updater(bot))
