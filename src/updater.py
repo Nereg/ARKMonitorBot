@@ -20,27 +20,33 @@ import aiohttp
 
 class DebugAddition():
 
-    def __init__(self,updater,httpPool,sqlPool) -> None:
+    def __init__(self,updater) -> None:
         print('Initing debug plugin!')
         # if true than the plugin will modify the record
         # for DB so all mutable plugins will be ran one-by-one and not concurrently
         # (cuz I don't want to mess with syncing of all changes)
-        self.mutable = True 
-        # http pool for APIs
-        self.httpPool = httpPool
-        # sql pool 
-        self.sqlPool = sqlPool
+        self.mutable = True         
         # main updater class 
         self.updater = updater
+        # http pool for APIs
+        self.httpPool = self.updater.httpSession
+        # sql pool 
+        self.sqlPool = self.updater.sqlPool
+
         pass
 
     # will be ran by main updater just like regular __init__
     async def init(self):
         pass
 
-    # will handle a batch of server uodates
+    # will handle a batch of server updates
+    # must return same sized array of update results
     async def handle(self,updateResults):
-        pass
+        print(f'Handled {updateResults.__len__()} servers!')
+        print(updateResults)
+        return updateResults
+
+
 
 class UpdateResult(c.JSON):
     def __init__(self, result: bool, serverObj: c.ARKServer, playersObj: c.PlayersList,
@@ -58,7 +64,6 @@ class UpdateResult(c.JSON):
     def successful(self):
         return self.result
     
-    
 
 
 class NeoUpdater(commands.Cog):
@@ -68,15 +73,29 @@ class NeoUpdater(commands.Cog):
         self.cfg = config.Config()
         # count of concurrent functions to run
         self.workersCount = self.cfg.workersCount
-        self.handlers = []  # array of handler classes which would handle results
-        self.additions = []  # array of additional classes which would update some info
+        self.plugins = [] # list of classes which would receive batches of update results 
         self.servers = None # local cache of all servers from DB. Updated on every iteration
         self.serversIds = None # list of ids of the servers from local cache for faster searching
         self.update.start() # start main loop 
 
+    # let's do anything normal __init__ can't do 
+    async def init(self): 
+        self.httpSession = aiohttp.ClientSession()  # for use in http API's
+        self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
+                                                  # https://github.com/aio-libs/aiomysql/issues/574
+                                                  user=self.cfg.dbUser, password=self.cfg.dbPass,
+                                                  db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+        self.plugins.append(DebugAddition(self))
+        print("Finished async init")
+
     def cog_unload(self):  # on unload
         self.update.cancel()  # cancel the task
                               # self.destroy will run anything to destroy 
+
+
+    # ~~~~~~~~~~~~~~~~~~~~~
+    #         MISC
+    # ~~~~~~~~~~~~~~~~~~~~~
 
     # generates array of ids of servers from local cache
     async def flattenCache(self):
@@ -109,17 +128,50 @@ class NeoUpdater(commands.Cog):
         self.sqlPool.release(conn)  # release current connection to the pool
         return result  # return result
 
-    # let's do anything normal __init__ can't do 
-    async def init(self): 
-        self.httpSession = aiohttp.ClientSession()  # for use in http API's
-        self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
-                                                  # https://github.com/aio-libs/aiomysql/issues/574
-                                                  user=self.cfg.dbUser, password=self.cfg.dbPass,
-                                                  db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
-        print("Finished async init")
+    async def performance(self,globalStart,globalStop,localStart,chunkTimes):
+        # calculate global time 
+        globalTime = globalStop - globalStart
+        avgChunk = sum(chunkTimes) / len(chunkTimes) 
+        minChunk = min(chunkTimes)
+        maxChunk = max(chunkTimes)
+        await sendToMe(f"New updater took {globalTime:.4f} sec. to update {self.serversIds.__len__()} servers.", self.bot)
+        await sendToMe(f"Min chunk time: {minChunk:.4f}\nAvg chunk time: {avgChunk:.4f}\nMax chunk time: {maxChunk:.4f}",self.bot)
     
+    # ~~~~~~~~~~~~~~~~~~~~~
+    #        PLUGINS
+    # ~~~~~~~~~~~~~~~~~~~~~
+
+    async def runPlugins(self,serverRecords):
+        '''
+        Runs plugins
+        '''
+        # search for mutable plugins
+        mutablePlugins = [x for x in self.plugins if x.mutable == True]
+        # search for immutable plugins
+        immutablePlugins = [x for x in self.plugins if x.mutable == False]
+        # if we have any mutable plugins
+        if (mutablePlugins.__len__() > 0):
+            # run mutable plugins one-by-one
+            for plugin in mutablePlugins:
+                serverRecords = await plugin.handle(serverRecords)
+        # if we have any mutable plugins
+        if (immutablePlugins.__len__() > 0):
+            # list for coroutines
+            coroutines = []
+            # generate coroutines
+            for immutablePlugin in immutablePlugins:
+                coroutines.append(immutablePlugin.handle(serverRecords))
+            # then run immutable plugins concurrently
+            await asyncio.gather(*coroutines)
+        # return the records
+        return serverRecords
+
+    # ~~~~~~~~~~~~~~~~~~~~~
+    #         MAIN
+    # ~~~~~~~~~~~~~~~~~~~~~
+
     # function that updates some server
-    async def updateServer(self, serverRecord, Id:int):
+    async def updateServer(self, serverRecord):
         Ip = serverRecord[1] # get IP of the server 
         server = c.ARKServer(Ip) # construct classes 
         players = c.PlayersList(Ip)
@@ -134,14 +186,6 @@ class NeoUpdater(commands.Cog):
         
         return UpdateResult(True, results[0], results[1], serverRecord) # else return success
 
-    async def performance(self,globalStart,globalStop,localStart,chunkTimes):
-        # calculate global time 
-        globalTime = globalStop - globalStart
-        avgChunk = sum(chunkTimes) / len(chunkTimes) 
-        minChunk = min(chunkTimes)
-        maxChunk = max(chunkTimes)
-        await sendToMe(f"New updater took {globalTime:.4f} sec. to update {self.serversIds.__len__()} servers.", self.bot)
-        await sendToMe(f"Min chunk time: {minChunk:.4f}\nAvg chunk time: {avgChunk:.4f}\nMax chunk time: {maxChunk:.4f}",self.bot)
 
     async def save(self,results):
         tasks = [] # list of tasks to run concurrently
@@ -185,18 +229,17 @@ class NeoUpdater(commands.Cog):
                 # skip this server
                 continue
             # make coroutine
-            task = self.updateServer(currentServer,i)
+            task = self.updateServer(currentServer)
             # append new task to task list
             tasks.append(task)
             # if enough tasks generated 
             if (tasks.__len__() >= self.workersCount):
                 # run them concurrently
                 results = await asyncio.gather(*tasks)
+                # run plugins 
+                results = await self.runPlugins(results)
                 # empty the list of tasks
                 tasks = []
-                #########
-                # Space for more functions
-                #########
                 # save results in DB
                 await self.save(results)
                 # add chunk time to array
@@ -207,6 +250,8 @@ class NeoUpdater(commands.Cog):
         if (tasks.__len__() != 0):
             # run them concurrently
             results = await asyncio.gather(*tasks)
+            # run plugins
+            results = await self.runPlugins(results)
             # empty the list of tasks
             tasks = []
             # save results in DB
