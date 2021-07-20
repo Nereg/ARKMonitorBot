@@ -17,23 +17,22 @@ import menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
+import battlemetrics
 
-class DebugAddition():
+class DebugPlugin():
 
     def __init__(self,updater) -> None:
         print('Initing debug plugin!')
         # if true than the plugin will modify the record
         # for DB so all mutable plugins will be ran one-by-one and not concurrently
         # (cuz I don't want to mess with syncing of all changes)
-        self.mutable = True         
+        self.mutable = False         
         # main updater class 
         self.updater = updater
         # http pool for APIs
         self.httpPool = self.updater.httpSession
         # sql pool 
         self.sqlPool = self.updater.sqlPool
-
-        pass
 
     # will be ran by main updater just like regular __init__
     async def init(self):
@@ -60,6 +59,8 @@ class UpdateResult(c.JSON):
         self.cachedServer = c.ARKServer.fromJSON(serverRecord[4]) # make classes out of JSON
         self.cachedPlayers = c.PlayersList.fromJSON(serverRecord[5])
         self.Id = serverRecord[0] # id of the server in DB
+        self.moreInfo = json.loads(serverRecord[8]) # decode JSON with more info from DB
+
 
     def successful(self):
         return self.result
@@ -85,7 +86,10 @@ class NeoUpdater(commands.Cog):
                                                   # https://github.com/aio-libs/aiomysql/issues/574
                                                   user=self.cfg.dbUser, password=self.cfg.dbPass,
                                                   db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
-        self.plugins.append(DebugAddition(self))
+        # add debug plugin to list of plugins
+        self.plugins.append(DebugPlugin(self))
+        # add Battlemetrics plugin
+        self.plugins.append(battlemetrics.BattlemetricsPlugin(self))
         print("Finished async init")
 
     def cog_unload(self):  # on unload
@@ -154,15 +158,19 @@ class NeoUpdater(commands.Cog):
             # run mutable plugins one-by-one
             for plugin in mutablePlugins:
                 serverRecords = await plugin.handle(serverRecords)
-        # if we have any mutable plugins
+                # catch common error
+                if (serverRecords == None):
+                    print(f'Plugin {type(plugin).__name__} returned none!')
+        # if we have any immutable plugins
         if (immutablePlugins.__len__() > 0):
             # list for coroutines
-            coroutines = []
+            # coroutines = []
             # generate coroutines
             for immutablePlugin in immutablePlugins:
-                coroutines.append(immutablePlugin.handle(serverRecords))
-            # then run immutable plugins concurrently
-            await asyncio.gather(*coroutines)
+                # run the plugin in background
+                asyncio.create_task(immutablePlugin.handle(serverRecords))
+            # then run immutable plugins concurrently (and don't wait for them)
+            # asyncio.create_task(asyncio.gather(*coroutines))
         # return the records
         return serverRecords
 
@@ -188,25 +196,25 @@ class NeoUpdater(commands.Cog):
 
 
     async def save(self,results):
-        tasks = [] # list of tasks to run concurrently
         # for each server on list
         for result in results:
             # if update is successful
             if (result.successful()):
                 # make request
-                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=1, OfflineTrys=0, ServerObj=%s, PlayersObj=%s WHERE Id=%s",
-                (result.serverObj.toJSON(), result.playersObj.toJSON(), result.Id,))
-                # append it to list of tasks
-                tasks.append(task)
+                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=1, OfflineTrys=0, ServerObj=%s, PlayersObj=%s, Info=%s, LastUpdated = CURRENT_TIMESTAMP WHERE Id=%s",
+                (result.serverObj.toJSON(), result.playersObj.toJSON(), json.dumps(result.moreInfo), result.Id,))
+                # run task in background
+                asyncio.create_task(task)
             else:
                 # make request
-                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s WHERE Id=%s",
-                                            (result.serverRecord[7] + 1, result.Id,))
-                # append it to list of tasks
-                tasks.append(task)
+                task = self.makeAsyncRequest("UPDATE servers SET LastOnline=0, OfflineTrys=%s, Info=%s, LastUpdated = CURRENT_TIMESTAMP WHERE Id=%s",
+                                            (result.serverRecord[7] + 1, json.dumps(result.moreInfo), result.Id,))
+                # run task in background
+                asyncio.create_task(task)
         # after each task generated
         # run them concurrently
-        await asyncio.gather(*tasks)
+        # and don't wait for them
+        #asyncio.create_task(asyncio.gather(*tasks))
 
     # main updater loop
     @tasks.loop(seconds=100.0)
