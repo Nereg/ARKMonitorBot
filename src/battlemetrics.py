@@ -44,6 +44,10 @@ class BattlemetricsPlugin():
                 # return false
                 return False
             else:
+                print('Ratelimited')
+                print(currentTime)
+                print(diff)
+                print(self.ratelimitStart)
                 # else return true
                 return True
         # if we don't have the attribute

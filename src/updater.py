@@ -188,8 +188,16 @@ class NeoUpdater(commands.Cog):
         
         try:
             # run coroutines concurrently
+            # raise BaseException() uncomment to make havoc 
             results = await asyncio.gather(updateServer, updatePlayers)
         except c.ARKServerError as e: # if fails
+            return UpdateResult(False, None, None, serverRecord, e) # return fail and reason
+        except BaseException as e: # if it isn't our error
+            # something bad happend
+            asyncio.create_task(self.onError(e))
+            # pls notify me
+            asyncio.create_task(sendToMe(f'Server failed!\nId:{serverRecord[0]} ,Ip:{serverRecord[1]}',self.bot))
+            # and go on
             return UpdateResult(False, None, None, serverRecord, e) # return fail and reason
         
         return UpdateResult(True, results[0], results[1], serverRecord) # else return success
@@ -280,7 +288,8 @@ class NeoUpdater(commands.Cog):
         errors = traceback.format_exception(
         type(error), error, error.__traceback__)
         errors_str = ''.join(errors)
-        await sendToMe(errors_str,self.bot,True)
+        await sendToMe(f'```{errors_str}```',self.bot)
+        await sendToMe(f'Plugins active: {[type(plugin).__name__ for plugin in self.plugins]}\nWorkers count: {self.workersCount}',self.bot,True)
 
     # will be executed before main loop will be destroyed
     @update.after_loop
