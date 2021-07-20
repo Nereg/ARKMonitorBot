@@ -154,13 +154,13 @@ async def prefix(ctx, *args):
                 if('@' in prefix):
                     await ctx.send('You can`t set prefix that contains @!')
                     return
-                data = makeRequest(
+                data = await makeAsyncRequest(
                     'SELECT * FROM settings WHERE GuildId = %s', (ctx.guild.id,))
                 if(data.__len__() > 0):
-                    makeRequest(
+                    await makeAsyncRequest(
                         'UPDATE settings SET Prefix=%s WHERE GuildId=%s', (prefix, ctx.guild.id,))
                 else:
-                    makeRequest(
+                    await makeAsyncRequest(
                         'INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)', (ctx.guild.id, prefix,))
                 # https://discordpy.readthedocs.io/en/latest/ext/commands/api.html?highlight=commands#discord.ext.commands.Bot.command_prefix
                 await ctx.send(t.l['done'])
