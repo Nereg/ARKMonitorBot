@@ -29,6 +29,13 @@ class BattlemetricsPlugin():
     async def init(self):
         pass
 
+    # called on each iteration of main loop
+    async def loopStart(self):
+        pass
+
+    async def loopEnd(self):
+        pass
+
     # checks if ratelimit is lifted
     # false if ratelimit is lifted
     # true if ratelimit isn't lifted

@@ -45,6 +45,13 @@ class DebugPlugin():
         print(updateResults)
         return updateResults
 
+    # called on each iteration of main loop
+    async def loopStart(self):
+        print('Loop started!')
+
+    async def loopEnd(self):
+        pass
+
 
 
 class UpdateResult(c.JSON):
@@ -174,6 +181,23 @@ class NeoUpdater(commands.Cog):
         # return the records
         return serverRecords
 
+    # let plugins know that the loop is starting
+    # will be called on each loop iteration
+    async def loopStart(self):
+        # for each plugin
+        for plugin in self.plugins:
+            # let the plugin refresh it's cache etc.
+            await plugin.loopStart()
+        print('Refreshed plugins!')
+
+    # let plugins know that the loop has ended
+    # will be called on each loop iteration
+    async def loopEnd(self):
+        # for each plugin
+        for plugin in self.plugins:
+            # let the plugin refresh it's cache etc.
+            await plugin.loopEnd()
+
     # ~~~~~~~~~~~~~~~~~~~~~
     #         MAIN
     # ~~~~~~~~~~~~~~~~~~~~~
@@ -228,6 +252,7 @@ class NeoUpdater(commands.Cog):
     @tasks.loop(seconds=100.0)
     async def update(self):
         await sendToMe("Entered updater loop!",self.bot)
+        await self.loopStart() # let the plugins know 
         globalStart = time.perf_counter() # start performance timer
         chunksTime = [] # array to hold time each chunk took to process
         self.servers = await self.makeAsyncRequest("SELECT * FROM servers") # update local cache
@@ -275,6 +300,8 @@ class NeoUpdater(commands.Cog):
         globalStop = time.perf_counter()
         # send performance data to me
         await self.performance(globalStart,globalStop,localStart,chunksTime)
+        # let plugins know
+        await self.loopEnd()
 
     # will be executed before main loop starts
     @update.before_loop
