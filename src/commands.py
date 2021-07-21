@@ -79,15 +79,23 @@ List of added servers :
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
     async def info(self, ctx):
+        # get how many servers we have in DB
         count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
+        # get object to get time
         time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
+        # get total and used memory in the system
         RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
+        # get me by id
         meUser = self.bot.get_user(277490576159408128)
+        # get bot's role
         role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
+        # create embed
         embed = discord.Embed(
             title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
+        # set footer
         embed.set_footer(
             text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+        # add fields
         embed.add_field(name='<:Link:739476980004814898> Invite link',
                         value='[Here!](https://bit.ly/ARKTop)', inline=True)
         embed.add_field(name='<:Github:739476979631521886> GitHub',
@@ -111,6 +119,7 @@ List of added servers :
         embed.add_field(name=':grey_exclamation: Current prefix', value=f'{await get_prefix(1,ctx.message)}', inline=True)
         embed.add_field(name='<:Cpu:739492057990693005> Current CPU utilisation',
                         value=f'{round(statistics.mean(psutil.getloadavg()),1)}', inline=True)
+        # guild 1 is special value
         message = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
         if (message.__len__() <= 0):
             message = 'No current message'
