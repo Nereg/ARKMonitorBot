@@ -17,7 +17,7 @@ import menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
-import battlemetrics
+from updatePlugins import battlemetrics
 
 class DebugPlugin():
 

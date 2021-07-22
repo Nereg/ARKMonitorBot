@@ -121,6 +121,7 @@ class BattlemetricsPlugin():
     # will handle a batch of server updates
     # must return same sized array of update results
     async def handle(self,updateResults):
+        # print('Battlemetrics handle')
         # list for servers we don't have URL for 
         emptyServers = []
         # for each server

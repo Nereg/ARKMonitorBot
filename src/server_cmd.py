@@ -15,24 +15,50 @@ class ServerCmd(commands.Cog):
         self.cfg = config.Config()
         self.bot = bot
 
-    async def serverInfo(self, server, playersList, online, ctx):
+    async def serverInfo(self, serverRecord, ctx):
+        # get list of player from server record
+        playersList = c.PlayersList.fromJSON(serverRecord[5])
+        # get server object from server record
+        server = c.ARKServer.fromJSON(serverRecord[4])
+        # get online status of the server from server record
+        online = bool(serverRecord[6])
+        # get object to get time
         time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
-        playersList = playersList.list  # get list of players
-        aliases = await getAlias(0, self.ctx.guild.id, server.ip)
+        # get list of players
+        playersList = playersList.list 
+        # get alias for server
+        aliases = await getAlias(serverRecord[0], self.ctx.guild.id)
+        # if we have no alias set name to original server name
+        # else set it to the alias
         name = server.name if aliases == '' else aliases
-        battleUrl = getattr(server, 'battleURL', '')
-        playersValue = ''  # value for players field
-        timeValue = ''  # value for time field
-        color = randomColor()  # pick random color
-        for player in playersList:  # for each player in player list
-            playersValue += player.name + '\n'  # add it's name to value
-            timeValue += player.time + '\n'  # and how much time it played
+        # get more info about server from server record
+        moreinfo = json.loads(serverRecord[8])
+        # if we have battleUrl in moreinfo set battleUrl to it
+        # else set battleUrl to empty
+        battleUrl = moreinfo['battleUrl'] if 'battleUrl' in moreinfo else ''
+        # variable for players
+        playersValue = ''
+        # variable for time of players
+        timeValue = '' 
+        # pick random color for embed
+        color = randomColor() 
+        # for each player in player list
+        for player in playersList: 
+            # add it's name to value
+            playersValue += player.name + '\n'
+            # and how much time it played  
+            timeValue += player.time + '\n'  
+        # if server is offline or there is no players on it
         if (not online or server.online == 0):
+            # set defaults
             playersValue = 'No one is on the server'
             timeValue = '\u200B'
+        # if server is online set variable to green circle
+        # else set it to red circle
         status = ':green_circle:' if online else ':red_circle:'
+        # make first embed
         emb1 = discord.Embed(title=name+' '+status,
-                             url=battleUrl, color=color)  # first embed
+                             url=battleUrl, color=color)
         emb1.add_field(name='Name', value=playersValue)
         emb1.add_field(name='Time played', value=timeValue)
         # if server offline override online players count
@@ -86,7 +112,7 @@ class ServerCmd(commands.Cog):
                     await ctx.send('You already added that server!')
                     return
             # get settings of the guild
-            data = makeRequest(
+            data = await makeAsyncRequest(
                 'SELECT * FROM settings WHERE GuildId=%s AND Type=0', (ctx.guild.id,))
             if data.__len__() <= 0:  # if we have no settings for that guild
                 # create it
@@ -109,10 +135,11 @@ class ServerCmd(commands.Cog):
             if server == '':  # if user didn't  selected server
                 return  # return
             ip = server.ip  # else get ip
+            # get server by ip
             servers = await makeAsyncRequest('SELECT * FROM servers WHERE Ip=%s', (ip,))
+            # get first match
             server = servers[0]
-            print(server[6])
-            await self.serverInfo(c.ARKServer.fromJSON(server[4]), c.PlayersList.fromJSON(server[5]), bool(server[6]), ctx)
+            await self.serverInfo(server, ctx)
         elif (mode == 'delete'):  # add !exec "delete from notifications where ServersIds like '%4%'"
             selector = Selector(ctx, self.bot, lang)
             server = await selector.select()
@@ -124,17 +151,17 @@ class ServerCmd(commands.Cog):
             else:
                 GuildId = ctx.guild.id
                 Type = 0
-            serverId = makeRequest(
+            serverId = await makeAsyncRequest(
                 'SELECT * FROM servers WHERE Ip=%s', (server.ip,))
             serverId = serverId[0][0]
-            serverIds = makeRequest(
+            serverIds = await makeAsyncRequest(
                 'SELECT * FROM settings WHERE GuildId=%s AND Type=%s', (GuildId, Type))
             if (serverIds[0][3] == None or serverIds[0][3] == 'null'):
                 serverIds = []
             else:
                 serverIds = json.loads(serverIds[0][3])  # remove()
             serverIds.remove(serverId)
-            makeRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',
+            await makeAsyncRequest('UPDATE settings SET ServersId=%s WHERE GuildId=%s AND Type=%s',
                         (json.dumps(serverIds), GuildId, Type))
             await ctx.send('Done!')
         elif (mode == 'alias'):  # if we need to add or delete alias
