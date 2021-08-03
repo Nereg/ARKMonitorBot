@@ -35,15 +35,12 @@ class Selector():
     async def select(self):
         reactions = ['⏮️', '\u2B05', '\u2705', '\u27A1',
                      '⏭️', '\u23F9']  # array with buttons
-        if self.ctx.guild == None:  # old code
-            GuildId = self.ctx.channel.id
-            Type = 1
-        else:
-            GuildId = self.ctx.guild.id
-            Type = 0
+        # get guild id
+        GuildId = self.ctx.guild.id
         # select settings from DB
         data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=0', (GuildId,))
-        if (data.__len__() == 0):  # if no servers are added
+        # if no servers are added
+        if (data.__len__() == 0):
             # send error message
             await self.ctx.send(self.l.l['no_servers_added'].format(self.ctx.prefix))
             return ''  # return
@@ -80,7 +77,7 @@ class Selector():
                 try:
                     await self.msg.clear_reactions()
                     await self.msg.edit(content='The interactive menu was closed.', embed=None)
-                except discord.errors.NotFound:  # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!
+                except discord.errors.NotFound:  # It was SO ANNOYING ! DONT DELETE MESSAGES THERE ARE STOP BUTTON!
                     return ''
             else:
                 if (str(reaction.emoji) == reactions[0]):

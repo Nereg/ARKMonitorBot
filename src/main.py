@@ -20,6 +20,7 @@ import updater  # cog with updater of servers in DB (main consern annoying AF)
 import automessage  # cog with !automessage command and updater for it
 import nest_asyncio
 import campfire
+from updatePlugins import notifications
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -105,6 +106,7 @@ bot.add_cog(updater.NeoUpdater(bot))
 bot.add_cog(automessage.Automessage(bot))
 bot.add_cog(campfire.Campfire(bot))
 bot.add_cog(Charcoal(bot))
+bot.add_cog(notifications.NotificationsCog(bot))
 
 # response for ping of bot
 

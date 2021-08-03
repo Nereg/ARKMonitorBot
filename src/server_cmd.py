@@ -8,7 +8,7 @@ import aiohttp
 import classes as c
 import a2s
 import time
-
+from discord.ext import commands
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):

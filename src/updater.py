@@ -17,7 +17,8 @@ import menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
-from updatePlugins import battlemetrics
+from updatePlugins.battlemetrics import BattlemetricsPlugin
+from updatePlugins.notifications import NotificationsPlugin
 
 class DebugPlugin():
 
@@ -42,7 +43,7 @@ class DebugPlugin():
     # must return same sized array of update results
     async def handle(self,updateResults):
         print(f'Handled {updateResults.__len__()} servers!')
-        print(updateResults)
+        #print(updateResults)
         return updateResults
 
     # called on each iteration of main loop
@@ -68,9 +69,17 @@ class UpdateResult(c.JSON):
         self.Id = serverRecord[0] # id of the server in DB
         self.moreInfo = json.loads(serverRecord[8]) # decode JSON with more info from DB
 
-
     def successful(self):
         return self.result
+
+    def __repr__(self):
+        repr = f'''
+Update result for server {self.Id} ({self.ip})
+More info: {self.moreInfo}
+Server record: {self.serverRecord}
+Failed?: {self.result}
+Fail reason: {self.reason}
+'''
     
 
 
@@ -96,7 +105,9 @@ class NeoUpdater(commands.Cog):
         # add debug plugin to list of plugins
         self.plugins.append(DebugPlugin(self))
         # add Battlemetrics plugin
-        self.plugins.append(battlemetrics.BattlemetricsPlugin(self))
+        self.plugins.append(BattlemetricsPlugin(self))
+        # add notifications plugin
+        self.plugins.append(NotificationsPlugin(self))
         print("Finished async init")
 
     def cog_unload(self):  # on unload
@@ -258,15 +269,16 @@ class NeoUpdater(commands.Cog):
         self.servers = await self.makeAsyncRequest("SELECT * FROM servers") # update local cache
         self.serversIds = await self.flattenCache() # make array with ids only     
         serversCount = self.servers.__len__() # get how many servers we need to update
-
+        print(f'Count of servers: {serversCount}')
         tasks = [] # list of tasks to run concurrently
         localStart = time.perf_counter() # start performance timer for this chunk
         # for each server
-        for i in range(1,serversCount):
+        for i in self.serversIds:
             # search for current server
             currentServer = await self.searchCache(i)
             # if server not found
             if (not currentServer):
+                print(f'Skipped server {i}')
                 # skip this server
                 continue
             # make coroutine
@@ -287,6 +299,7 @@ class NeoUpdater(commands.Cog):
                 chunksTime.append(time.perf_counter() - localStart)
                 # reset timer 
                 localStart = time.perf_counter()
+                print(f'Updated {[i.Id for i in results]}')
         # if there is some tasks left 
         if (tasks.__len__() != 0):
             # run them concurrently
@@ -297,6 +310,7 @@ class NeoUpdater(commands.Cog):
             tasks = []
             # save results in DB
             await self.save(results)
+        
         globalStop = time.perf_counter()
         # send performance data to me
         await self.performance(globalStart,globalStop,localStart,chunksTime)
