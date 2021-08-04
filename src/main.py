@@ -200,6 +200,27 @@ async def on_error(event, *args, **kwargs):
         return
 
 
+async def sendErrorEmbed(ctx, Id, error):
+    # object to get time
+    time = datetime(2000, 1, 1, 0, 0, 0, 0)
+    # get config of bot
+    cfg = config.Config()
+    # create embed
+    embed = discord.Embed()
+    # paint it red
+    embed.color = discord.Colour.red()
+    # set title 
+    embed.title = 'Opps! An error occurred!' 
+    # add info
+    embed.add_field(name='I notified my creator about it! A fix is already on it`s way!',
+                    value=f'Your **unique** error id is `{Id}`. You can get more support in our [support](https://bit.ly/ARKDiscord) server.')
+    # add bot's version 
+    embed.set_footer(text=f'Bot {cfg.version}')
+    # set embed's timestamp
+    embed.timestamp = time.utcnow()
+    # send embed 
+    await ctx.send(embed=embed)
+
 @bot.event
 async def on_command_error(ctx, error):
     meUser = bot.get_user(277490576159408128)
@@ -260,7 +281,8 @@ Try later.
     data = await makeAsyncRequest('SELECT * FROM errors WHERE Time=%s', (Time,))
     Id = data[0][0]
     meUser = bot.get_user(277490576159408128)
-    await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
+    await sendErrorEmbed(ctx,Id,error)
+    # await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
     debug.debug('Sent channel message')
     errors_str = ''.join(errors)
     date = datetime.utcfromtimestamp(Time).strftime('%Y-%m-%d %H:%M:%S')
