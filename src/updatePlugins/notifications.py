@@ -67,19 +67,70 @@ class NotificationsCog(commands.Cog):
         embed.color = discord.Colour.green()
         await ctx.send(embed=embed)
 
+    async def noPerms(self, ctx, channel, perms):
+        # this will describe which permissions are missing
+        missing = ''
+        # if both
+        if (perms.send_messages and perms.embed_links):
+            # set it to both
+            missing = 'send messages and embed links'
+        # if only messages
+        elif (perms.send_messages):
+            # set it
+            missing = 'send messages'
+        # if only links
+        elif (perms.embed_links):
+            # set it
+            missing = 'embed links'
+        # default
+        else:
+            # both
+            missing = 'send message and embed links'
+        # create embed
+        embed = discord.Embed()
+        # set color 
+        embed.color = discord.Colour.red()
+        # add info
+        embed.add_field(name='I have insufficient permissions in that channel!',
+                        value=f'I need `{missing}` in {channel.mention} to send notifications there!')
+        # and sent it
+        await ctx.send(embed=embed)
+
+    async def canWrite(self, ctx, channel):
+        # get our bot memeber in current guild
+        botMember = ctx.guild.me
+        # get permissions 
+        perms = channel.permissions_for(botMember)
+        print(perms)
+        print(perms.send_messages)
+        print(perms.embed_links)
+        # if bot have permission to send messages and embed links
+        if (perms.send_messages and perms.embed_links):
+            # return true
+            return True
+        else:
+            # send error embed
+            await self.noPerms(ctx, channel, perms)
+            # return false
+            return False
 
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
     async def watch(self, ctx, discordChannel: discord.TextChannel = None, *argv):
         # if no channel is supplied 
-        # TODO: add check if the channel is in this guild
-        # TODO: add check if bot can write to the channel
         # TODO: add bulk adding of servers
+        # TODO: add custom 'Channel not found' message in error handler
+        # if no channel was supplied
         if (discordChannel == None):
             # send warning message
             await ctx.send('No optional channel provided. Notifications will be sent to this channel.')
             # sent discord channel to current
             discordChannel = ctx.channel
+        
+        # check if the bot can write to channel
+        if (not await self.canWrite(ctx, discordChannel)):
+            return
+        
         # if no additional args
         if(argv.__len__() <= 0):
             # create server selector
