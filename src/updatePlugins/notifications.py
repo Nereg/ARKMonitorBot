@@ -31,12 +31,10 @@ class NotificationsCog(commands.Cog):
         self.bot = bot
         pass
 
-    async def alreadyReceives(self, ctx, serverRecord, notificationRecord):
-        # get channel from notification record
-        channel = self.bot.get_channel(notificationRecord[1])
+    async def alreadyReceives(self, ctx, serverRecord, discordChannel):
         # if channel is not found set channel name to fallback message
         # else set it to name of the channel
-        channelName = f'`channel id {notificationRecord[1]}`' if channel else f'`{channel.name}`'
+        channelName = f'`{discordChannel.name}`'
         # get server from server record
         server = c.ARKServer.fromJSON(serverRecord[0][4])
         # get prefix for this guild
@@ -101,9 +99,6 @@ class NotificationsCog(commands.Cog):
         botMember = ctx.guild.me
         # get permissions 
         perms = channel.permissions_for(botMember)
-        print(perms)
-        print(perms.send_messages)
-        print(perms.embed_links)
         # if bot have permission to send messages and embed links
         if (perms.send_messages and perms.embed_links):
             # return true
@@ -151,9 +146,9 @@ class NotificationsCog(commands.Cog):
                     # load list of servers from record
                     serverList = json.loads(notifications[0][4])
                     # if the channel already receives notifications 
-                    if (server[0] in serverList):
+                    if (server[0][0] in serverList):
                         # send error message
-                        await self.alreadyReceives(ctx, server, notifications[0])
+                        await self.alreadyReceives(ctx, server, discordChannel)
                     # we need to update record for the channel
                     else:
                         # add id of the new server to list
@@ -237,10 +232,10 @@ class NotificationsPlugin():
     async def sendNotifications(self,updateResult,notificationRecords):
         # get status of the server (went or was down/up)
         status = await self.serverStatus(updateResult)
-        print(updateResult.serverRecord)
-        print(notificationRecords)
-        print(f'Server {updateResult.Id}. Status: {status}')
-        print(status.changed(status))
+        #print(updateResult.serverRecord)
+        #print(notificationRecords)
+        #print(f'Server {updateResult.Id}. Status: {status}')
+        #print(status.changed(status))
         # if something changed
         if (status.changed(status)):
             # for each notification in DB
