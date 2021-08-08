@@ -11,7 +11,7 @@ chardet==3.0.4
 cryptography==3.3.2
 dblpy==0.4.0
 deepdiff==5.0.2
-discord.py==1.5.1
+discord.py==1.7.3
 idna==2.9
 importlib-metadata==1.0.0
 jsonpickle==1.4.1

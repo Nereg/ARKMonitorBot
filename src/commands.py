@@ -85,8 +85,6 @@ List of added servers :
         time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
         # get total and used memory in the system
         RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
-        # get me by id
-        meUser = self.bot.get_user(277490576159408128)
         # get bot's role
         role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
         # create embed
@@ -111,7 +109,7 @@ List of added servers :
         embed.add_field(name=':ping_pong: Ping',
                         value=f'{int(self.bot.latency * 1000)} ms', inline=True)
         embed.add_field(name='<:me:739473644874367007> Creator',
-                        value=f'{meUser.name}#{meUser.discriminator}', inline=True)
+                        value=f'Nereg#7006', inline=True)
         embed.add_field(name='<:Discord:739476979782254633> Currently in',
                         value=f'{len(self.bot.guilds)} servers', inline=True)
         embed.add_field(
