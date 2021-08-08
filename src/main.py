@@ -29,9 +29,9 @@ from updatePlugins import notifications
 
 debug = Debuger('main')  # create debuger (see helpers.py)
 conf = config.Config()  # load config
-# set custom status for bot (no it isn;t possible to put buttons like for user's profiles)
+# set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
 game = discord.Game('ping me to get prefix')
-# create bot with default prefix and no help command
+# create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
     command_prefix=get_prefix, help_command=None, activity=game)
 debug.debug('Inited DB and Bot!')  # debug into console !
@@ -41,15 +41,80 @@ t = c.Translation()  # load default english translation
 bot.loop.set_debug(conf.debug)
 
 
+# add all cogs
+bot.add_cog(ServerCmd(bot))
+bot.add_cog(cmd.BulkCommands(bot))
+bot.add_cog(admin_cog.Admin(bot))
+bot.add_cog(dbl_cog.TopGG(bot))
+##bot.add_cog(updater.Updater(bot))
+bot.add_cog(updater.NeoUpdater(bot))
+bot.add_cog(automessage.Automessage(bot))
+bot.add_cog(campfire.Campfire(bot))
+bot.add_cog(Charcoal(bot))
+bot.add_cog(notifications.NotificationsCog(bot))
+
+
+# ~~~~~~~~~~~~~~~~~~~~~
+#       COMMANDS
+# ~~~~~~~~~~~~~~~~~~~~~
+
+# !prefix command
+# default permissions check
+@commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
+@bot.command()
+async def prefix(ctx, *args):
+    if (args.__len__() <= 0):  # if no additional parameters
+        # send current prefix and return
+        await ctx.send(t.l['curr_prefix'].format(ctx.prefix))
+        return
+    else:  # if not
+        # get permissions of caller in current channel
+        Permissions = ctx.author.permissions_in(ctx.channel)
+        # set needed permissions (manage roles)
+        needed_perms = permissions.Permissions(manage_roles=True)
+        if (needed_perms <= Permissions):  # check permissions
+            # if check successed
+            # get new prefix from params
+            prefix = args[0] 
+            # if @ in prefix
+            if('@' in prefix):
+                # send error message
+                await ctx.send('You can`t set prefix that contains @!')
+                return
+            # get settings for current guild
+            data = await makeAsyncRequest(
+                'SELECT * FROM settings WHERE GuildId = %s', (ctx.guild.id,))
+            # if we have record for current guild
+            if(data.__len__() > 0):
+                # update it
+                await makeAsyncRequest(
+                    'UPDATE settings SET Prefix=%s WHERE GuildId=%s', (prefix, ctx.guild.id,))
+            # else
+            else:
+                # create one
+                await makeAsyncRequest(
+                    'INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)', (ctx.guild.id, prefix,))
+            # send done message
+            await ctx.send(t.l['done'])
+        # if check failed
+        else: 
+            # send error message
+            await ctx.send('You need manage roles permission to change my prefix!')
+            return
+
+
+#main help command
 @bot.command()
 async def help(ctx):
-    time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get random time
+    time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
+    # set title and timestamp of embed
     message = discord.Embed(title='List of commands',
-                            timestamp=time.utcnow())  # set title of embed
-    prefix = await get_prefix(bot, ctx.message)  # get current prefix
-    isInline = False  # junk from tests but still used
+                            timestamp=time.utcnow())  
+    # get current prefix
+    prefix = ctx.prefix
+    # set footer for embed
     message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',
-                       icon_url=ctx.author.avatar_url)  # set default footer
+                       icon_url=ctx.author.avatar_url)
     # define value for Server section
     serverValue = f'''**`{prefix}server info`- select and view info about added server (only Steam servers both official and not)
 `{prefix}server add <IP>:<Query port>`- add server to your list
@@ -58,8 +123,9 @@ async def help(ctx):
 `{prefix}server alias`- list aliases for your servers
 `{prefix}server alias "<Alias>"`- select and add alias for server
 `{prefix}server alias delete`- delete alias for your server**'''
+    # add server section to the embed
     message.add_field(name=f'**Server group:**',
-                      value=serverValue)  # add server section to the embed
+                      value=serverValue)  
     # define value for notifications section
     notificationsValue = f'''**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel
 `{prefix}unwatch` - undone what `{prefix}watch` command do 
@@ -67,19 +133,32 @@ async def help(ctx):
 `{prefix}automessage` - list any automessages you have
 `{prefix}automessage delete` - delete all automessages for some server
 **'''
+    # add notifications section to the embed
     message.add_field(name=f'**Notifications:**', value=notificationsValue,
-                      inline=isInline)  # add notifications section to the embed
+                      inline=False)  
     # define misc sections value
     miscValue = f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**'
+    # add misc section to the embed
     message.add_field(name=f'**Miscellaneous:**', value=miscValue,
-                      inline=isInline)  # add misc section to the embed
-    await ctx.send(embed=message)  # and send it
+                      inline=False)
+    # and send it  
+    await ctx.send(embed=message)  
 
+# some old command
+@bot.command()
+async def share(ctx):
+    await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
 
+# ~~~~~~~~~~~~~~~~~~~~~
+#        EVENTS
+# ~~~~~~~~~~~~~~~~~~~~~
+
+# used to count executed commands
+# doesn't work at all
 @bot.event
 async def on_command_completion(ctx):
     name = ctx.command.name  # extract name of command
-    if (name == 'server'):  # if it is a server command (I am too lzy to chop the into subcommands or smth like that)
+    if (name == 'server'):  # if it is a server command (I am too lazy to chop the into subcommands or smth like that)
         try:
             command = ctx.args[2]  # get the "subcommand"
         except IndexError:  # that happens if we write just //server
@@ -96,24 +175,10 @@ async def on_command_completion(ctx):
     await makeAsyncRequest('INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1', (name))
     # see admin_cog.py for how this data is used
 
-# add all cogs
-bot.add_cog(ServerCmd(bot))
-bot.add_cog(cmd.BulkCommands(bot))
-bot.add_cog(admin_cog.Admin(bot))
-bot.add_cog(dbl_cog.TopGG(bot))
-##bot.add_cog(updater.Updater(bot))
-bot.add_cog(updater.NeoUpdater(bot))
-bot.add_cog(automessage.Automessage(bot))
-bot.add_cog(campfire.Campfire(bot))
-bot.add_cog(Charcoal(bot))
-bot.add_cog(notifications.NotificationsCog(bot))
-
-# response for ping of bot
-
-
+# will respond for ping of the bot
 @bot.event
 async def on_message(msg):  # on every message
-    # if we in DMs  AND it isn't our message (it was spaming me AF in dm lol) and it isn't me
+    # if we in DMs  AND it isn't our message
     if msg.guild == None and msg.author != bot.user:
         try:
             # send error message
@@ -122,67 +187,17 @@ async def on_message(msg):  # on every message
             return
         return  # ignore it we have no way to notify the user anyway
     # if content contains ping with id of our bot
+    # (first case is desktop ping and second is mobile ping)
     if msg.content == f'<@!{bot.user.id}>' or msg.content == f'<@{bot.user.id}>':
         try:
             # send message and return
             await msg.channel.send(t.l['curr_prefix'].format(await get_prefix(bot, msg)))
+            return
         except discord.errors.Forbidden:  # it was spaming me in DM's lol
             return
-        return
     await bot.process_commands(msg)  # if not process commands
 
-# !prefix command
-
-
-# default pwrmissions check
-@commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
-@bot.command()
-async def prefix(ctx, *args):
-    if (args.__len__() <= 0):  # if no additional parameters
-        # send current prefix and return
-        await ctx.send(t.l['curr_prefix'].format(ctx.prefix))
-        return
-    else:  # if not
-        # get permissions of caller in current channel
-        Permissions = ctx.author.permissions_in(ctx.channel)
-        # set needed permissions (manage roles)
-        needed_perms = permissions.Permissions(manage_roles=True)
-        if (needed_perms <= Permissions):  # check permissions
-            prefix = args[0]  # if check succseesed
-            if (ctx.guild == None):
-                await ctx.send(t.l['cant_change_prefix'])
-                return
-            else:
-                if('@' in prefix):
-                    await ctx.send('You can`t set prefix that contains @!')
-                    return
-                data = await makeAsyncRequest(
-                    'SELECT * FROM settings WHERE GuildId = %s', (ctx.guild.id,))
-                if(data.__len__() > 0):
-                    await makeAsyncRequest(
-                        'UPDATE settings SET Prefix=%s WHERE GuildId=%s', (prefix, ctx.guild.id,))
-                else:
-                    await makeAsyncRequest(
-                        'INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)', (ctx.guild.id, prefix,))
-                # https://discordpy.readthedocs.io/en/latest/ext/commands/api.html?highlight=commands#discord.ext.commands.Bot.command_prefix
-                await ctx.send(t.l['done'])
-        else:  # if check failed
-            # send error message
-            await ctx.send('You need manage roles permission to change my prefix!')
-            return
-
-
-@bot.event
-async def on_command_error1(ctx, error):
-    debug.debug('Entered second handler!')
-    debug.debug(error)
-    try:
-        await on_command_error1(ctx, error)
-    except BaseException as e:
-        debug.debug('Error in  handler!')
-        debug.debug(e)
-
-
+# on error in some event
 @bot.event
 async def on_error(event, *args, **kwargs):
     # get tuple with exeption and traceback https://docs.python.org/3/library/sys.html#sys.exc_info
@@ -193,10 +208,10 @@ async def on_error(event, *args, **kwargs):
     msg = f'Error happened in `{event}` event\n```{errors_str}```'
     if (msg.__len__() >= 2000):
         await sendToMe(errors_str[:1975] + '`\nEnd of first part', bot)
-        await sendToMe(errors_str[1975:-1], bot)
+        await sendToMe(errors_str[1975:-1], bot, True)
         return
     else:
-        await sendToMe(msg, bot)
+        await sendToMe(msg, bot, True)
         return
 
 
@@ -221,112 +236,174 @@ async def sendErrorEmbed(ctx, Id, error):
     # send embed 
     await ctx.send(embed=embed)
 
+async def sendCommandNotFoundEmbed(ctx):
+    # get prefix for this guild
+    prefix = ctx.prefix
+    # create embed
+    embed = discord.Embed()
+    # paint it red
+    embed.color = discord.Colour.red()
+    # add info
+    embed.add_field(name='You entered wrong command!',
+                    value=f"Command `{ctx.message.content}` doesn't exist. You can list my commands with `{prefix}help`.")
+    # send embed 
+    await ctx.send(embed=embed)
+
+async def rateLimitHit(ctx, error):
+    # create embed
+    embed = discord.Embed()
+    # paint it red
+    embed.color = discord.Colour.red()
+    # add title
+    embed.title = 'Hold on!'
+    # add info
+    embed.add_field(name=f'You can only use `{ctx.message.content}` only `{error.cooldown.rate}` time(s) per `{int(error.cooldown.per)}` second(s)!',
+                    value="Please try again later.")
+    # send embed 
+    await ctx.send(embed=embed)
+
+async def insufficientPerms(ctx, perms):
+    # add \n to each permission
+    joined = '\n'.join(perms)
+    # create embed
+    embed = discord.Embed()
+    # paint it red
+    embed.color = discord.Colour.red()
+    # add title
+    embed.title = 'I am missing some permissions in current channel!'
+    # add info
+    embed.add_field(name='I need:',
+                    value=f"```{joined}```")
+    # send embed 
+    await ctx.send(embed=embed)
+
 @bot.event
 async def on_command_error(ctx, error):
-    meUser = bot.get_user(277490576159408128)
-    meDM = await meUser.create_dm()
+    # get original error from d.py error
+    # if none it will be set to error itself
     origError = getattr(error, "original", error)
-    if (type(error) == discord.ext.commands.errors.CommandNotFound):
+    # get type of an error
+    errorType = type(error)
+    # long if elif statement 
+    # if some command isn't found
+    if (errorType == discord.ext.commands.errors.CommandNotFound):
         try:
-            await ctx.send('You entered wrong command ! You can list all my commands with `{}help`'.format(ctx.prefix))
-        except discord.errors.Forbidden:  # again spam in DM
+            # try to send an error embed
+            await sendCommandNotFoundEmbed(ctx)
             return
+        # if we can't
+        except discord.errors.Forbidden:
+            # return
+            return
+    # if some check failed
+    elif (errorType == discord.ext.commands.errors.CheckFailure):
+        # do nothing
+        # (it doesn't have any info on what has failed)
         return
-    if (type(error) == discord.ext.commands.errors.CheckFailure):
+    # if someone hit ratelimit
+    elif (errorType == discord.ext.commands.CommandOnCooldown):
+        # send an embed about it
+        await rateLimitHit(ctx, error)
         return
-    if (type(error) == discord.ext.commands.errors.NotOwner):
-        await meDM.send(f'Someone tried used only admin command ! It was `{ctx.message.content}`')
-        return
-    if (type(error) == discord.ext.commands.CommandOnCooldown):
-        message = f'''
-Hold down !
-You can use `{ctx.message.content}` command
-Only {error.cooldown.rate} times per {int(error.cooldown.per)} seconds!
-Try later.
-        '''
-        await ctx.send(message)
-        return
-    if (type(error) == discord.ext.commands.BotMissingPermissions or type(origError) == discord.ext.commands.BotMissingPermissions):
+    # if bot need some permissions
+    elif (errorType == discord.ext.commands.BotMissingPermissions):
         try:
-            missing = error.missing_perms  # to not type l  o  n  g name
-        except AttributeError:  # TODO test this
+            # try to get what we are missing
+            missing = error.missing_perms
+        # if we can't 
+        except AttributeError:
+            # get it from original error
             missing = origError.missing_perms
+        # n is how a permission is called in API
+        # n + 1 is it's replacement for message
         map = ['manage_messages', 'Manage messages', 'external_emojis',
-               'Use external emojis', 'add_reactions', 'Add reactions']  # replacement list
-        needed = []  # replaced list
-        for perm in missing:  # for each permission
-            if perm in map:  # if permission is in list
-                needed.append(map[map.index(perm)+1])  # put it's replacement
+               'Use external emojis', 'add_reactions', 'Add reactions']
+        # array with replaced permissions names
+        needed = []
+        # for each permission
+        for perm in missing:
+            # if permission is in list  
+            if perm in map: 
+                # put it's replacement
+                needed.append(map[map.index(perm)+1])  
+            # if not
             else:
-                needed.append(perm)  # if not put it as is
-        # and send message
-        await ctx.send(f"Bot can't work in current channel without those permissions: `{' , '.join(needed)}`. Please check if bot have this permissions in current channel and try again.")
+                # put it as is
+                needed.append(perm)  
+        # send embed about it
+        await insufficientPerms(ctx,needed)
         return
-    if (type(error) == discord.errors.Forbidden or type(origError) == discord.errors.Forbidden):
-        needed_perms = "```Add reactions\nUse external emojis\nSend and read messages\nManage messages```"
+    # if bot is missing some permissions
+    elif (errorType == discord.errors.Forbidden):
+        # add some of them to the list
+        needed_perms = ['Add reactions', 'Use external emojis', 'Send and read messages', 'Manage messages']
         try:
-            await ctx.send(f'Hey! Bot is missing some permissions! Bot needs:\n{needed_perms}')
+            # try to send message
+            await insufficientPerms(ctx, needed_perms)
+            return
+        # if we can't 
         except discord.Forbidden:
-            try:
-                await ctx.author.send(f'Hey hello. You invited me to your `{ctx.guild.name}` guild and used `{ctx.message.content}` command. But I am missing some permissions! Most likely some channel permissions overrides bots one. I need:\n{needed_perms}')
-            except BaseException:
-                return
-        return
+            # return
+            return
+    # debug
+    # I really need some good logging system
     debug.debug('Entered error handler')
+    # format exception
     errors = traceback.format_exception(
         type(error), error, error.__traceback__)
+    # get current time
     Time = int(time.time())
-    await makeAsyncRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)', (json.dumps(errors), Time, ctx.author.id, ctx.channel.id, ctx.guild.id, ctx.message.content,))
-    debug.debug('Made SQL')
+    # insert error record into DB
+    await makeAsyncRequest('INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)',
+    (json.dumps(errors), Time, ctx.author.id, ctx.channel.id, ctx.guild.id, ctx.message.content,))
+    # select inserted error record
     data = await makeAsyncRequest('SELECT * FROM errors WHERE Time=%s', (Time,))
+    # get it's id
     Id = data[0][0]
-    meUser = bot.get_user(277490576159408128)
+    # send error embed with this id
     await sendErrorEmbed(ctx,Id,error)
-    # await ctx.send(f'Error occured ! I logged in and notified my creator. Your unique error id is `{Id}`. You can message my creator {meUser.name}#{meUser.discriminator} or report this error to my support discord server ! You can join it by this link : <https://bit.ly/ARKDiscord>')
-    debug.debug('Sent channel message')
+    # add each error together 
     errors_str = ''.join(errors)
+    # format time
     date = datetime.utcfromtimestamp(Time).strftime('%Y-%m-%d %H:%M:%S')
+    # format message for me 
     message = f'''
-{meUser.mention}
-Произошов пиздец !
+Error happened! 
 `{errors_str}`
-Айдишник еррора : `{Id}`
-Сообщение : `{ctx.message.content}`
-Ошибка произошла : `{date}`
-Имя гильдии : `{ctx.guild.name}`
-Айди гильдии: `{ctx.guild.id}`
+Error id : `{Id}`
+Message : `{ctx.message.content}`
+Error happened : `{date}`
+Guild name : `{ctx.guild.name}`
+Guild id : `{ctx.guild.id}`
     '''
+    # if message has over 2k characters
     if (message.__len__() >= 2000):
         try:
-            await meDM.send(message[:1975] + '`\nEnd of first part')
-            await meDM.send(message[1975:-1])
+            # send it in chunks
+            await sendToMe(message[:1975] + '`\nEnd of first part', bot)
+            await sendToMe(message[1975:-1], bot, True)
+        # if we can't 
         except BaseException as e:
-            await meDM.send('Lenth of error message is over 4k!')
-            await meDM.send('''Айдишник еррора : `{Id}`
-Сообщение : `{ctx.message.content}`
-Ошибка произошла : `{date}`
-Имя гильдии : `{ctx.guild.name}`
-Айди гильдии: `{ctx.guild.id}`''')
-            await meDM.send(e)
+            await sendToMe('Lenth of error message is over 4k!', bot, True)
+            await sendToMe(f'''Error id : `{Id}`
+Message : `{ctx.message.content}`
+When this happened : `{date}`
+Guild name : `{ctx.guild.name}`
+Guild id : `{ctx.guild.id}`
+Error : {e}''', bot)
     else:
-        await meDM.send(message)
+        await sendToMe(message, bot, True)
 
 
-@bot.command()
-async def share(ctx):
-    await ctx.send(t.l['share_msg'].format(conf.inviteUrl))
 
 
 @bot.command()
 @commands.is_owner()
 @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
+@commands.cooldown(1, 60, type=commands.BucketType.user)
 async def test(ctx):
-    selector = Selector(ctx, bot, c.Translation())
-    server = await selector.select()
-    if server == '':
-        return
-    print(server.name)
-    await ctx.send(await server.getBattlemetricsUrl(server))
+    await ctx.send('sdfds')
+    
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token)  # get our discord token and FIRE IT UP !
