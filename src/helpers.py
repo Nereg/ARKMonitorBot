@@ -246,18 +246,33 @@ async def sendToMe(text, bot, ping=False):
     If ping is True it will ping me
     '''
     try:
-        meUser = bot.get_user(277490576159408128)
-        meDM = await meUser.create_dm()
-        await meDM.send(text)
-        if(ping):
-            await meDM.send(meUser.mention)
+        # get our guild
+        # sorry for hard coding
+        guild = bot.get_guild(349178138258833418)
+        if (guild == None):
+            print(f'Can`t get guild 349178138258833418!')
+            print(text)
+            return
+        # get channel for logs
+        channel = guild.get_channel(874715094645346395)
+        if (channel == None):
+            print(f'Can`t get channel 874715094645346395!')
+            print(text)
+            return
+        # send message
+        await channel.send(text)
+        # if we need to ping me
+        if (ping):
+            # thanks intents I hate you
+            await channel.send('<@277490576159408128>')
     except AttributeError:
-        print("Send to me but bot isn't ready:")
+        print("No permissions in 874715094645346395!")
         print(text)
         return
     except BaseException as e:
         print('exeption in sendToMe')
         print(e)
+        print(text)
         return
 
 
