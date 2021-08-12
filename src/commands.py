@@ -11,7 +11,8 @@ import datetime
 import psutil
 from psutil._common import bytes2human
 import statistics
-
+import time
+import arrow
 
 class BulkCommands(commands.Cog):
     def __init__(self, bot):
@@ -76,6 +77,34 @@ List of added servers :
 {discord.utils.escape_mentions(servers)}
         ''')
 
+    def getUptime(self):
+        # get current process
+        proc = psutil.Process()
+        # get process creation date
+        # (in float UNIX timestamp)
+        creationTime = arrow.get(proc.create_time())
+        # get current time in UNIX timestamp
+        currentTime = arrow.utcnow()
+        # get uptime
+        uptime = currentTime - creationTime
+        # get components of datetime.timedelta
+        # where is .format() python ?!
+        days = uptime.days
+        seconds = uptime.seconds % 60
+        hours = uptime.seconds//3600
+        minutes = (uptime.seconds//60) % 60
+        # if less then 1 hour
+        if (hours == 0):
+            # return just minutes + seconds
+            return f"{minutes}:{seconds}"
+        # if less than 1 day
+        elif (days == 0):
+            # return just hours + minutes + seconds
+            return f"{hours}:{minutes}:{seconds}"
+        else:
+            # return full string
+            return f"{days}:{hours}:{minutes}:{seconds}"
+
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
     async def info(self, ctx):
@@ -92,7 +121,7 @@ List of added servers :
             title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
         # set footer
         embed.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=ctx.author.avatar_url)
         # add fields
         embed.add_field(name='<:Link:739476980004814898> Invite link',
                         value='[Here!](https://bit.ly/ARKTop)', inline=True)
