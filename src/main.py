@@ -277,6 +277,19 @@ async def insufficientPerms(ctx, perms):
     # send embed 
     await ctx.send(embed=embed)
 
+async def channelNotFound(ctx, error):
+    # create embed
+    embed = discord.Embed()
+    # paint it red
+    embed.color = discord.Colour.red()
+    # add title
+    embed.title = 'The channel isn`t found!'
+    # add info
+    embed.add_field(name=f"Channel with id `{error.argument[2:-1]}` isn't found!",
+                    value="Maybe you copied this channel from other server? ")
+    # send embed 
+    await ctx.send(embed=embed)
+
 @bot.event
 async def on_command_error(ctx, error):
     # get original error from d.py error
@@ -295,6 +308,10 @@ async def on_command_error(ctx, error):
         except discord.errors.Forbidden:
             # return
             return
+    # if some channel isn't found
+    if (errorType == discord.ext.commands.errors.ChannelNotFound):
+        await channelNotFound(ctx, error)
+        return
     # if some check failed
     elif (errorType == discord.ext.commands.errors.CheckFailure):
         # do nothing

@@ -148,7 +148,6 @@ class NotificationsCog(commands.Cog):
     async def watch(self, ctx, discordChannel: discord.TextChannel = None, *argv):
         # if no channel is supplied 
         # TODO: add bulk adding of servers
-        # TODO: add custom 'Channel not found' message in error handler
         # if no channel was supplied
         if (discordChannel == None):
             # send warning message
