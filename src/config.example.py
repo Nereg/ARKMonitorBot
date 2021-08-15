@@ -17,3 +17,5 @@ class Config:
         self.workersCount = 5  # x update workers per interation
         self.updateFrequency = 120  # 1 update loop in x seconds
         self.backupWebhookUrl = ''  # discord webhook url to use in backup script
+        self.logsGuildId = 349178138258833418 # id of a guild where bot will send it's logs
+        self.logsChannelId = 874715094645346395 # id of a channel where bot will send it's logs

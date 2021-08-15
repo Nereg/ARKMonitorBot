@@ -508,4 +508,4 @@ class Admin(commands.Cog):
 
     @commands.command()
     async def error(self,ctx):
-        raise BaseException()
+        await ctx.send('A'*5000)

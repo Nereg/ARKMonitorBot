@@ -245,18 +245,18 @@ async def sendToMe(text, bot, ping=False):
     Sends a text to Me the creator of this bot
     If ping is True it will ping me
     '''
+    cfg = config.Config()
     try:
         # get our guild
-        # sorry for hard coding
-        guild = bot.get_guild(349178138258833418)
+        guild = bot.get_guild(cfg.logsGuildId)
         if (guild == None):
-            print(f'Can`t get guild 349178138258833418!')
+            print(f'Can`t get guild {cfg.logsGuildId}!')
             print(text)
             return
         # get channel for logs
-        channel = guild.get_channel(874715094645346395)
+        channel = guild.get_channel(cfg.logsChannelId)
         if (channel == None):
-            print(f'Can`t get channel 874715094645346395!')
+            print(f'Can`t get channel {cfg.logsChannelId}!')
             print(text)
             return
         # send message
