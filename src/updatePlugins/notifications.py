@@ -196,7 +196,8 @@ class NotificationsCog(commands.Cog):
                     # make new list of servers
                     serverList = [server[0][0]]
                     # create new record in the DB
-                    await makeAsyncRequest('INSERT INTO notifications (DiscordChannelId,ServersIds,Type,Sent,Data) VALUES (%s,%s,3,0,"{}")',(discordChannel.id,json.dumps(serverList)))
+                    await makeAsyncRequest('INSERT INTO notifications (DiscordChannelId,ServersIds,Type,Sent,Data,GuildId) VALUES (%s,%s,3,0,"{}",%s)',
+                    (discordChannel.id,json.dumps(serverList),discordChannel.guild.id))
                     # send success message
                     await self.success(ctx, server)
         else:
@@ -263,14 +264,46 @@ class NotificationsPlugin():
         # get object to get time
         self.time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
 
+    # ALTER TABLE `notifications` ADD `GuildId` BIGINT NOT NULL DEFAULT '0' COMMENT 'Discord guild id. ' AFTER `Data`; 
+    async def fixRecords(self, notificationRecords):
+        print('handling fixes for db')
+        #print(notificationRecords)
+        # list of coroutines to run concurrently
+        coroutines = []
+        # for each record
+        for record in notificationRecords:
+            #print(record)
+            # if value is default value
+            if (record[6] == 0):
+                #print(record[1])
+                # get channel from record
+                channel = self.updater.bot.get_channel(record[1])
+                #print(channel)
+                # if channel isn't found
+                if (channel == None):
+                    print(f'Channel {record[1]} isn`t found')
+                    # skip it
+                    continue
+                # if found get guild id for this channel
+                guildId = channel.guild.id
+                # make and append update coroutine
+                coroutines.append(self.updater.makeAsyncRequest('UPDATE notifications SET GuildId=%s WHERE Id=%s',(guildId,record[0],)))
+        #print(coroutines)
+        # we made all coroutines
+        # if there any
+        if (coroutines.__len__() > 0):
+            # run them concurrently
+            await asyncio.gather(*coroutines)
+
     # will be ran by main updater just like regular __init__
     async def init(self):
-        pass
+        print('entered async init')
 
     # called on each iteration of main loop
     async def loopStart(self):
         # cache all notifications
         self.notificationsCache = await self.updater.makeAsyncRequest('SELECT * FROM notifications')
+
 
     async def loopEnd(self):
         pass
@@ -335,15 +368,14 @@ class NotificationsPlugin():
                     print(f'Sent notification for {channel.id}')
         # nothing changed
         else:
-            return
-                
-            
+            return                  
 
     async def searchForNotificationRecord(self,serverId):
         return [i for i in self.notificationsCache if serverId in json.loads(i[4])] 
 
     async def handle(self,updateResults):
         print(f'Handling notifications for {[res.Id for res in updateResults]}')
+        await self.fixRecords(self.notificationsCache)
         for i in updateResults:
             # search for every notification record
             # for current server

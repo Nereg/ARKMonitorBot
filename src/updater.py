@@ -108,6 +108,9 @@ class NeoUpdater(commands.Cog):
         self.plugins.append(BattlemetricsPlugin(self))
         # add notifications plugin
         self.plugins.append(NotificationsPlugin(self))
+        # call async inits of every plugin
+        #print([i.init for i in self.plugins])
+        await asyncio.gather(*[i.init() for i in self.plugins])
         print("Finished async init")
 
     def cog_unload(self):  # on unload

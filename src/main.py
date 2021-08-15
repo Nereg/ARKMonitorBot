@@ -48,7 +48,7 @@ bot.add_cog(admin_cog.Admin(bot))
 bot.add_cog(dbl_cog.TopGG(bot))
 ##bot.add_cog(updater.Updater(bot))
 bot.add_cog(updater.NeoUpdater(bot))
-bot.add_cog(automessage.Automessage(bot))
+#bot.add_cog(automessage.Automessage(bot))
 bot.add_cog(campfire.Campfire(bot))
 bot.add_cog(Charcoal(bot))
 bot.add_cog(notifications.NotificationsCog(bot))
@@ -394,21 +394,6 @@ Error : {e}''', bot)
     else:
         await sendToMe(message, bot, True)
 
-
-
-
-@bot.command()
-@commands.is_owner()
-@commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
-@commands.cooldown(1, 60, type=commands.BucketType.user)
-async def test(ctx):
-    await ctx.send('sdfds')
-
-@bot.command()
-@commands.is_owner()
-@commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
-async def error(ctx):
-    raise BaseException()
     
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/

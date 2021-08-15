@@ -92,8 +92,8 @@ class Admin(commands.Cog):
         self.bot = bot
         self._last_result = None
         self.sessions = set()
-        self.cmdCountUpdater.start()
-        print('started cmd updater')
+        #self.cmdCountUpdater.start()
+        #print('started cmd updater')
 
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author) or ctx.author.id == 277490576159408128
@@ -454,7 +454,7 @@ class Admin(commands.Cog):
         await ctx.send('Done!')
         return
 
-    @tasks.loop(seconds=20.0)
+    #@tasks.loop(seconds=20.0)
     async def cmdCountUpdater(self):
         '''
         Well no excluding of commands and no order but I'll do with that
@@ -496,7 +496,16 @@ class Admin(commands.Cog):
             await AddServer(ip, ctx)
         await ctx.send('Done!')
 
-    @cmdCountUpdater.before_loop
+    #@cmdCountUpdater.before_loop
     async def before_printer(self):
         print('waiting...')
         await self.bot.wait_until_ready()  # wait until cache of bot is ready
+
+    @commands.command()
+    @commands.cooldown(1, 60, type=commands.BucketType.user)
+    async def test(self,ctx):
+        await ctx.send('sdfds')
+
+    @commands.command()
+    async def error(self,ctx):
+        raise BaseException()

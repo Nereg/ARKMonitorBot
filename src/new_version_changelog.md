@@ -6,13 +6,19 @@ Added a check in sendToMe function is bot isn't ready (and won't send anything t
 Tryig to use native C implementation of asyncio instead of nest_asyncio Python one
 Updated requirements.txt and bot.sql 
 Changed stripVersion to accept and work with bare names
-Updated discord.py to 1.4 # let's hope that doesn't brake anything
+Updated discord.py to 1.7.3
 Fixed requirements conflicts
 Altered server table definition:
 ```sql
 ALTER TABLE `servers` ADD `Info` TEXT NOT NULL COMMENT 'Additional JSON info about server' AFTER `OfflineTrys`, ADD `LastUpdated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp that updates every time the record is updated' AFTER `Info`; 
 ALTER TABLE `servers` CHANGE `Info` `Info` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT ('{}') COMMENT 'Additional JSON info about server'; 
 ```
+Altered notifications table definition:
+```sql
+ALTER TABLE `notifications` ADD `GuildId` BIGINT NOT NULL DEFAULT '0' COMMENT 'Discord guild id. ' AFTER `Data`; 
+```
+Now sendToMe is sending messages to a guild channel not in DM's
+(thanks intents)
 External :
 #This is a comment (won't be included in discord patchnotes)
 #Added !campfire command
