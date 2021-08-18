@@ -290,3 +290,77 @@ class AutoMessageCog(commands.Cog):
         (channel.id, message.id, server[0][0], ctx.guild.id,))
         # and notify user
         await self.done(ctx, server[0], message.id, channel)
+
+class AutoMessagesPlugin():
+
+    def __init__(self,updater) -> None:
+        print('Initing auto messages plugin!')
+        # if true than the plugin will modify the record
+        # for DB so all mutable plugins will be ran one-by-one and not concurrently
+        # (cuz I don't want to mess with syncing of all changes)
+        self.mutable = False         
+        # main updater class 
+        self.updater = updater
+        # http pool for APIs
+        self.httpPool = self.updater.httpSession
+        # shortcut
+        self.bot = self.updater.bot
+        # get object to get time
+        self.time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
+        # create command cog to use the
+        # same embed generating function
+        self.generator = AutoMessageCog(self.updater.bot)
+        self.updatedMessages = 0
+
+    # will be ran by main updater just like regular __init__
+    async def init(self):
+        print('entered async init')
+
+    async def refresh(self):   
+        self.updatedMessages = 0 
+        # get all messages
+        messages = await self.updater.makeAsyncRequest('SELECT * FROM automessages')
+        # for each record
+        for message in messages:
+            # get guild from record
+            guild = self.bot.get_guild(message[5])
+            # if we can't get guild
+            if (guild == None):
+                print(f'Can`t get guild {message[5]}')
+                # skip record
+                continue
+            # get channel from record
+            channel = guild.get_channel(message[1])
+            # if we can't get channel 
+            if (channel == None):
+                print(f'can`t get channel {message[1]}')
+                # skip record
+                continue
+            # get message from record 
+            msg = channel.get_partial_message(message[2])
+            # if we can't get channel
+            if (msg == None):
+                print(f'can`t get msg {message[2]}')
+                # skip record
+                continue
+            # generate embed
+            embed = await self.generator.makeMessage(message[3], message[5])
+            try:
+                # edit message
+                await msg.edit(embed=embed)
+                self.updatedMessages += 1
+            # if we can't edit message
+            except discord.Forbidden:
+                # skip record
+                continue
+
+    # called on each iteration of main loop
+    async def loopStart(self):
+        # refresh messages in background
+        asyncio.create_task(self.refresh())
+
+    async def loopEnd(self):
+        await sendToMe(f'Updated {self.updatedMessages} auto messages!', self.bot)
+
+    async def handle(self,updateResults):
+        pass

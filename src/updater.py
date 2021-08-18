@@ -17,6 +17,7 @@ import menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
+from updatePlugins.automessage import AutoMessagesPlugin
 from updatePlugins.battlemetrics import BattlemetricsPlugin
 from updatePlugins.notifications import NotificationsPlugin
 
@@ -108,6 +109,8 @@ class NeoUpdater(commands.Cog):
         self.plugins.append(BattlemetricsPlugin(self))
         # add notifications plugin
         self.plugins.append(NotificationsPlugin(self))
+        # add auto messages plugin
+        self.plugins.append(AutoMessagesPlugin(self))
         # call async inits of every plugin
         #print([i.init for i in self.plugins])
         await asyncio.gather(*[i.init() for i in self.plugins])
