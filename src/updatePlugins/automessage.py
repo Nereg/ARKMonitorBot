@@ -226,7 +226,7 @@ class AutoMessageCog(commands.Cog):
 
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
-    async def neoautomessage(self, ctx, *agrs):
+    async def automessage(self, ctx, *agrs):
         # construct converter
         channel_converter = discord.ext.commands.TextChannelConverter()
         try:
