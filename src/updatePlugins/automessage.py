@@ -195,34 +195,89 @@ class AutoMessageCog(commands.Cog):
         embed = discord.Embed(title=name)
         # if there are any players
         if (playersObj.list.__len__() > 0):
+            # variables
             nameValue = ''
             timevalue = ''
+            # for each player in list
             for player in playersObj.list:
+                # and it's name and time to variables
                 nameValue += f'{player.name}\n'
                 timevalue += f'{player.time}\n'
+            # then add these variables to embed
             embed.add_field(name='Name', value=nameValue, inline=True)
             embed.add_field(name='Time', value=timevalue, inline=True)
+        # if there is no players
         else:
+            # add this info into embed
             embed.add_field(name='No one is on the server',
                             value='\u200B', inline=True)
+        # if server is online set status to online string
+        # else set to offline string
         status = ':green_circle: Online' if server[0][6] == 1 else ':red_circle: Offline'
+        # add other info about servesr
         embed.add_field(name='Status', value=status, inline=False)
         embed.add_field(name='Ping', value=f'{serverObj.ping} ms', inline=True)
         embed.add_field(name='Map', value=serverObj.map, inline=True)
         embed.add_field(name='IP', value=f'{serverObj.ip}', inline=True)
+        # get current time
         curTime = datetime.datetime.utcnow()
+        # set footer
         embed.set_footer(
             text=f'Updated: {curTime.strftime("%m.%d at %H:%M")} (UTC)')
+        # paint in random color 
+        embed.color = randomColor()
+        # return embed
         return embed
 
+    async def noPerms(self, ctx, channel, perms):
+        # list with needed perms
+        boolPerms = [perms.send_messages,
+                    perms.embed_links, 
+                    perms.external_emojis]
+        # list with text representations of perms in first list
+        textPerms = ['Send messages',
+                    'Embed links',
+                    'Use external emojis']
+        # where we put text representations of needed perms
+        neededPerms = []
+        for i,perm in enumerate(boolPerms):
+            # if perm is false
+            if (not perm):
+                # append to needed perms
+                # text representation from 
+                # textPerms
+                neededPerms.append(textPerms[i])
+                pass
+        # join each needed perm
+        neededPerms = ' , '.join(neededPerms)
+        # create embed 
+        embed = discord.Embed()
+        # set color 
+        embed.color = discord.Colour.red()
+        # add info
+        embed.add_field(name='I have insufficient permissions in that channel!',
+                        value=f'I need `{neededPerms}` in {channel.mention} to send auto messages there!')
+        # send embed
+        await ctx.send(embed = embed)
+
     async def checkPermissions(self, channel, ctx):
-        return True
+        #return True
         # get our bot memeber in current guild
         botMember = ctx.guild.me
         # get permissions 
         perms = channel.permissions_for(botMember)
-
-        pass
+        # if bot have permissions:
+        # send messages
+        # embed links
+        # use external emojis
+        if (perms.send_messages and perms.embed_links and perms.external_emojis):
+            # return true
+            return True
+        else:
+            # send error embed
+            await self.noPerms(ctx, channel, perms)
+            # return false
+            return False
 
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
