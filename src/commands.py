@@ -20,6 +20,73 @@ class BulkCommands(commands.Cog):
         self.cfg = config.Config()
         self.t = c.Translation()
 
+    async def listServers(self, ctx):
+        # select settings of the guild
+        settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s', (ctx.guild.id,))
+        # get ids of added servers in this guild
+        serversIds = json.loads(settings[0][3])
+        # if we have no servers added
+        if (serversIds.__len__() <= 0):
+            # create error embed
+            embed = discord.Embed()
+            # add title
+            embed.title = 'Looks like you have no servers added!'
+            # and description
+            embed.description = f'You can add any steam server using `{ctx.prefix}server add` command!'
+            # and return
+            return embed
+        # empty statement
+        statement = "SELECT * FROM servers WHERE Id IN ({})"
+        # SELECT * FROM servers WHERE Id IN (1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 150)
+        # make IN (...) part
+        #await ctx.send(serversIds)
+        # problem here
+        param = ', '.join([str(i) for i in serversIds]) 
+        #await ctx.send(param)
+        # make request
+        #await ctx.send(statement.format(param))
+        servers = await makeAsyncRequest(statement.format(param))
+        # create embed
+        embed = discord.Embed()
+        # paint it 
+        embed.color = randomColor()
+        # set title 
+        embed.title = 'List of servers:'
+        # index of the first server
+        i = 1
+        # for each server
+        for server in servers:
+            # load server object
+            serverObj = c.ARKServer.fromJSON(server[4])
+            # load more info about server
+            info = json.loads(server[8])
+            # create field name
+            fieldName = f'{i}. {await stripVersion(serverObj)}'
+            # if server is online set status to online string
+            # else to offline string 
+            status = ':green_circle: Online' if server[6] == 1 else ':red_circle: Offline'
+            # create field value
+            fieldValue = f'[{server[1]}]({info.get("battleUrl","")}) {status}'
+            # add field to embed
+            embed.add_field(name = fieldName, value = fieldValue)
+            # increment index 
+            i += 1
+        # return embed
+        return embed
+
+    async def listNotifications(self, ctx):
+        pass
+
+    async def listAutoMessages(self, ctx):
+        pass
+
+    @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
+    @commands.command()
+    async def neolist(self, ctx):
+        # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
+        await ctx.send(embed = await self.listServers(ctx))
+        pass
+
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
     async def list(self, ctx):
@@ -48,6 +115,7 @@ class BulkCommands(commands.Cog):
             Servers = json.loads(data[0][3])  # remove()
         statement = "SELECT * FROM servers WHERE Id IN ({})".format(
             ', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
+        await ctx.send(statement)
         data = await makeAsyncRequest(statement)
         i = 1  # i (yeah classic)
         for result in data:  # from each record in DB
