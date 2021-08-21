@@ -20,6 +20,7 @@ class BulkCommands(commands.Cog):
         self.cfg = config.Config()
         self.t = c.Translation()
 
+
     async def selectServersByIds(self, ids):
         # empty statement
         statement = "SELECT * FROM servers WHERE Id IN ({})"
@@ -28,6 +29,7 @@ class BulkCommands(commands.Cog):
         print(statement.format(param))
         # return result
         return await makeAsyncRequest(statement.format(param))
+
 
     async def listServers(self, ctx):
         # select settings of the guild
@@ -76,6 +78,7 @@ class BulkCommands(commands.Cog):
         # return embed
         return embed
 
+
     async def listNotifications(self, ctx):
         # select all notifications for current guild
         # (won't work with old table format)
@@ -120,83 +123,39 @@ class BulkCommands(commands.Cog):
 
 
     async def listAutoMessages(self, ctx):
-        pass
+        # select all messages for this guild
+        records = await makeAsyncRequest('SELECT * FROM automessages WHERE DiscordGuildId = %s',(ctx.guild.id,))
+        # if no records found
+        if (records.__len__() <= 0):
+            # return nothing
+            return None
+        # create embed
+        embed = discord.Embed()
+        # paint it
+        embed.color = randomColor()
+        # add title 
+        embed.title = 'List of auto messages:'
+        # get ids of all servers in records
+        serversIds = [record[3] for record in records]
+        # get servers from those ids
+        servers = await self.selectServersByIds(serversIds)
+        # auto message index
+        index = 1
+        # for each record
+        for i, record in enumerate(records):
+            # create server object from server record
+            server = c.ARKServer.fromJSON(servers[i][4])
+            # create link to message from auto message record
+            msgLink = f'https://discordapp.com/channels/{ctx.guild.id}/{record[1]}/{record[2]}'
+            # create name and value for field
+            name = f'{index}. Message for `{await stripVersion(server)}`'
+            value = f'[Message]({msgLink}) in <#{record[1]}>'
+            # add field
+            embed.add_field(name = name, value = value)
+            index += 1
+        # return embed
+        return embed
 
-    @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
-    @commands.command()
-    async def neolist(self, ctx):
-        # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
-        # make all coroutines
-        coroutines = [self.listServers(ctx),
-                    self.listNotifications(ctx),
-                    self.listAutoMessages(ctx)
-                    ] 
-        # run them concurrently
-        embeds = await asyncio.gather(*coroutines)
-        # for each embed
-        for embed in embeds:
-            # if we have some embed
-            if (embed != None):
-                # send it
-                await ctx.send(embed = embed)
-
-    @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
-    @commands.command()
-    async def list(self, ctx):
-        servers = ''  # string with list of servers
-        l = c.Translation()  # load translation
-        GuildId = ctx.guild.id
-        Type = 0  # lefovers of old code (supposed support for DM's)
-        # get settings of current guild
-        data = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s AND Type=%s', (GuildId, Type))
-        # select server notifications
-        notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE Type=3')
-        watchedServers = []  # list of watched servers
-        # most bugged and required part of the bot AFAIK (no updater is lol)
-        for notification in notifications:  # for notifications
-            # if bot will notify in current channel (not in some channel of the guild and it is a new feature to make)
-            if (notification[1] == ctx.channel.id):
-                # append server id in list
-                watchedServers.append(json.loads(notification[4]))
-        if (data.__len__() == 0):  # if
-            await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
-            return
-        if (data[0][3] == None or data[0][3] == 'null' or data[0][3] == '[]'):
-            await ctx.send(l.l['no_servers_added'].format(ctx.prefix))
-            return
-        else:
-            Servers = json.loads(data[0][3])  # remove()
-        statement = "SELECT * FROM servers WHERE Id IN ({})".format(
-            ', '.join(['{}'.format(Servers[i]) for i in range(len(Servers))]))
-        await ctx.send(statement)
-        data = await makeAsyncRequest(statement)
-        i = 1  # i (yeah classic)
-        for result in data:  # from each record in DB
-            # print(result)
-            #print(result[0] in watchedServers[0])
-            # print(watchedServers)
-            server = c.ARKServer.fromJSON(result[4])  # construct our class
-            online = bool(result[6])  # exstarct last online state
-            # if last online is tru green circle else (if offline) red
-            emoji = ':green_circle:' if online else ':red_circle:'
-            if watchedServers.__len__() > 0:
-                watched = '(watched)' if result[0] in watchedServers[0] else ''
-            else:
-                watched = ''
-            alias = await getAlias(result[0], ctx.guild.id)
-            if(alias == ''):
-                name = server.name.find(f'- ({server.version})')
-                name = server.name[:name].strip()
-            else:
-                name = alias
-            # construct line and add it to all strings
-            servers += f'{i}. {name} ({server.map}) {watched} {emoji} {server.ip}\n'
-            i += 1
-        # send message
-        await ctx.send(f''' 
-List of added servers :
-{discord.utils.escape_mentions(servers)}
-        ''')
 
     def getUptime(self):
         # get current process
@@ -225,6 +184,27 @@ List of added servers :
         else:
             # return full string
             return f"{days}:{hours}:{minutes}:{seconds}"
+
+
+    @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
+    @commands.command()
+    async def list(self, ctx):
+        # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
+        # IDEA maybe you can select what you are trying to list ? like :
+        # /list servers, /list notifications
+        # make all coroutines
+        coroutines = [self.listServers(ctx),
+                    self.listNotifications(ctx),
+                    self.listAutoMessages(ctx)] 
+        # run them concurrently
+        embeds = await asyncio.gather(*coroutines)
+        # for each embed
+        for embed in embeds:
+            # if we have some embed
+            if (embed != None):
+                # send it
+                await ctx.send(embed = embed)
+
 
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()

@@ -371,7 +371,9 @@ class AutoMessagesPlugin():
     async def init(self):
         print('entered async init')
 
-    async def refresh(self):   
+    async def refresh(self):  
+        # TODO: add "smart" deletion of broken records
+        # e.g. count how many times we tried to update that record 
         self.updatedMessages = 0 
         # get all messages
         messages = await self.updater.makeAsyncRequest('SELECT * FROM automessages')
