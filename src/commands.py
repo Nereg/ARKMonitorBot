@@ -20,6 +20,15 @@ class BulkCommands(commands.Cog):
         self.cfg = config.Config()
         self.t = c.Translation()
 
+    async def selectServersByIds(self, ids):
+        # empty statement
+        statement = "SELECT * FROM servers WHERE Id IN ({})"
+        # construct part of the query
+        param = ', '.join([str(i) for i in ids]) 
+        print(statement.format(param))
+        # return result
+        return await makeAsyncRequest(statement.format(param))
+
     async def listServers(self, ctx):
         # select settings of the guild
         settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s', (ctx.guild.id,))
@@ -29,23 +38,16 @@ class BulkCommands(commands.Cog):
         if (serversIds.__len__() <= 0):
             # create error embed
             embed = discord.Embed()
+            # paint it 
+            embed.color = randomColor()
             # add title
             embed.title = 'Looks like you have no servers added!'
             # and description
             embed.description = f'You can add any steam server using `{ctx.prefix}server add` command!'
             # and return
             return embed
-        # empty statement
-        statement = "SELECT * FROM servers WHERE Id IN ({})"
-        # SELECT * FROM servers WHERE Id IN (1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 150)
-        # make IN (...) part
-        #await ctx.send(serversIds)
-        # problem here
-        param = ', '.join([str(i) for i in serversIds]) 
-        #await ctx.send(param)
-        # make request
-        #await ctx.send(statement.format(param))
-        servers = await makeAsyncRequest(statement.format(param))
+        # select servers by ids
+        servers = await self.selectServersByIds(serversIds)
         # create embed
         embed = discord.Embed()
         # paint it 
@@ -75,7 +77,47 @@ class BulkCommands(commands.Cog):
         return embed
 
     async def listNotifications(self, ctx):
-        pass
+        # select all notifications for current guild
+        # (won't work with old table format)
+        notifications = await makeAsyncRequest('SELECT * FROM notifications WHERE GuildId = %s',(ctx.guild.id,))
+        # if there are no notifications
+        if (notifications.__len__() <= 0):
+            # return nothing
+            return None
+        # create embed
+        embed = discord.Embed()
+        # paint it 
+        embed.color = randomColor()
+        # add title 
+        embed.title = 'List of notifications:'
+        # notification index
+        i = 1
+        # for each record in db
+        for record in notifications:
+            # load server ids
+            serverIds = json.loads(record[4])
+            # if no servers in record
+            if (serverIds.__len__() <= 0):
+                # skip it
+                continue
+            # load server records
+            servers = await self.selectServersByIds(serverIds)
+            # for each server
+            for server in servers:
+                # make server object from record
+                server = c.ARKServer.fromJSON(server[4])
+                # make name and value
+                name = f'{i}. Notification for `{await stripVersion(server)}`'
+                value = f'In <#{record[1]}>'
+                # and add field
+                embed.add_field(name = name, value = value)
+                i += 1
+        # if no fields were added
+        if (i <= 1):
+            return None
+        # else return embed
+        return embed
+
 
     async def listAutoMessages(self, ctx):
         pass
@@ -84,8 +126,19 @@ class BulkCommands(commands.Cog):
     @commands.command()
     async def neolist(self, ctx):
         # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
-        await ctx.send(embed = await self.listServers(ctx))
-        pass
+        # make all coroutines
+        coroutines = [self.listServers(ctx),
+                    self.listNotifications(ctx),
+                    self.listAutoMessages(ctx)
+                    ] 
+        # run them concurrently
+        embeds = await asyncio.gather(*coroutines)
+        # for each embed
+        for embed in embeds:
+            # if we have some embed
+            if (embed != None):
+                # send it
+                await ctx.send(embed = embed)
 
     @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
     @commands.command()
