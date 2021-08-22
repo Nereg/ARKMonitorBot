@@ -31,23 +31,31 @@ class BulkCommands(commands.Cog):
         return await makeAsyncRequest(statement.format(param))
 
 
+    def noServers(self, ctx):
+        # create error embed
+        embed = discord.Embed()
+        # paint it 
+        embed.color = randomColor()
+        # add title
+        embed.title = 'Looks like you have no servers added!'
+        # and description
+        embed.description = f'You can add any steam server using `{ctx.prefix}server add` command!'
+        # and return
+        return embed
+
     async def listServers(self, ctx):
         # select settings of the guild
         settings = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=%s', (ctx.guild.id,))
+        # if no settings found 
+        if (settings.__len__() <= 0 or settings[0][3] == None):
+            # send no servers embed
+            return self.noServers(ctx)
         # get ids of added servers in this guild
         serversIds = json.loads(settings[0][3])
         # if we have no servers added
         if (serversIds.__len__() <= 0):
-            # create error embed
-            embed = discord.Embed()
-            # paint it 
-            embed.color = randomColor()
-            # add title
-            embed.title = 'Looks like you have no servers added!'
-            # and description
-            embed.description = f'You can add any steam server using `{ctx.prefix}server add` command!'
-            # and return
-            return embed
+            # return no servers embed
+            return self.noServers(ctx)
         # select servers by ids
         servers = await self.selectServersByIds(serversIds)
         # create embed
