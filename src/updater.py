@@ -101,8 +101,8 @@ class NeoUpdater(commands.Cog):
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
         #self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
                                                   # https://github.com/aio-libs/aiomysql/issues/574
-                                                  user=self.cfg.dbUser, password=self.cfg.dbPass,
-                                                  db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
+                                                  #user=self.cfg.dbUser, password=self.cfg.dbPass,
+                                                  #db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
         # add debug plugin to list of plugins
         self.plugins.append(DebugPlugin(self))
         # add Battlemetrics plugin
