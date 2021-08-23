@@ -99,7 +99,7 @@ class NeoUpdater(commands.Cog):
     # let's do anything normal __init__ can't do 
     async def init(self): 
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
-        self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
+        #self.sqlPool = await aiomysql.create_pool(host=self.cfg.dbHost, port=3306,  # somehow works see:
                                                   # https://github.com/aio-libs/aiomysql/issues/574
                                                   user=self.cfg.dbUser, password=self.cfg.dbPass,
                                                   db=self.cfg.DB, loop=asyncio.get_running_loop(), minsize=self.workersCount)
@@ -148,13 +148,15 @@ class NeoUpdater(commands.Cog):
         
     # performs SQL request using aiomysql pool instead of regular function
     async def makeAsyncRequest(self, SQL, params=()):
-        conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
-        async with conn.cursor() as cur:  # with cursor as cur
-            await cur.execute(SQL, params)  # execute SQL with parameters
-            result = await cur.fetchall()  # fetch all results
-            await conn.commit()  # commit changes
-        self.sqlPool.release(conn)  # release current connection to the pool
-        return result  # return result
+        # hotfix !
+        return await makeAsyncRequest(SQL, params)
+        # conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
+        # async with conn.cursor() as cur:  # with cursor as cur
+        #     await cur.execute(SQL, params)  # execute SQL with parameters
+        #     result = await cur.fetchall()  # fetch all results
+        #     await conn.commit()  # commit changes
+        # self.sqlPool.release(conn)  # release current connection to the pool
+        # return result  # return result
 
     async def performance(self,globalStart,globalStop,localStart,chunkTimes):
         # calculate global time 
