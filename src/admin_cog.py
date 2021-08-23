@@ -20,6 +20,7 @@ import json
 import datetime
 from collections import Counter
 from discord.ext import tasks
+import location
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -64,6 +65,7 @@ class PerformanceMocker:
     def __bool__(self):
         return False
 
+
 class GlobalChannel(commands.Converter):
     async def convert(self, ctx, argument):
         try:
@@ -73,12 +75,15 @@ class GlobalChannel(commands.Converter):
             try:
                 channel_id = int(argument, base=10)
             except ValueError:
-                raise commands.BadArgument(f'Could not find a channel by ID {argument!r}.')
+                raise commands.BadArgument(
+                    f'Could not find a channel by ID {argument!r}.')
             else:
                 channel = ctx.bot.get_channel(channel_id)
                 if channel is None:
-                    raise commands.BadArgument(f'Could not find a channel by ID {argument!r}.')
+                    raise commands.BadArgument(
+                        f'Could not find a channel by ID {argument!r}.')
                 return channel
+
 
 class Admin(commands.Cog):
     """Admin-only commands that make the bot dynamic."""
@@ -87,17 +92,19 @@ class Admin(commands.Cog):
         self.bot = bot
         self._last_result = None
         self.sessions = set()
-        self.cmdCountUpdater.start()
-        print('started cmd updater')
+        #self.cmdCountUpdater.start()
+        #print('started cmd updater')
 
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author) or ctx.author.id == 277490576159408128
+
     async def run_process(self, command):
         try:
             process = await asyncio.create_subprocess_shell(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             result = await process.communicate()
         except NotImplementedError:
-            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             result = await self.bot.loop.run_in_executor(None, process.communicate)
 
         return [output.decode() for output in result]
@@ -180,8 +187,8 @@ class Admin(commands.Cog):
 
         def check(m):
             return m.author.id == ctx.author.id and \
-                   m.channel.id == ctx.channel.id and \
-                   m.content.startswith('`')
+                m.channel.id == ctx.channel.id and \
+                m.content.startswith('`')
 
         while True:
             try:
@@ -321,26 +328,26 @@ class Admin(commands.Cog):
         await ctx.send(f'Status: {ctx.tick(success)} Time: {(end - start) * 1000:.2f}ms')
 
     @commands.command()
-    async def exec(self,ctx,sql):
-        data = makeRequest(sql)
+    async def exec(self, ctx, sql):
+        data = await makeAsyncRequest(sql)
         await ctx.send(data)
-    
+
     @commands.command()
     async def setMessage(self, ctx, message):
         result = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
         if (result.__len__() <= 0):
             await makeAsyncRequest('INSERT INTO settings(GuildId, Prefix, ServersId, Admins, Type, Aliases) VALUES (1,"","","",0,"")')
-        makeRequest('UPDATE settings SET Admins=%s WHERE GuildId=1',(message,))
+        await makeAsyncRequest('UPDATE settings SET Admins=%s WHERE GuildId=1', (message,))
         await ctx.send('Done!')
 
     @commands.command()
-    async def deleteMessage(self, ctx, channelId : int, messageId : int):
+    async def deleteMessage(self, ctx, channelId: int, messageId: int):
         channel = self.bot.get_channel(channelId)
         if (channel == None):
             await ctx.send('Wrong channel id')
         else:
             try:
-                message =  await channel.fetch_message(messageId)
+                message = await channel.fetch_message(messageId)
             except BaseException as e:
                 await ctx.send('error')
                 await ctx.send(e)
@@ -355,11 +362,11 @@ class Admin(commands.Cog):
         return
 
     @commands.command()
-    async def deleteServer(self, ctx, serverIp : str):
+    async def deleteServer(self, ctx, serverIp: str):
         await deleteServer(serverIp)
-    
+
     @commands.command()
-    async def setCmdCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
+    async def setCmdCountChannel(self, ctx, value: str = None, channel: discord.VoiceChannel = None):
         '''
         Sets channel to update count of commands used
         supports formatting of value string wich will be put into channel's name
@@ -381,43 +388,52 @@ class Admin(commands.Cog):
             data = json.loads(channelRecord[2])
             if int(data[0]) == channel.id:
                 await ctx.send(f'You already have a message for that channel with id {channelRecord[0]}!')
-                return 
-        record = [int(channel.id),value]
-        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (0,%s)',(json.dumps(record),))
+                return
+        record = [int(channel.id), value]
+        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (0,%s)', (json.dumps(record),))
         await ctx.send('Done!')
         return
 
-    async def purge(self,ctx,value:int):
-        servers = await makeAsyncRequest('SELECT Id FROM servers WHERE OfflineTrys >= %s',(value,))
+    async def purge(self, ctx, value: int):
+        servers = await makeAsyncRequest('SELECT Id FROM servers WHERE OfflineTrys >= %s', (value,))
         for server in servers:
             id = server[0]
-            result = await deleteServer('',id)
+            result = await deleteServer('', id)
             if(result != 0):
                 await ctx.send(f'Smt went wrong with server {id}!')
         await ctx.send('Deleted servers!')
         return
 
     @commands.command()
-    async def purgeServers(self, ctx, value:int):
-        machedServers = await makeAsyncRequest('SELECT COUNT(*) FROM `servers` WHERE OfflineTrys >= %s',(value,))
+    async def purgeServers(self, ctx, *argv):
+        if (argv.__len__() <= 0):
+            await ctx.send("Not every parameter was supplied!")
+            return
+        elif (str.isdigit(argv[0])):
+            value = int(argv[0])
+        else:
+            await ctx.send(f"`{ argv[0]}` isn't a number!")
+            return
+        machedServers = await makeAsyncRequest('SELECT COUNT(*) FROM `servers` WHERE OfflineTrys >= %s', (value,))
         self.msg = await ctx.send(f'Do you really want to delete {machedServers[0][0]} servers?')
         await self.msg.add_reaction('✅')
         try:
-            reaction,user = await self.bot.wait_for('reaction_add',timeout=100,check=lambda r,user: user != self.bot.user and r.message.id == self.msg.id)
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=100, check=lambda r, user: user != self.bot.user and r.message.id == self.msg.id)
         except asyncio.TimeoutError:
             try:
                 await self.msg.clear_reactions()
-                await self.msg.edit(content='The interactive menu was closed.',embed=None)
-            except discord.errors.NotFound: # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON!  
+                await self.msg.edit(content='The interactive menu was closed.', embed=None)
+            # It was SO ANNOYING ! DONT DELET MESSAGES THERE ARE STOP BUTTON! (yeah I pasted this code from user space why not)
+            except discord.errors.NotFound:
                 return ''
         else:
             if (str(reaction.emoji) == '✅'):
                 await ctx.send('Ok! Deleting!')
                 await self.msg.clear_reactions()
-                await self.purge(ctx,value)
+                await self.purge(ctx, value)
 
     @commands.command()
-    async def setServersCountChannel(self, ctx, value : str = None, channel : discord.VoiceChannel = None):
+    async def setServersCountChannel(self, ctx, value: str = None, channel: discord.VoiceChannel = None):
         if (channel == None):
             await ctx.send('Channel is not selected or wrong!')
             return
@@ -432,37 +448,64 @@ class Admin(commands.Cog):
             data = json.loads(channelRecord[2])
             if int(data[0]) == channel.id:
                 await ctx.send(f'You already have a message for that channel with id {channelRecord[0]}!')
-                return 
-        record = [int(channel.id),value]
-        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (1,%s)',(json.dumps(record),))
+                return
+        record = [int(channel.id), value]
+        await makeAsyncRequest('INSERT INTO manager (Type,Data) VALUES (1,%s)', (json.dumps(record),))
         await ctx.send('Done!')
         return
-        
 
-    @tasks.loop(seconds=20.0) 
+    #@tasks.loop(seconds=20.0)
     async def cmdCountUpdater(self):
         '''
         Well no excluding of commands and no order but I'll do with that
         '''
         print('entered cmd updater')
-        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=0') # get all record about channels we need to update
-        commands = await makeAsyncRequest('SELECT * FROM commandsused') # get commands 
-        total = await makeAsyncRequest('SELECT SUM(Uses) FROM commandsused') # get how much all commands are used
-        total = total[0][0] # extract count of all commands used
-        i=0 
-        for channel in channels: # for each channel in DB
-            cmd = commands[i] # get command
-            data = json.loads(channel[2]) # load data
-            print(data) # debug
-            discordChannel = self.bot.get_channel(data[0]) # get channel 
-            print(discordChannel) # debug
-            if (discordChannel == None): # if channel is not found
-                continue # skip 
-            await discordChannel.edit(reason='Auto edit',name=data[1].format(cmd[1],int(cmd[2]),total)) # else edit name of the channel
+        # get all record about channels we need to update
+        channels = await makeAsyncRequest('SELECT * FROM manager WHERE Type=0')
+        # get commands
+        commands = await makeAsyncRequest('SELECT * FROM commandsused')
+        # get how much all commands are used
+        total = await makeAsyncRequest('SELECT SUM(Uses) FROM commandsused')
+        total = total[0][0]  # extract count of all commands used
+        i = 0
+        for channel in channels:  # for each channel in DB
+            cmd = commands[i]  # get command
+            data = json.loads(channel[2])  # load data
+            print(data)  # debug
+            discordChannel = self.bot.get_channel(data[0])  # get channel
+            print(discordChannel)  # debug
+            if (discordChannel == None):  # if channel is not found
+                continue  # skip
+            # else edit name of the channel
+            await discordChannel.edit(reason='Auto edit', name=data[1].format(cmd[1], int(cmd[2]), total))
             print('edited')
-            i += 1 # increase i 
+            i += 1  # increase i
 
-    @cmdCountUpdater.before_loop
+    @commands.command()
+    async def getIpLocation(self, ctx, ip: str):
+        session = aiohttp.ClientSession()
+        loc = location.Location(session)
+        code = await loc.get(ip)
+        emoji = await loc.getEmoji(code)
+        await ctx.send(f'Ip: `{ip}`\nCountry code: `{code}`\nCountry emoji: {emoji}')
+
+    @commands.command()
+    async def bulkServerAdd(self, ctx, servers: str):
+        array = servers.split('\n') # split by newline
+        for ip in array:
+            await AddServer(ip, ctx)
+        await ctx.send('Done!')
+
+    #@cmdCountUpdater.before_loop
     async def before_printer(self):
         print('waiting...')
-        await self.bot.wait_until_ready() # wait until cache of bot is ready
+        await self.bot.wait_until_ready()  # wait until cache of bot is ready
+
+    @commands.command()
+    @commands.cooldown(1, 60, type=commands.BucketType.user)
+    async def test(self,ctx):
+        await ctx.send('sdfds')
+
+    @commands.command()
+    async def error(self,ctx):
+        await ctx.send('A'*5000)

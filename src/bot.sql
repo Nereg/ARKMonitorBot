@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Apr 09, 2021 at 05:44 PM
+-- Generation Time: Aug 15, 2021 at 03:48 PM
 -- Server version: 8.0.19
 -- PHP Version: 7.4.16
 
@@ -48,14 +48,6 @@ CREATE TABLE `commandsused` (
   `Uses` int NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Dumping data for table `commandsused`
---
-
-INSERT INTO `commandsused` (`Id`, `Name`, `Uses`) VALUES
-(1, 'info', 1),
-(2, 'prefix', 1);
-
 -- --------------------------------------------------------
 
 --
@@ -96,8 +88,23 @@ CREATE TABLE `notifications` (
   `Type` int NOT NULL,
   `Sent` int NOT NULL,
   `ServersIds` text NOT NULL,
-  `Data` text NOT NULL
+  `Data` text NOT NULL,
+  `GuildId` bigint NOT NULL DEFAULT '0' COMMENT 'Discord guild id. '
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `officialServers`
+--
+
+CREATE TABLE `officialServers` (
+  `Id` int NOT NULL,
+  `Name` varchar(59) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `Ip` varchar(14) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `Query port` int DEFAULT NULL,
+  `Port` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -106,14 +113,16 @@ CREATE TABLE `notifications` (
 --
 
 CREATE TABLE `servers` (
-  `Id` int NOT NULL,
-  `Ip` text NOT NULL,
-  `Port` int DEFAULT NULL,
-  `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci,
-  `ServerObj` text NOT NULL,
-  `PlayersObj` text NOT NULL,
-  `LastOnline` int NOT NULL DEFAULT '1',
-  `OfflineTrys` int NOT NULL DEFAULT '0'
+  `Id` int NOT NULL COMMENT 'Id of a server. Auto invreases',
+  `Ip` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'Ip of a server in format: IP:Query port',
+  `Port` int DEFAULT NULL COMMENT 'Query port of a server',
+  `Address` text CHARACTER SET utf8 COLLATE utf8_general_ci COMMENT 'Ip of a server',
+  `ServerObj` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'JSON dump of server object. See: /src/classes.py:72',
+  `PlayersObj` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'JSON dump of players object. See: /src/classes.py:268',
+  `LastOnline` int NOT NULL DEFAULT '1' COMMENT '0 or 1 indicating if the server was online or not last time we checked it.',
+  `OfflineTrys` int NOT NULL DEFAULT '0' COMMENT 'Counts how many attempts were made to reach server.',
+  `Info` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT (_utf8mb4'{}') COMMENT 'Additional JSON info about server',
+  `LastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp that updates every time the record is updated'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -131,6 +140,8 @@ CREATE TABLE `settings` (
   `Type` int NOT NULL,
   `Aliases` text CHARACTER SET utf8 COLLATE utf8_general_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `users`
@@ -180,6 +191,12 @@ ALTER TABLE `notifications`
   ADD PRIMARY KEY (`Id`);
 
 --
+-- Indexes for table `officialServers`
+--
+ALTER TABLE `officialServers`
+  ADD PRIMARY KEY (`Id`);
+
+--
 -- Indexes for table `servers`
 --
 ALTER TABLE `servers`
@@ -211,7 +228,7 @@ ALTER TABLE `automessages`
 -- AUTO_INCREMENT for table `commandsused`
 --
 ALTER TABLE `commandsused`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `errors`
@@ -232,16 +249,22 @@ ALTER TABLE `notifications`
   MODIFY `Id` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `officialServers`
+--
+ALTER TABLE `officialServers`
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `servers`
 --
 ALTER TABLE `servers`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT COMMENT 'Id of a server. Auto invreases';
 
 --
 -- AUTO_INCREMENT for table `settings`
 --
 ALTER TABLE `settings`
-  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`

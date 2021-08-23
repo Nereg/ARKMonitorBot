@@ -13,43 +13,6 @@ import socket
 import discord
 import time
 
-class BattleMetricsAPI():
-    def __init__(self, session):
-        self.session = session
-        pass
-    
-
-    async def getBattlemetricsUrl(self,serverClass):
-        '''
-        Gets url for given server on battlemetrics.com
-
-        Parameters: 
-        serverClass : ARKServer - server to search for
-
-        Returns:
-        False ot str : false if url is not found, url if found
-        '''
-        apiURL = f'https://api.battlemetrics.com/servers?fields[server]=name,ip,portQuery&filter[game]=ark&filter[search]={serverClass.name}' # contruct API url
-        async with self.session.get(apiURL) as response: # make request 
-            if (response.status == 200): # if 200 
-                json_data = await response.json() # decode body
-                for server in json_data['data']: # for each server
-                    serverName = server['attributes']['name'] # extract data
-                    serverIp = server['attributes']['ip']
-                    serverPort = server['attributes']['portQuery']
-                    if (serverClass.name == serverName and serverClass.address == serverIp and serverClass.port == serverPort): # compare to needed server
-                        serverId = server['id'] # if match 
-                        return f'https://www.battlemetrics.com/servers/ark/{serverId}' # return Battlemetrcis URL
-                return False # else return false
-            elif (response.status == 429): # if we hit rate limit
-                wait = int(response.headers['Retry-After']) # get for how much we must wait
-                #print(wait)
-                #print(f'We need to wait for {wait} to get battlemetrics url!\nServer ip is: {serverClass.ip}')
-                await asyncio.sleep(wait) # wait it out
-                #print('Failed battlemetrics API call!')
-                #print(response.text())
-                return await self.getBattlemetricsUrl(serverClass) # remake request 
-
 class ARKServerError(Exception): # ARK server error
     def __init__(self,reason, error, *args, **kwargs) :
         self.reason = reason
