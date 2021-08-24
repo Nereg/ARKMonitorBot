@@ -3,7 +3,7 @@ services:
   db:
     image: mysql:8.0.19
     restart: always
-    command: --disable-log-bin 
+    command: --disable-log-bin --max-connections=100
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: bot
