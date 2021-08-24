@@ -360,8 +360,13 @@ class NotificationsPlugin():
                     # continue with other records
                     continue
                 else:
-                    # send the notification
-                    await channel.send(embed = await self.makeEmbed(status,updateResult,i))
+                    try:
+                        # send the notification
+                        await channel.send(embed = await self.makeEmbed(status,updateResult,i))
+                    except discord.errors.Forbidden:
+                        # I will implement delete logic later
+                        # for now skipp this record
+                        continue
                     # change the status in DB to sent in background
                     asyncio.create_task(self.updater.makeAsyncRequest('UPDATE notifications SET Sent=1 WHERE Id=%s',(i[0],)))
                     print(f'Sent notification for {channel.id}')
