@@ -148,7 +148,7 @@ class NeoUpdater(commands.Cog):
         
     # performs SQL request using aiomysql pool instead of regular function
     async def makeAsyncRequest(self, SQL, params=()):
-        # hotfix !
+        # just in case
         #return await makeAsyncRequest(SQL, params)
         conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
         async with conn.cursor() as cur:  # with cursor as cur
