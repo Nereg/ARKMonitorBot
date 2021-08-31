@@ -2,7 +2,6 @@ import asyncio
 import a2s
 import arrow
 import json
-from helpers import sendToMe
 import jsonpickle
 import requests
 import os

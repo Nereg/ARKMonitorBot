@@ -1,5 +1,5 @@
-import classes as c # our classes
-from helpers import * # our helpers
+import cogs.utils.classes as c # our classes
+from cogs.utils.helpers import * # our helpers
 import config  # config
 import discord # main discord libary
 from discord.ext import commands # import commands extension
@@ -59,6 +59,10 @@ class Charcoal(commands.Cog):
             emb.set_thumbnail(url='https://static.wikia.nocookie.net/arksurvivalevolved_gamepedia/images/4/4f/Charcoal.png')
             await ctx.send(embed=emb)
             return
+
+def setup(bot: commands.Bot) -> None:
+    pass
+    #bot.add_cog(Charcoal(bot))
 
 
 

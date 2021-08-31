@@ -1,6 +1,6 @@
-from helpers import *
+from cogs.utils.helpers import *
 import discord 
-import menus as m
+import cogs.utils.menus as m
 import datetime
 
 class AutoMessageCog(commands.Cog):

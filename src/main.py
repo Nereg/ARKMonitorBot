@@ -1,25 +1,22 @@
-from charcoal import Charcoal
-import classes as c  # our classes
-from helpers import *  # our helpers
+#from charcoal import Charcoal
+import cogs.utils.classes as c  # our classes
+from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
-import commands as cmd  # import all our commands
-from menus import *  # menus like selector of servers
-from server_cmd import *  # !server command
+#import commands as cmd  # import all our commands
+from cogs.utils.menus import *  # menus like selector of servers
+#from server_cmd import *  # !server command
 import json  # json module
 import traceback  # traceback
 import time  # time
 from datetime import datetime
-import dbl_cog  # cog with top.gg updater
+#import dbl_cog  # cog with top.gg updater
 import os
-import admin_cog  # cog with admin commands
+#import admin_cog  # cog with admin commands
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
-import updater  # cog with updater of servers in DB (main consern annoying AF)
-import nest_asyncio
-import campfire
-from updatePlugins import notifications, automessage
+from pathlib import Path
 
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
@@ -33,6 +30,7 @@ game = discord.Game('ping me to get prefix')
 # create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
     command_prefix=get_prefix, help_command=None, activity=game)
+bot.cfg = conf
 debug.debug('Inited DB and Bot!')  # debug into console !
 t = c.Translation()  # load default english translation
 
@@ -41,17 +39,28 @@ bot.loop.set_debug(conf.debug)
 
 
 # add all cogs
-bot.add_cog(ServerCmd(bot))
-bot.add_cog(cmd.BulkCommands(bot))
-bot.add_cog(admin_cog.Admin(bot))
-bot.add_cog(dbl_cog.TopGG(bot))
+#bot.add_cog(ServerCmd(bot))
+#bot.add_cog(cmd.BulkCommands(bot))
+#bot.add_cog(admin_cog.Admin(bot))
+#bot.add_cog(dbl_cog.TopGG(bot))
 ##bot.add_cog(updater.Updater(bot))
-bot.add_cog(updater.NeoUpdater(bot))
-bot.add_cog(campfire.Campfire(bot))
-bot.add_cog(Charcoal(bot))
-bot.add_cog(notifications.NotificationsCog(bot))
-bot.add_cog(automessage.AutoMessageCog(bot))
+#bot.add_cog(updater.NeoUpdater(bot))
+#bot.add_cog(campfire.Campfire(bot))
+#bot.add_cog(Charcoal(bot))
+#bot.add_cog(notifications.NotificationsCog(bot))
+#bot.add_cog(automessage.AutoMessageCog(bot))
 
+# setup function
+def setup():
+    print("Entered setup function")
+    # search for cogs
+    cogs = [p.stem for p in Path(".").glob("./src/cogs/*.py")]
+    print(cogs)
+    for cog in cogs:
+        print(f"cogs.{cog}")
+        bot.load_extension(f"cogs.{cog}")
+        print(f"{cog} cog loaded")
+    print("Finished setup function")
 
 # ~~~~~~~~~~~~~~~~~~~~~
 #       COMMANDS
@@ -410,7 +419,7 @@ Error : {e}''', bot)
     else:
         await sendToMe(message, bot, True)
 
-    
+setup() 
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token)  # get our discord token and FIRE IT UP !

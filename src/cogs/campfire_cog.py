@@ -1,5 +1,5 @@
-import classes as c  # our classes
-from helpers import *  # our helpers
+import cogs.utils.classes as c  # our classes
+from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
@@ -158,3 +158,6 @@ class Campfire(commands.Cog):
                 url='https://static.wikia.nocookie.net/arksurvivalevolved_gamepedia/images/0/01/Campfire.png')
             await ctx.send(embed=emb)
             return
+
+def setup(bot: commands.Bot) -> None:
+    bot.add_cog(Campfire(bot))

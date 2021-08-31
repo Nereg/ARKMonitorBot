@@ -1,10 +1,10 @@
-from helpers import *  # all our helpers
-import classes as c  # all our classes
+from cogs.utils.helpers import *  # all our helpers
+import cogs.utils.classes as c  # all our classes
 import discord  # main discord lib
 from discord.ext import commands
-import menus as m
+import cogs.utils.menus as m
 # import /server command module (see server_cmd.py)
-import server_cmd as server
+#import server_cmd as server
 import json
 import config
 import datetime
@@ -14,7 +14,8 @@ import statistics
 import time
 import arrow
 
-class BulkCommands(commands.Cog):
+
+class MiscCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cfg = config.Config()
@@ -263,3 +264,6 @@ class BulkCommands(commands.Cog):
             message = message[0][4]
         embed.add_field(name='Message from creator', value=message)
         await ctx.send(embed=embed)
+    
+def setup(bot: commands.Bot) -> None:
+    bot.add_cog(MiscCommands(bot))

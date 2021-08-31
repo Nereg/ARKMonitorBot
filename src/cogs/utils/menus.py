@@ -1,6 +1,6 @@
 import discord
-from helpers import *  # all our helpers
-import classes as c
+from .helpers import *  # all our helpers
+from . import classes as c
 import asyncio
 import json
 import datetime

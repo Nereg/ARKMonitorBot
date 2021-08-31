@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-import classes as c
+import cogs.utils.classes as c
 import arrow
 import flag
 

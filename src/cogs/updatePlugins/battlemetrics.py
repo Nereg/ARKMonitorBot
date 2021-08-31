@@ -153,6 +153,6 @@ class BattlemetricsPlugin():
                 # we need to get info and add it to the DB
                 emptyServers.append(i)
         # update servers which don't contain URL and id anywhere
-        updateResults = await self.getUrls(updateResults, emptyServers)
+        updateResults = await self.getUrls(updateResults,   )
         # return results
         return updateResults

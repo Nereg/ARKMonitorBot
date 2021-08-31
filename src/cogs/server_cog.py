@@ -1,11 +1,11 @@
-from helpers import *
-import classes as c
-from menus import *
+from cogs.utils.helpers import *
+import cogs.utils.classes as c
+from cogs.utils.menus import *
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
 import json
 import aiohttp
-import classes as c
+import cogs.utils.classes as c
 import a2s
 import time
 from discord.ext import commands
@@ -342,3 +342,6 @@ List of detected servers on that ip by steam:
             end = time.perf_counter()  # end timer
             # debug
             await sendToMe(f'/ipfix exec time: {end - start:.4} sec.\n There was {i-1} servers to fetch', self.bot)
+
+def setup(bot: commands.Bot) -> None:
+    bot.add_cog(ServerCmd(bot))

@@ -5,10 +5,10 @@ import json
 import arrow
 import discord
 from enum import Enum
-from helpers import *
+from cogs.utils.helpers import *
 import datetime
-import menus
-import classes as c
+import cogs.utils.menus
+import cogs.utils.classes as c
 
 class ServerStatus(Enum):
     SERVER_WENT_DOWN=0

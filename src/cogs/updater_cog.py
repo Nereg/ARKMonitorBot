@@ -1,5 +1,5 @@
-import classes as c  # our classes
-from helpers import *  # our helpers
+import cogs.utils.classes as c  # our classes
+from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
@@ -13,13 +13,13 @@ import os
 import io
 import traceback
 import socket
-import menus as m
+import cogs.utils.menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
-from updatePlugins.automessage import AutoMessagesPlugin
-from updatePlugins.battlemetrics import BattlemetricsPlugin
-from updatePlugins.notifications import NotificationsPlugin
+from cogs.updatePlugins.automessage import AutoMessagesPlugin
+from cogs.updatePlugins.battlemetrics import BattlemetricsPlugin
+from cogs.updatePlugins.notifications import NotificationsPlugin
 
 class DebugPlugin():
 
@@ -44,6 +44,7 @@ class DebugPlugin():
     # must return same sized array of update results
     async def handle(self,updateResults):
         print(f'Handled {updateResults.__len__()} servers!')
+        print([i.cachedServer.name for i in updateResults])
         #print(updateResults)
         return updateResults
 
@@ -347,5 +348,5 @@ class NeoUpdater(commands.Cog):
         await self.httpSession.close()
         print("Destroyed updater loop!")
 
-#def setup(bot):
-    #bot.add_cog(Updater(bot))
+def setup(bot: commands.Bot) -> None:
+    bot.add_cog(NeoUpdater(bot))

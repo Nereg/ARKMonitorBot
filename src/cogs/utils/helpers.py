@@ -4,7 +4,7 @@ import logging
 import discord
 import sys
 import ipaddress
-import classes as c
+from . import classes as c
 import config
 import mysql.connector
 import asyncio

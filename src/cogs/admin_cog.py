@@ -14,13 +14,13 @@ import copy
 import time
 import subprocess
 from typing import Union, Optional
-from helpers import *
+from cogs.utils.helpers import *
 import json
 # to expose to the eval command
 import datetime
 from collections import Counter
 from discord.ext import tasks
-import location
+import  cogs.utils.location
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -509,3 +509,6 @@ class Admin(commands.Cog):
     @commands.command()
     async def error(self,ctx):
         await ctx.send('A'*5000)
+
+def setup(bot: commands.Bot) -> None:
+    bot.add_cog(Admin(bot))
