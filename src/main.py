@@ -31,6 +31,7 @@ game = discord.Game('ping me to get prefix')
 bot = commands.AutoShardedBot(
     command_prefix=get_prefix, help_command=None, activity=game)
 bot.cfg = conf
+bot.myCogs = []
 debug.debug('Inited DB and Bot!')  # debug into console !
 t = c.Translation()  # load default english translation
 

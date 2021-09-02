@@ -20,7 +20,11 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
+        self.slashCommands = ['info']
 
+    async def slashHandler(self, interaction):
+        await self.slashInfo(interaction)
+        pass
 
     async def selectServersByIds(self, ids):
         # empty statement
@@ -231,7 +235,7 @@ class MiscCommands(commands.Cog):
             title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
         # set footer
         embed.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=ctx.author.avatar_url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=ctx.author.display_avatar.url)
         # add fields
         embed.add_field(name='<:Link:739476980004814898> Invite link',
                         value='[Here!](https://bit.ly/ARKTop)', inline=True)
@@ -264,6 +268,68 @@ class MiscCommands(commands.Cog):
             message = message[0][4]
         embed.add_field(name='Message from creator', value=message)
         await ctx.send(embed=embed)
+
+    async def slashInfo(self, interaction):
+        # get how many servers we have in DB
+        count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
+        # get object to get time
+        time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
+        # get total and used memory in the system
+        RAM = f'{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}'
+        # get bot's role
+        role = interaction.guild.me.top_role.mention if interaction.guild.me.top_role != "@everyone" else "No role"
+        # create embed
+        embed = discord.Embed(
+            title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
+        # set footer
+        embed.set_footer(
+            text=f'Requested by {interaction.user.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=interaction.user.display_avatar.url)
+        # create view
+        view = discord.ui.View()
+        # add buttons (yay)
+        view.add_item(discord.ui.Button(style=discord.ButtonStyle.link,
+                                        label='Our support guild',
+                                        emoji='<:Discord:739476979782254633>',
+                                        url='https://bit.ly/ARKDiscord'
+                                        ))
+        view.add_item(discord.ui.Button(style=discord.ButtonStyle.link,
+                                        label='GitHub',
+                                        emoji='<:Github:739476979631521886>',
+                                        url='https://github.com/Nereg/ARKMonitorBot'
+                                        ))
+        view.add_item(discord.ui.Button(style=discord.ButtonStyle.link,
+                                        label='Invite link',
+                                        emoji='<:Link:739476980004814898>',
+                                        url='https://bit.ly/ARKTop'
+                                        ))
+        # add fields
+        embed.add_field(name='<:DB:739476980075986976> Servers in database',
+                        value=f'{count[0][0]}', inline=True)
+        embed.add_field(name='<:RAM:739476925852155914> RAM',
+                        value=RAM, inline=True)
+        embed.add_field(name='<:Bot:748958111456296961> Version',
+                        value=self.cfg.version, inline=True)
+        embed.add_field(name=':ping_pong: Ping',
+                        value=f'{int(self.bot.latency * 1000)} ms', inline=True)
+        embed.add_field(name='<:me:739473644874367007> Creator',
+                        value=f'Nereg#7006', inline=True)
+        embed.add_field(name='<:Discord:739476979782254633> Currently in',
+                        value=f'{len(self.bot.guilds)} servers', inline=True)
+        embed.add_field(
+            name='<:Role:739476980076118046> Role on this server', value=role, inline=True)
+        embed.add_field(name=':grey_exclamation: Current prefix', value=f'You are using slash commands!', inline=True)
+        embed.add_field(name='<:Cpu:739492057990693005> Current CPU utilisation',
+                        value=f'{round(statistics.mean(psutil.getloadavg()),1)}', inline=True)
+        # guild 1 is special value
+        message = await makeAsyncRequest('SELECT * FROM settings WHERE GuildId=1')
+        if (message.__len__() <= 0):
+            message = 'No current message'
+        else:
+            message = message[0][4]
+        embed.add_field(name='Message from creator', value=message)
+        await interaction.response.send_message(embed=embed, view=view)
     
 def setup(bot: commands.Bot) -> None:
-    bot.add_cog(MiscCommands(bot))
+    cog = MiscCommands(bot)
+    bot.add_cog(cog)
+    bot.myCogs.append(cog)
