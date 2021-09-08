@@ -1,3 +1,5 @@
+from cogs.utils import classes
+from cogs.utils.classes import ARKServer
 from discord.ext import commands
 import asyncio
 import traceback
@@ -20,7 +22,7 @@ import json
 import datetime
 from collections import Counter
 from discord.ext import tasks
-import  cogs.utils.location
+import cogs.utils.classes as c
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -501,10 +503,17 @@ class Admin(commands.Cog):
         print('waiting...')
         await self.bot.wait_until_ready()  # wait until cache of bot is ready
 
+    def fail(self,e):
+        print(e)
+        print('Fail in fromJSON!')
+        return 'Failed'
+
     @commands.command()
-    @commands.cooldown(1, 60, type=commands.BucketType.user)
     async def test(self,ctx):
-        await ctx.send('sdfds')
+        text = '{"py/object": "c.ARKServer", "ip": "192.223.27.63:27001", "address": "192.223.27.63", "port": 27001, "name": "Bacon Blitz 8/27 100x/Shop/Kit/S+/flyerspeed/4man - (v678.10)", "version": "v678.10", "stripedName": "Bacon Blitz 8/27 100x/Shop/Kit/S+/flyerspeed/4man", "serverSteamId": 90150868627673092, "platform": "Windows", "online": 68, "maxPlayers": 100, "map": "Ragnarok", "password": false, "PVE": false, "clusterName": "Cluster0001", "mods": ["849985437", "1999447172", "1231538641", "2183584447"], "isARK": true, "game_id": 346110, "ping": 141}'
+        testClass = c.ARKServer.fromJSON(text)
+        await ctx.send(testClass)
+        await ctx.send(type(testClass))
 
     @commands.command()
     async def error(self,ctx):

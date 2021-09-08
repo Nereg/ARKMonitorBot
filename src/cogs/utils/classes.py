@@ -1,4 +1,5 @@
 import asyncio
+from json import decoder
 import a2s
 import arrow
 import json
@@ -27,9 +28,41 @@ class JSON: #base class
     def toJSON(self):
         return jsonpickle.encode(self) # yeah pickles I know
 
-    def fromJSON(JSONText):
-        self = jsonpickle.decode(JSONText) # decode and return
-        return self
+    def fromJSON(JSONText, **kwargs):
+        decoded = jsonpickle.decode(JSONText, **kwargs) # let's try to decode 
+        # we caught a bug 
+        # in short after rework "path" to every class changed
+        # so we will fix json and decode it 
+        if (type(decoded) == type({})):
+            # new "root" for classes.py file
+            newRoot = 'cogs.utils.'
+            # decoded is decoded JSON data
+            # we can change it
+            # get old path
+            # e.g. с.ARKServer
+            classPath = decoded['py/object']
+            # strip c from path
+            #classPath = classPath[1:]
+            # prepend new root to old class path
+            classPath = newRoot + classPath
+            # edit path in old JSON
+            decoded['py/object'] = classPath
+            # dump JSON text
+            text = json.dumps(decoded)
+            # and decode one more time
+            newDecoded = jsonpickle.decode(text, **kwargs)
+            # if new decoded is with error 
+            if (type(newDecoded) == type({})):
+                print(newDecoded)
+                print(type(newDecoded))
+                # raise exeption
+                raise BaseException()
+            # else
+            else:
+                # return fixed class
+                return newDecoded
+        else:
+            return decoded
 
 class ARKServer(JSON):
     """Represents ARK server"""
