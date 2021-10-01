@@ -91,7 +91,7 @@ class ARKServer(JSON):
             data = await a2s.arules((self.address,self.port)) # custom ARK data
             #end = time.perf_counter()
             #print(f'Raw async get time: {end - start:.4}')
-        except base.TimeoutError as e: 
+        except asyncio.exceptions.TimeoutError as e: 
             raise ARKServerError('1: Timeout',e)
         except socket.gaierror as e:
             raise ARKServerError('2: DNS resolution error',e)
@@ -193,7 +193,7 @@ class PlayersList(JSON):
         """Gets all needed data"""
         try :
             players = await a2s.aplayers((self.address,self.port)) # get raw data
-        except base.TimeoutError as e:
+        except asyncio.exceptions.TimeoutError as e:
             raise ARKServerError('1: Timeout',e)
         except socket.gaierror as e:
             raise ARKServerError('2: DNS resolution error',e)

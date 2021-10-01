@@ -28,7 +28,7 @@ class Charcoal(commands.Cog):
     async def sendEmbed(self,ctx,title,name,value):
         time = datetime.datetime(2000,1,1,0,0,0,0)
         emb = discord.Embed(title=title,timestamp=time.utcnow())
-        emb.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
+        emb.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.display_avatar)
         emb.add_field(name=name,value=value)
         ctx.send(embed=emb)
         return
@@ -45,7 +45,7 @@ class Charcoal(commands.Cog):
             return 
         self.calculate(ammount,camps)
         emb = discord.Embed(title='Charcoal',timestamp=time.utcnow())
-        emb.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.avatar_url)
+        emb.set_footer(text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ',icon_url=ctx.author.display_avatar)
         if (camps == 1):
             emb.add_field(name='Time:',value=f'{self.cookTimeHor}:{self.cookTimeMin}:{self.cookTimeSec}',inline=True)
             emb.add_field(name='Wood:',value=self.neededWood,inline=False)

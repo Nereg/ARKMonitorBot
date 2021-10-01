@@ -66,7 +66,7 @@ class ServerCmd(commands.Cog):
         emb2 = discord.Embed(
             color=color, timestamp=time.utcnow())  # second embed
         emb2.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.display_avatar)
         emb2.add_field(name='IP:', value=server.ip)
         emb2.add_field(name='Players:',
                        value=f'{server.online}/{server.maxPlayers}')

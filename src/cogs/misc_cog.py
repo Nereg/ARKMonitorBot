@@ -235,7 +235,7 @@ class MiscCommands(commands.Cog):
             title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
         # set footer
         embed.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=ctx.author.display_avatar.url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=ctx.author.display_avatar)
         # add fields
         embed.add_field(name='<:Link:739476980004814898> Invite link',
                         value='[Here!](https://bit.ly/ARKTop)', inline=True)
@@ -283,7 +283,7 @@ class MiscCommands(commands.Cog):
             title=f'Info about {self.bot.user.name}', timestamp=time.utcnow(), color=randomColor())
         # set footer
         embed.set_footer(
-            text=f'Requested by {interaction.user.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=interaction.user.display_avatar.url)
+            text=f'Requested by {interaction.user.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ', icon_url=interaction.user.display_avatar)
         # create view
         view = discord.ui.View()
         # add buttons (yay)

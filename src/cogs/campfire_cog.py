@@ -100,7 +100,7 @@ class Campfire(commands.Cog):
         time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
         emb = discord.Embed(title=title, timestamp=time.utcnow())
         emb.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.display_avatar)
         emb.add_field(name=name, value=value)
         ctx.send(embed=emb)
         return
@@ -113,7 +113,7 @@ class Campfire(commands.Cog):
             emb = discord.Embed(title='Campfire rates:',
                                 timestamp=time.utcnow())
             emb.set_footer(
-                text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+                text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.display_avatar)
             emb.set_thumbnail(
                 url='https://static.wikia.nocookie.net/arksurvivalevolved_gamepedia/images/0/01/Campfire.png')
             emb.add_field(name='Thatch burn time:',
@@ -132,7 +132,7 @@ class Campfire(commands.Cog):
         self.calculate(ammount, Meat.Default, camps)
         emb = discord.Embed(title='Campfire', timestamp=time.utcnow())
         emb.set_footer(
-            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.avatar_url)
+            text=f'Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ', icon_url=ctx.author.display_avatar)
         if (camps == 1):
             emb.add_field(
                 name='Time:', value=f'{self.cookTimeHor}:{self.cookTimeMin}:{self.cookTimeSec}', inline=True)

@@ -123,7 +123,7 @@ async def help(ctx):
     prefix = ctx.prefix
     # set footer for embed
     message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',
-                       icon_url=ctx.author.avatar_url)
+                       icon_url=ctx.author.display_avatar)
     # define value for Server section
     serverValue = f'''**`{prefix}server info`- select and view info about added server (only Steam servers both official and not)
 `{prefix}server add <IP>:<Query port>`- add server to your list
