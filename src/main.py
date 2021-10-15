@@ -299,6 +299,19 @@ async def channelNotFound(ctx, error):
     # send embed 
     await ctx.send(embed=embed)
 
+@bot.check
+async def check_commands(ctx):
+    if (getattr(conf, 'deprecation', True)):
+        embed = discord.Embed()
+        embed.title = 'Notice!'
+        embed.colour = discord.Colour.red()
+        embed.add_field(name="Regular commands will stop working in <t:1634294539:R>!",
+                        value='Instead there will be new slash commands.')
+        embed.add_field(name="To check if you are ready for the change use `validateSlash` command.",
+                value='No data will be lost after the transition!')
+        await ctx.send(embed=embed)
+    return True
+
 @bot.event
 async def on_command_error(ctx, error):
     # get original error from d.py error

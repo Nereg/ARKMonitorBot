@@ -19,3 +19,4 @@ class Config:
         self.backupWebhookUrl = ''  # discord webhook url to use in backup script
         self.logsGuildId = 349178138258833418 # id of a guild where bot will send it's logs
         self.logsChannelId = 874715094645346395 # id of a channel where bot will send it's logs
+        self.deprecation = False # set to True to display deprecation warning on every command
