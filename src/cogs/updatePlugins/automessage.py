@@ -410,6 +410,10 @@ class AutoMessagesPlugin():
             except discord.Forbidden:
                 # skip record
                 continue
+            # if we can't find message
+            except discord.errors.NotFound:
+                # skip record
+                continue
 
     # called on each iteration of main loop
     async def loopStart(self):

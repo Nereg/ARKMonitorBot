@@ -23,6 +23,7 @@ import datetime
 from collections import Counter
 from discord.ext import tasks
 import cogs.utils.classes as c
+import ast
 
 class PerformanceMocker:
     """A mock object that can also be used in await expressions."""
@@ -211,7 +212,7 @@ class Admin(commands.Cog):
             if cleaned.count('\n') == 0:
                 # single statement, potentially 'eval'
                 try:
-                    code = compile(cleaned, '<repl session>', 'eval')
+                    code = compile(cleaned, '<repl session>', 'eval', flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
                 except SyntaxError:
                     pass
                 else:
@@ -219,7 +220,7 @@ class Admin(commands.Cog):
 
             if executor is exec:
                 try:
-                    code = compile(cleaned, '<repl session>', 'exec')
+                    code = compile(cleaned, '<repl session>', 'exec', flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
                 except SyntaxError as e:
                     await ctx.send(self.get_syntax_error(e))
                     continue

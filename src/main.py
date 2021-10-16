@@ -348,11 +348,11 @@ async def on_command_error(ctx, error):
     elif (errorType == discord.ext.commands.BotMissingPermissions):
         try:
             # try to get what we are missing
-            missing = error.missing_perms
+            missing = error.missing_permissions
         # if we can't 
         except AttributeError:
             # get it from original error
-            missing = origError.missing_perms
+            missing = origError.missing_permissions
         # n is how a permission is called in API
         # n + 1 is it's replacement for message
         map = ['manage_messages', 'Manage messages', 'external_emojis',
