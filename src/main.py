@@ -78,10 +78,10 @@ async def prefix(ctx, *args):
         return
     else:  # if not
         # get permissions of caller in current channel
-        Permissions = ctx.author.permissions_in(ctx.channel)
+        permissions = ctx.channel.permissions_for(ctx.author)
         # set needed permissions (manage roles)
         needed_perms = permissions.Permissions(manage_roles=True)
-        if (needed_perms <= Permissions):  # check permissions
+        if (needed_perms <= permissions):  # check permissions
             # if check successed
             # get new prefix from params
             prefix = args[0] 
