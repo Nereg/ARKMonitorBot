@@ -80,7 +80,7 @@ async def prefix(ctx, *args):
         # get permissions of caller in current channel
         permissions = ctx.channel.permissions_for(ctx.author)
         # set needed permissions (manage roles)
-        needed_perms = permissions.Permissions(manage_roles=True)
+        needed_perms = discord.Permissions(manage_roles=True)
         if (needed_perms <= permissions):  # check permissions
             # if check successed
             # get new prefix from params
