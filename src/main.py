@@ -242,8 +242,11 @@ async def sendErrorEmbed(ctx, Id, error):
     embed.set_footer(text=f'Bot {cfg.version}')
     # set embed's timestamp
     embed.timestamp = time.utcnow()
-    # send embed 
-    await ctx.send(embed=embed)
+    try:
+        # send embed 
+        await ctx.send(embed=embed)
+    except:
+        return
 
 async def sendCommandNotFoundEmbed(ctx):
     # get prefix for this guild
