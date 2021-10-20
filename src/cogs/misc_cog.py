@@ -328,6 +328,15 @@ class MiscCommands(commands.Cog):
             message = message[0][4]
         embed.add_field(name='Message from creator', value=message)
         await interaction.response.send_message(embed=embed, view=view)
+
+    @commands.bot_has_permissions(add_reactions=True, read_messages=True, send_messages=True, manage_messages=True, external_emojis=True)
+    @commands.command()
+    async def ticketInfo(self, ctx):
+        text = ''
+        text += f'Your guild id is: {ctx.guild.id}\n'
+        permissions = ctx.channel.permissions_for(ctx.guild.me)
+        text += f'My current permissions in current channel are: {permissions.value}'
+        await ctx.send(discord.utils.escape_mentions(text))
     
 def setup(bot: commands.Bot) -> None:
     cog = MiscCommands(bot)
