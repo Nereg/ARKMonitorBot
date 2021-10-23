@@ -415,10 +415,20 @@ class AutoMessagesPlugin():
                 # skip record
                 continue
 
+    # https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/
+    def handle_task_result(self, task: asyncio.Task) -> None:
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            pass  # Task cancellation should not be logged as an error.
+        except Exception as e:
+            asyncio.create_task(sendToMe(f'{e} in automessage task', self.bot, True))
+
     # called on each iteration of main loop
     async def loopStart(self):
         # refresh messages in background
-        asyncio.create_task(self.refresh())
+        task = asyncio.create_task(self.refresh())
+        task.add_done_callback(self.handle_task_result)
 
     async def loopEnd(self):
         await sendToMe(f'Updated {self.updatedMessages} auto messages!', self.bot)
