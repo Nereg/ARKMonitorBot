@@ -203,7 +203,7 @@ class MiscCommands(commands.Cog):
             return f"{hours}:{minutes}:{seconds}"
         else:
             # return full string
-            return f"{days}:{hours}:{minutes}:{seconds}"
+            return f"{days} days {hours}:{minutes}:{seconds}"
 
     @commands.bot_has_permissions(
         add_reactions=True,
@@ -311,7 +311,7 @@ class MiscCommands(commands.Cog):
             inline=True,
         )
         embed.add_field(
-            name="<:Cpu:739492057990693005> Current CPU utilisation",
+            name="<:Cpu:739492057990693005> Current CPU utilization",
             value=f"{round(statistics.mean(psutil.getloadavg()),1)}",
             inline=True,
         )
@@ -411,7 +411,7 @@ class MiscCommands(commands.Cog):
             inline=True,
         )
         embed.add_field(
-            name="<:Cpu:739492057990693005> Current CPU utilisation",
+            name="<:Cpu:739492057990693005> Current CPU utilization",
             value=f"{round(statistics.mean(psutil.getloadavg()),1)}",
             inline=True,
         )
