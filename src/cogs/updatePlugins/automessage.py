@@ -2,6 +2,7 @@ from cogs.utils.helpers import *
 import discord
 import cogs.utils.menus as m
 import datetime
+import time
 
 
 class AutoMessagesPlugin:
@@ -19,7 +20,16 @@ class AutoMessagesPlugin:
         self.bot = self.updater.bot
         # get object to get time
         self.time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
+        # debug variable to track how many messages we updated
         self.updatedMessages = 0
+        # list of defective auto messages
+        self.defective = {}
+        # how often in seconds to reset self.defective
+        self.resetTimer = 600
+        # start timer
+        asyncio.create_task(self.resetDefective())
+        # threshold before deleting an automessage from db
+        self.threshold = 10
 
     async def makeMessage(self, serverId, guildId, serverIp=""):
         # if we have server ip
@@ -88,11 +98,43 @@ class AutoMessagesPlugin:
 
     # will be ran by main updater just like regular __init__
     async def init(self):
-        print("entered async init")
+        pass
+        # print("entered async init")
+
+    async def resetDefective(self):
+        """Simple timer to reset self.defective dictionary"""
+        # sleep
+        await asyncio.sleep(self.resetTimer)
+        # reset dictionary
+        self.defective = {}
+        # print(f'reset ! {self.resetTimer}')
+        # start timer again
+        asyncio.create_task(self.resetDefective())
+
+    async def deleteDefective(self):
+        '''Deletes all faulty recors from db'''
+        # array of record to delete
+        toDelete = []
+        # for each record in list of defective records
+        for id, value in self.defective.items():
+            # if it's failed to update more than 
+            # self.threshold times
+            if (value >= self.threshold):
+                # add it's id
+                toDelete.append(id)
+        # if there are records to delete
+        if (toDelete.__len__() > 0):
+            # construct query
+            query = f'DELETE * FROM automessages WHERE Id IN ({",".join(["%s"] * len(toDelete))})'
+            print(query)
+            print(toDelete)
+            # execute it
+            await makeAsyncRequest(query, toDelete)
 
     async def refresh(self):
-        # TODO: add "smart" deletion of broken records
-        # e.g. count how many times we tried to update that record
+        # start performance timer
+        start = time.perf_counter()
+        # reset counter
         self.updatedMessages = 0
         # get all messages
         messages = await self.updater.makeAsyncRequest("SELECT * FROM automessages")
@@ -102,21 +144,29 @@ class AutoMessagesPlugin:
             guild = self.bot.get_guild(message[5])
             # if we can't get guild
             if guild == None:
-                print(f"Can`t get guild {message[5]}")
+                # if record is found add 1 to number in it
+                # else create it with value of 1
+                self.defective[message[0]] = self.defective.get(message[0], 0) + 1
                 # skip record
                 continue
             # get channel from record
             channel = guild.get_channel(message[1])
             # if we can't get channel
             if channel == None:
-                print(f"can`t get channel {message[1]}")
+                # print(f"can`t get channel {message[1]}")
+                # if record is found add 1 to number in it
+                # else create it with value of 1
+                self.defective[message[0]] = self.defective.get(message[0], 0) + 1
                 # skip record
                 continue
             # get message from record
             msg = channel.get_partial_message(message[2])
             # if we can't get channel
             if msg == None:
-                print(f"can`t get msg {message[2]}")
+                # print(f"can`t get msg {message[2]}")
+                # if record is found add 1 to number in it
+                # else create it with value of 1
+                self.defective[message[0]] = self.defective.get(message[0], 0) + 1
                 # skip record
                 continue
             # generate embed
@@ -127,10 +177,16 @@ class AutoMessagesPlugin:
                 self.updatedMessages += 1
             # if we can't edit message
             except discord.Forbidden:
+                # if record is found add 1 to number in it
+                # else create it with value of 1
+                self.defective[message[0]] = self.defective.get(message[0], 0) + 1
                 # skip record
                 continue
             # if we can't find message
             except discord.errors.NotFound:
+                # if record is found add 1 to number in it
+                # else create it with value of 1
+                self.defective[message[0]] = self.defective.get(message[0], 0) + 1
                 # skip record
                 continue
             # if any other error
@@ -138,6 +194,15 @@ class AutoMessagesPlugin:
                 asyncio.create_task(
                     sendToMe(f"Error in auto messages: {e}", self.bot, True)
                 )
+        # delete any defective records from db
+        await self.deleteDefective()
+        # end performance timer
+        end = time.perf_counter()
+        # send stats
+        await sendToMe(
+            f"Updated {self.updatedMessages}/{messages.__len__()} auto messages!\nIt took: {end - start:.4} sec.\n{self.defective}",
+            self.bot,
+        )
 
     # https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/
     def handle_task_result(self, task: asyncio.Task) -> None:
@@ -146,7 +211,9 @@ class AutoMessagesPlugin:
         except asyncio.CancelledError:
             pass  # Task cancellation should not be logged as an error.
         except Exception as e:
-            asyncio.create_task(sendToMe(f"{e} in automessage task", self.bot, True))
+            asyncio.create_task(
+                sendToMe(f"unhandled {e} in automessage task", self.bot, True)
+            )
 
     # called on each iteration of main loop
     async def loopStart(self):
@@ -155,7 +222,8 @@ class AutoMessagesPlugin:
         task.add_done_callback(self.handle_task_result)
 
     async def loopEnd(self):
-        await sendToMe(f"Updated {self.updatedMessages} auto messages!", self.bot)
+        pass
+        # await sendToMe(f"Updated {self.updatedMessages} auto messages!", self.bot)
 
     async def handle(self, updateResults):
         pass

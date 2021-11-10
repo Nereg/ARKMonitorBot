@@ -43,8 +43,8 @@ class DebugPlugin:
     # will handle a batch of server updates
     # must return same sized array of update results
     async def handle(self, updateResults):
-        print(f"Handled {updateResults.__len__()} servers!")
-        print([i.cachedServer.name for i in updateResults])
+        #print(f"Handled {updateResults.__len__()} servers!")
+        #print([i.cachedServer.name for i in updateResults])
         # print(updateResults)
         return updateResults
 
@@ -174,7 +174,7 @@ class NeoUpdater(commands.Cog):
     async def makeAsyncRequest(self, SQL, params=()):
         # just in case
         # return await makeAsyncRequest(SQL, params)
-        conn = await self.sqlPool.acquire()  # acquire one connecton from the pool
+        conn = await self.sqlPool.acquire()  # acquire one connection from the pool
         async with conn.cursor() as cur:  # with cursor as cur
             await cur.execute(SQL, params)  # execute SQL with parameters
             result = await cur.fetchall()  # fetch all results
