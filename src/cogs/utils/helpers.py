@@ -145,14 +145,14 @@ async def AddServer(ip, ctx):
     """
     Adds a server to the DB.
     Checks for common error and, if possible, fixes them or notifies user
-    If succesful returns id of added server else returns None
+    If successful returns id of added server else returns None
     """
     debug = Debuger("AddServer")
     await ctx.trigger_typing()
     if IpCheck(ip) != True:  # check IP address
         if ">" in ip or "<" in ip:  # if we have < or > in string
             # tell the user that they aren't needed
-            await ctx.send("You don`t need those <>!")
+            await ctx.send("You don't need those <>!")
             return  # return
         # debug.debug(f'Wrong IP : {ip}') # debug
         await ctx.send("Something is wrong with **IP**!")  # and reply to user

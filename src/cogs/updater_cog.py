@@ -120,8 +120,7 @@ class NeoUpdater(commands.Cog):
         self.httpSession = aiohttp.ClientSession()  # for use in http API's
         self.sqlPool = await aiomysql.create_pool(
             host=self.cfg.dbHost,
-            port=3306,  # somehow works see:
-            # https://github.com/aio-libs/aiomysql/issues/574
+            port=3306,
             user=self.cfg.dbUser,
             password=self.cfg.dbPass,
             db=self.cfg.DB,

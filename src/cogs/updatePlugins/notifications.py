@@ -9,7 +9,7 @@ from cogs.utils.helpers import *
 import datetime
 import cogs.utils.menus
 import cogs.utils.classes as c
-
+import time 
 
 class ServerStatus(Enum):
     SERVER_WENT_DOWN = 0
@@ -36,7 +36,7 @@ class NotificationsPlugin:
         # if true than the plugin will modify the record
         # for DB so all mutable plugins will be ran one-by-one and not concurrently
         # (cuz I don't want to mess with syncing of all changes)
-        self.mutable = True
+        self.mutable = False
         # main updater class
         self.updater = updater
         # http pool for APIs
@@ -45,10 +45,12 @@ class NotificationsPlugin:
         self.sqlPool = self.updater.sqlPool
         # get object to get time
         self.time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
+        # performance of each call to us
+        self.performance = []
 
     # will be ran by main updater just like regular __init__
     async def init(self):
-        print("entered async init")
+        pass
 
     # called on each iteration of main loop
     async def loopStart(self):
@@ -58,7 +60,12 @@ class NotificationsPlugin:
         )
 
     async def loopEnd(self):
-        pass
+        avgTime = sum(self.performance) / len(self.performance)
+        minTime = min(self.performance)
+        maxTime = max(self.performance)
+        await sendToMe(f'Notifications performance:\nAvg time: {avgTime:.4} sec.\nMin time: {minTime:.4}\nMax time: {maxTime:.4}', self.updater.bot)
+        # reset sent flag for all notifications records
+        await self.updater.makeAsyncRequest('UPDATE notifications SET Sent = 0')
 
     async def serverStatus(self, updateResult):
         # if update failed
@@ -108,6 +115,10 @@ class NotificationsPlugin:
         if status.changed(status):
             # for each notification in DB
             for i in notificationRecords:
+                # if we already sent the notification
+                if (i[3] == 1):
+                    # skip this record
+                    continue
                 # try to get channel to send notification to
                 channel = self.updater.bot.get_channel(i[1])
                 # if channel is not found
@@ -146,7 +157,9 @@ class NotificationsPlugin:
         return [i for i in self.notificationsCache if serverId in json.loads(i[4])]
 
     async def handle(self, updateResults):
-        print(f"Handling notifications for {[res.Id for res in updateResults]}")
+        # start performance timer
+        start = time.perf_counter()
+        #print(f"Handling notifications for {[res.Id for res in updateResults]}")
         for i in updateResults:
             # search for every notification record
             # for current server
@@ -158,4 +171,8 @@ class NotificationsPlugin:
             # send notifications
             # we are already in background so it is ok to do
             await self.sendNotifications(i, notifRecords)
+        # end performance timer
+        stop = time.perf_counter()
+        # record performance
+        self.performance.append(stop - start)
         return updateResults
