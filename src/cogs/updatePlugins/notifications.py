@@ -47,6 +47,8 @@ class NotificationsPlugin:
         self.time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
         # performance of each call to us
         self.performance = []
+        # count sent notifications
+        self.sentNotifications = 0
 
     # will be ran by main updater just like regular __init__
     async def init(self):
@@ -64,6 +66,7 @@ class NotificationsPlugin:
         minTime = min(self.performance)
         maxTime = max(self.performance)
         await sendToMe(f'Notifications performance:\nAvg time: {avgTime:.4} sec.\nMin time: {minTime:.4}\nMax time: {maxTime:.4}', self.updater.bot)
+        await sendToMe(f'Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications', self.updater.bot)
         # reset sent flag for all notifications records
         await self.updater.makeAsyncRequest('UPDATE notifications SET Sent = 0')
 
@@ -148,7 +151,9 @@ class NotificationsPlugin:
                             "UPDATE notifications SET Sent=1 WHERE Id=%s", (i[0],)
                         )
                     )
-                    print(f"Sent notification for {channel.id}")
+                    # add one to number of sent notifications
+                    self.sentNotifications += 1
+                    #print(f"Sent notification for {channel.id}")
         # nothing changed
         else:
             return
