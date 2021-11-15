@@ -196,14 +196,14 @@ class MiscCommands(commands.Cog):
         # if less then 1 hour
         if hours == 0:
             # return just minutes + seconds
-            return f"{minutes}:{seconds}"
+            return f"{minutes:01}:{seconds:01}"
         # if less than 1 day
         elif days == 0:
             # return just hours + minutes + seconds
-            return f"{hours}:{minutes}:{seconds}"
+            return f"{hours:01}:{minutes:01}:{seconds:01}"
         else:
             # return full string
-            return f"{days} days {hours}:{minutes}:{seconds}"
+            return f"{days} days {hours:01}:{minutes:01}:{seconds:01}"
 
     @commands.bot_has_permissions(
         add_reactions=True,
