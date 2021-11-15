@@ -69,6 +69,8 @@ class NotificationsPlugin:
         await sendToMe(f'Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications', self.updater.bot)
         # reset sent flag for all notifications records
         await self.updater.makeAsyncRequest('UPDATE notifications SET Sent = 0')
+        # reset number of sent notifications
+        self.sentNotifications = 0
 
     async def serverStatus(self, updateResult):
         # if update failed
