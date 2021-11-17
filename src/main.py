@@ -115,30 +115,29 @@ async def help(ctx):
     message.set_footer(text=f'Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ',
                        icon_url=ctx.author.avatar_url)
     # define value for Server section
-    serverValue = f'''**`{prefix}server info`- select and view info about added server (only Steam servers both official and not)
-`{prefix}server add <IP>:<Query port>`- add server to your list
-`{prefix}server delete`- delete server from your list
-`{prefix}server alias`- list aliases for your servers
-`{prefix}server alias`- list aliases for your servers
-`{prefix}server alias "<Alias>"`- select and add alias for server
-`{prefix}server alias delete`- delete alias for your server**'''
+    serverValue = f'''**`{prefix}server info`- Select and view info about added server (Only Steam Official and Unofficial Servers Supported)
+`{prefix}server add <IP>:<Query port>`- Add a server to your list
+`{prefix}server delete`- Delete a server from your list
+`{prefix}server alias`- List aliases for your servers
+`{prefix}server alias "<Alias>"`- Select and add an alias for server
+`{prefix}server alias delete`- Delete alias for your server**'''
     # add server section to the embed
-    message.add_field(name=f'**Server group:**',
+    message.add_field(name=f'**Server Commands:**',
                       value=serverValue)  
     # define value for notifications section
-    notificationsValue = f'''**`{prefix}watch`- select server and bot will send a message when it goes online/offline in current channel
-`{prefix}unwatch` - undone what `{prefix}watch` command do 
-`{prefix}automessage #any_channel` - bot will send and update message about some server!
-`{prefix}automessage` - list any automessages you have
-`{prefix}automessage delete` - delete all automessages for some server
+    notificationsValue = f'''**`{prefix}watch`- Selected server and bot will send a message when it goes online/offline in current channel
+`{prefix}unwatch` - Stop watching server
+`{prefix}automessage #any_channel` - Bot will send and update message about a server!
+`{prefix}automessage` - List any automessages you have
+`{prefix}automessage delete` - Delete all automessages for a server
 **'''
     # add notifications section to the embed
-    message.add_field(name=f'**Notifications:**', value=notificationsValue,
+    message.add_field(name=f'**Notification Commands:**', value=notificationsValue,
                       inline=False)  
     # define misc sections value
     miscValue = f'**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**'
     # add misc section to the embed
-    message.add_field(name=f'**Miscellaneous:**', value=miscValue,
+    message.add_field(name=f'**Miscellaneous Commands:**', value=miscValue,
                       inline=False)
     # and send it  
     await ctx.send(embed=message)  
@@ -181,7 +180,7 @@ async def on_message(msg):  # on every message
     if msg.guild == None and msg.author != bot.user:
         try:
             # send error message
-            await msg.channel.send("Sorry you can't use this bot in DMs! You can add me to some server by this link: https://bit.ly/ARKTop")
+            await msg.channel.send("Sorry you can't use this bot in DMs! You can add me to a server using this link: https://bit.ly/ARKTop")
         except BaseException as e:  # catch error
             return
         return  # ignore it we have no way to notify the user anyway
@@ -243,8 +242,8 @@ async def sendCommandNotFoundEmbed(ctx):
     # paint it red
     embed.color = discord.Colour.red()
     # add info
-    embed.add_field(name='You entered wrong command!',
-                    value=f"Command `{ctx.message.content}` doesn't exist. You can list my commands with `{prefix}help`.")
+    embed.add_field(name='Unknown Command!',
+                    value=f"Command `{ctx.message.content}` doesn't exist. You can see all commands with `{prefix}help`.")
     # send embed 
     await ctx.send(embed=embed)
 
@@ -256,7 +255,7 @@ async def rateLimitHit(ctx, error):
     # add title
     embed.title = 'Hold on!'
     # add info
-    embed.add_field(name=f'You can only use `{ctx.message.content}` only `{error.cooldown.rate}` time(s) per `{int(error.cooldown.per)}` second(s)!',
+    embed.add_field(name=f'You can only use `{ctx.message.content}`  `{error.cooldown.rate}` time(s) per `{int(error.cooldown.per)}` second(s)!',
                     value="Please try again later.")
     # send embed 
     await ctx.send(embed=embed)
@@ -269,7 +268,7 @@ async def insufficientPerms(ctx, perms):
     # paint it red
     embed.color = discord.Colour.red()
     # add title
-    embed.title = 'I am missing some permissions in current channel!'
+    embed.title = 'I am missing some permissions in this channel!'
     # add info
     embed.add_field(name='I need:',
                     value=f"```{joined}```")
@@ -282,10 +281,10 @@ async def channelNotFound(ctx, error):
     # paint it red
     embed.color = discord.Colour.red()
     # add title
-    embed.title = 'The channel isn`t found!'
+    embed.title = 'That channel could not be found!'
     # add info
     embed.add_field(name=f"Channel with id `{error.argument[2:-1]}` isn't found!",
-                    value="Maybe you copied this channel from other server? ")
+                    value="Maybe you copied this channel from another server? ")
     # send embed 
     await ctx.send(embed=embed)
 
