@@ -22,18 +22,24 @@ class MiscCommands(commands.Cog):
         self.cfg = config.Config()
         self.t = c.Translation()
         self.slashCommands = {'info' : self.slashInfo}
+        self.fakeCtxCommands = {'ticketinfo' : self.ticketInfo}
 
     async def slashHandler(self, interaction, name = None):
-        await sendToMe(name, self.bot)
         # if this is a command
         if (name != None):
             # get command from dictionary
             command = self.slashCommands.get(name)
-            await sendToMe(command, self.bot)
-            # if we have such command
+            fakeCtxCommand = self.fakeCtxCommands.get(name)
+            # if we have such native command
             if (command != None):
                 # call it 
                 await command(interaction)
+            # if we have such fakeCtx command
+            elif (fakeCtxCommand != None):
+                # create fake ctx
+                ctx = c.fakeCtx(interaction)
+                # run command
+                await fakeCtxCommand(ctx)
 
     async def selectServersByIds(self, ids):
         # empty statement

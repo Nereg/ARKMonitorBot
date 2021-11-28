@@ -34,11 +34,8 @@ class SlashCommandsHelper(commands.Cog):
             # get it's name
             name = interaction.data['name']
             await sendToMe(name, self.bot)
-            try:
-                # run all handlers (may cause chaos if something matches in two handlers)
-                await asyncio.gather(*[i.slashHandler(interaction, name) for i in self.cogs])
-            except BaseException as e:
-                await sendToMe(f'Error in slash handler! {e}', self.bot, True)
+            # run all handlers (may cause chaos if something matches in two handlers)
+            await asyncio.gather(*[i.slashHandler(interaction, name) for i in self.cogs])
 
     def listCommands(self, commands):
         types = {1: "Slash command", 2: "User command", 3: "Message command"}

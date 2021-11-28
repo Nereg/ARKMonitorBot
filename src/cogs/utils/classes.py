@@ -12,6 +12,49 @@ import concurrent.futures._base as base
 import socket
 import discord
 import time
+import discord.utils
+
+MISSING = discord.utils.MISSING
+
+class fakeCtx:
+    """
+    Class for emulation regular ctx
+    using interactions
+    """
+
+    def __init__(self, interaction) -> None:
+        self.interaction = interaction
+        self.prefix = "/"
+        self.guild = self.interaction.guild
+        self.channel = self.interaction.channel
+        self.author = self.interaction.user
+        self.messages_sent = 0
+        pass
+
+    async def send(self,
+        content,
+        *,
+        tts=False,
+        embed=MISSING,
+        embeds=MISSING,
+        file=MISSING,
+        files=MISSING,
+        stickers=MISSING,
+        delete_after=MISSING,
+        nonce=MISSING,
+        allowed_mentions=None,
+        reference=MISSING,
+        mention_author=MISSING,
+        view=MISSING,
+    ):
+        if (self.messages_sent <= 0):
+            await self.interaction.response.send_message(content, embed=embed, embeds=embeds, view=view, tts=tts, ephemeral=False)
+            self.messages_sent += 1
+            return await self.interaction.original_message()
+        else:
+            msg = await self.interaction.followup.send(content, tts=tts, embed=embed, embeds=embeds, view=view, username=self.guild.me.nick, avatar_url=self.guild.me.display_avatar, ephemeral=False, file=MISSING, files=MISSING, allowed_mentions=None, thread=MISSING, wait=True)
+            self.messages_sent += 1
+            return msg
 
 
 class ARKServerError(Exception):  # ARK server error
