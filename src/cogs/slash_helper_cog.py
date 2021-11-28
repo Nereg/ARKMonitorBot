@@ -1,15 +1,17 @@
+from cogs.utils.helpers import sendToMe
 from discord.ext import commands
 import discord
 import aiohttp
-
+import asyncio
 
 class SlashCommandsHelper(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.appId = 727114852245569545
+        self.appId = bot.cfg.app_id
         self.cfg = bot.cfg
         self.token = self.cfg.token
         self.authheader = {"Authorization": f"Bot {self.token}"}
+        self.cogs = self.bot.myCogs
 
     async def cog_check(self, ctx):
         return (
@@ -23,18 +25,20 @@ class SlashCommandsHelper(commands.Cog):
             self.httpSession = aiohttp.ClientSession()
 
     @commands.Cog.listener()
+    # on any interaction
     async def on_interaction(self, interaction):
-        cog = self.bot.myCogs[0]
-        print(cog)
-        await cog.slashHandler(interaction)
-        return
-        view = discord.ui.View()
-        button = discord.ui.Button(
-            style=discord.ButtonStyle.primary, url="https://google.com", emoji="❤️"
-        )
-        view.add_item(button)
-        await interaction.response.send_message("test!", view=view)
-        pass
+        await sendToMe(interaction.data, self.bot)
+        await sendToMe(interaction.data['type'], self.bot)
+        # if this is a slash command
+        if (interaction.data['type'] == 1):
+            # get it's name
+            name = interaction.data['name']
+            await sendToMe(name, self.bot)
+            try:
+                # run all handlers (may cause chaos if something matches in two handlers)
+                await asyncio.gather(*[i.slashHandler(interaction, name) for i in self.cogs])
+            except BaseException as e:
+                await sendToMe(f'Error in slash handler! {e}', self.bot, True)
 
     def listCommands(self, commands):
         types = {1: "Slash command", 2: "User command", 3: "Message command"}
@@ -57,7 +61,7 @@ class SlashCommandsHelper(commands.Cog):
         )
         # https://discord.com/api/v8/applications/{application.id}/guilds/{guild.id}/commands
         commands = await resp.json()
-        # await ctx.send(commands)
+        await ctx.send(commands)
         text = "List of **global** slash commands:\n"
         text += self.listCommands(commands)
         if commands.__len__() <= 0:
@@ -71,6 +75,10 @@ class SlashCommandsHelper(commands.Cog):
         )
         localCommands = await resp.json()
         text += self.listCommands(localCommands)
+        text += "List of loaded slash cogs:\n"
+        text += str(self.cogs) + '\n'
+        text += 'List of slash command handlers:\n'
+        text += str(*[i.slashHandler for i in self.cogs]) + '\n'
         await ctx.send(text)
         pass
 

@@ -21,11 +21,19 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
-        self.slashCommands = ["info"]
+        self.slashCommands = {'info' : self.slashInfo}
 
-    async def slashHandler(self, interaction):
-        await self.slashInfo(interaction)
-        pass
+    async def slashHandler(self, interaction, name = None):
+        await sendToMe(name, self.bot)
+        # if this is a command
+        if (name != None):
+            # get command from dictionary
+            command = self.slashCommands.get(name)
+            await sendToMe(command, self.bot)
+            # if we have such command
+            if (command != None):
+                # call it 
+                await command(interaction)
 
     async def selectServersByIds(self, ids):
         # empty statement
