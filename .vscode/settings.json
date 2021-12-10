@@ -5,6 +5,8 @@
         "aplayers",
         "dblpy",
         "notifRecords",
-        "SESSIONISPVE_i"
+        "SESSIONISPVE_i",
+        "sharded",
+        "unwatch"
     ]
 }

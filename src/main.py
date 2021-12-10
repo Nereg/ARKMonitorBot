@@ -1,23 +1,13 @@
-# from charcoal import Charcoal
 import cogs.utils.classes as c  # our classes
 from cogs.utils.helpers import *  # our helpers
 import config  # config
-import discord  # main discord libary
+import discord  # main discord library
 from discord.ext import commands  # import commands extension
-
-# import commands as cmd  # import all our commands
 from cogs.utils.menus import *  # menus like selector of servers
-
-# from server_cmd import *  # !server command
 import json  # json module
 import traceback  # traceback
 import time  # time
 from datetime import datetime
-
-# import dbl_cog  # cog with top.gg updater
-import os
-
-# import admin_cog  # cog with admin commands
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 from pathlib import Path
@@ -25,9 +15,9 @@ from pathlib import Path
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
-# helpers.py - helper funtions (like work with DB)
+# helpers.py - helper functions (like work with DB)
 
-debug = Debuger("main")  # create debuger (see helpers.py)
+debug = Debuger("main")  # create debugger (see helpers.py)
 conf = config.Config()  # load config
 # set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
 game = discord.Game("ping me to get prefix")
@@ -37,28 +27,15 @@ bot = commands.AutoShardedBot(
 )
 bot.cfg = conf
 bot.myCogs = []
-debug.debug("Inited DB and Bot!")  # debug into console !
+debug.debug("Initted DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
 
 # if conf.debug is True asyncio will output additional debug info into logs
 bot.loop.set_debug(conf.debug)
 
-
-# add all cogs
-# bot.add_cog(ServerCmd(bot))
-# bot.add_cog(cmd.BulkCommands(bot))
-# bot.add_cog(admin_cog.Admin(bot))
-# bot.add_cog(dbl_cog.TopGG(bot))
-##bot.add_cog(updater.Updater(bot))
-# bot.add_cog(updater.NeoUpdater(bot))
-# bot.add_cog(campfire.Campfire(bot))
-# bot.add_cog(Charcoal(bot))
-# bot.add_cog(notifications.NotificationsCog(bot))
-# bot.add_cog(automessage.AutoMessageCog(bot))
-
 # setup function
 def setup():
-    print("Entered setup function")
+    print("Started loading cogs")
     # search for cogs
     cogs = [p.stem for p in Path(".").glob("./src/cogs/*.py")]
     print(cogs)
@@ -66,7 +43,7 @@ def setup():
         print(f"cogs.{cog}")
         bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
-    print("Finished setup function")
+    print("Finished loading cogs")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +71,7 @@ async def prefix(ctx, *args):
         # set needed permissions (manage roles)
         needed_perms = discord.Permissions(manage_roles=True)
         if needed_perms <= permissions:  # check permissions
-            # if check successed
+            # if check successes
             # get new prefix from params
             prefix = args[0]
             # if @ in prefix
@@ -149,27 +126,27 @@ async def help(ctx):
         icon_url=ctx.author.display_avatar,
     )
     # define value for Server section
-    serverValue = f'''**`{prefix}server info`- Select and view info about added server (Only Steam Official and Unofficial Servers Supported)
-`{prefix}server add <IP>:<Query port>`- Add a server to your list
-`{prefix}server delete`- Delete a server from your list
+    serverValue = f"""**`{prefix}server info`- View info about added server
+`{prefix}server add <IP>:<Query port>`- Add server (Steam only, both official and not) to your list
+`{prefix}server delete`- Delete server from your list
 `{prefix}server alias`- List aliases for your servers
-`{prefix}server alias "<Alias>"`- Select and add an alias for server
-`{prefix}server alias delete`- Delete alias for your server**'''
+`{prefix}server alias "<Alias>"`- Add alias for a server
+`{prefix}server alias delete`- Delete alias for your server**"""
     # add server section to the embed
-    message.add_field(name=f'**Server Commands:**',
-                      value=serverValue)  
+    message.add_field(name=f"**Server commands:**", value=serverValue)
     # define value for notifications section
-    notificationsValue = f'''**`{prefix}watch`- Selected server and bot will send a message when it goes online/offline in current channel
+    notificationsValue = f"""**`{prefix}watch`- Bot will send a message when selected server goes online/offline in current channel
 `{prefix}unwatch` - Stop watching server
 `{prefix}automessage #any_channel` - Bot will send and update message about a server!
 `{prefix}automessage` - List any automessages you have
-`{prefix}automessage delete` - Delete all automessages for a server
-**'''
+`{prefix}automessage delete` - Delete **all** automessages for a server
+**"""
     # add notifications section to the embed
-    message.add_field(name=f'**Notification Commands:**', value=notificationsValue,
-                      inline=False)  
+    message.add_field(
+        name=f"**Notification commands:**", value=notificationsValue, inline=False
+    )
     # define misc sections value
-    miscValue = f"**`{prefix}info`- get info about this bot (e.g. support server, github etc.)**"
+    miscValue = f"**`{prefix}info`- Get info about this bot (e.g. support server, GitHub etc.)**"
     # add misc section to the embed
     message.add_field(name=f'**Miscellaneous Commands:**', value=miscValue,
                       inline=False)
@@ -250,10 +227,10 @@ async def on_message(msg):  # on every message
 # on error in some event
 @bot.event
 async def on_error(event, *args, **kwargs):
-    # get tuple with exeption and traceback https://docs.python.org/3/library/sys.html#sys.exc_info
-    exeption_pack = sys.exc_info()
+    # get tuple with exception and traceback https://docs.python.org/3/library/sys.html#sys.exc_info
+    exception_pack = sys.exc_info()
     errors = traceback.format_exception(
-        exeption_pack[0], exeption_pack[1], exeption_pack[2]
+        exception_pack[0], exception_pack[1], exception_pack[2]
     )
     errors_str = "".join(errors)
     msg = f"Error happened in `{event}` event\n```{errors_str}```"
@@ -279,7 +256,7 @@ async def sendErrorEmbed(ctx, Id, error):
     embed.title = "Opps! An error occurred!"
     # add info
     embed.add_field(
-        name="I notified my creator about it! A fix is already on it`s way!",
+        name="I notified my creator about it! A fix is already on it's way!",
         value=f"Your **unique** error id is `{Id}`. You can get more support in our [support](https://bit.ly/ARKDiscord) server.",
     )
     # add bot's version

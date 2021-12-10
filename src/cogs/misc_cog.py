@@ -431,6 +431,7 @@ class MiscCommands(commands.Cog):
         text += f"Your guild id is: {ctx.guild.id}\n"
         permissions = ctx.channel.permissions_for(ctx.guild.me)
         text += f"My current permissions in current channel are: {permissions.value}"
+        text += f"My current prefix is: {ctx.prefix}"
         await ctx.send(discord.utils.escape_mentions(text))
 
 
