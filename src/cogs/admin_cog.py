@@ -1,4 +1,4 @@
-from cogs.utils import classes
+from cogs.utils import classes, menus
 from cogs.utils.classes import ARKServer
 from discord.ext import commands
 import asyncio
@@ -101,6 +101,25 @@ class Admin(commands.Cog):
         self.sessions = set()
         # self.cmdCountUpdater.start()
         # print('started cmd updater')
+        self.slashCommands = {}
+        self.fakeCtxCommands = {'test' : self.test}
+
+    async def slashHandler(self, interaction, name = None):
+        # if this is a command
+        if (name != None):
+            # get command from dictionary
+            command = self.slashCommands.get(name)
+            fakeCtxCommand = self.fakeCtxCommands.get(name)
+            # if we have such native command
+            if (command != None):
+                # call it 
+                await command(interaction)
+            # if we have such fakeCtx command
+            elif (fakeCtxCommand != None):
+                # create fake ctx
+                ctx = c.fakeCtx(interaction)
+                # run command
+                await fakeCtxCommand(ctx)
 
     async def cog_check(self, ctx):
         return (
@@ -571,10 +590,8 @@ class Admin(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
-        text = '{"py/object": "c.ARKServer", "ip": "192.223.27.63:27001", "address": "192.223.27.63", "port": 27001, "name": "Bacon Blitz 8/27 100x/Shop/Kit/S+/flyerspeed/4man - (v678.10)", "version": "v678.10", "stripedName": "Bacon Blitz 8/27 100x/Shop/Kit/S+/flyerspeed/4man", "serverSteamId": 90150868627673092, "platform": "Windows", "online": 68, "maxPlayers": 100, "map": "Ragnarok", "password": false, "PVE": false, "clusterName": "Cluster0001", "mods": ["849985437", "1999447172", "1231538641", "2183584447"], "isARK": true, "game_id": 346110, "ping": 141}'
-        testClass = c.ARKServer.fromJSON(text)
-        await ctx.send(testClass)
-        await ctx.send(type(testClass))
+        selector = menus.Selector(ctx, self.bot, c.Translation())
+        await ctx.send(await selector.select())
 
     @commands.command()
     async def error(self, ctx):
@@ -582,4 +599,6 @@ class Admin(commands.Cog):
 
 
 def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Admin(bot))
+    cog = Admin(bot)
+    bot.add_cog(cog)
+    bot.myCogs.append(cog)

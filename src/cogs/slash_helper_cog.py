@@ -28,9 +28,11 @@ class SlashCommandsHelper(commands.Cog):
     # on any interaction
     async def on_interaction(self, interaction):
         await sendToMe(interaction.data, self.bot)
-        await sendToMe(interaction.data['type'], self.bot)
+        type = interaction.data.get('type',-1)
+        await sendToMe(type, self.bot)
+        await sendToMe(interaction, self.bot)
         # if this is a slash command
-        if (interaction.data['type'] == 1):
+        if (type == 1):
             # get it's name
             name = interaction.data['name']
             await sendToMe(name, self.bot)

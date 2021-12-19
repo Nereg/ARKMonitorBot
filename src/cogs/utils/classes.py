@@ -18,7 +18,7 @@ MISSING = discord.utils.MISSING
 
 class fakeCtx:
     """
-    Class for emulation regular ctx
+    Class for emulation of regular ctx
     using interactions
     """
 
@@ -32,7 +32,7 @@ class fakeCtx:
         pass
 
     async def send(self,
-        content,
+        content = None,
         *,
         tts=False,
         embed=MISSING,
