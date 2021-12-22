@@ -49,6 +49,8 @@ class NotificationsPlugin:
         self.performance = []
         # count sent notifications
         self.sentNotifications = 0
+        # record why so many notifications are sent
+        self.reasons = {}
 
     # will be ran by main updater just like regular __init__
     async def init(self):
@@ -66,7 +68,7 @@ class NotificationsPlugin:
         minTime = min(self.performance)
         maxTime = max(self.performance)
         await sendToMe(f'Notifications performance:\nAvg time: {avgTime:.4} sec.\nMin time: {minTime:.4}\nMax time: {maxTime:.4}', self.updater.bot)
-        await sendToMe(f'Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications', self.updater.bot)
+        await sendToMe(f'Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications\nReasons: {str(self.reasons)}', self.updater.bot)
         # reset sent flag for all notifications records
         await self.updater.makeAsyncRequest('UPDATE notifications SET Sent = 0')
         # reset number of sent notifications
@@ -99,6 +101,7 @@ class NotificationsPlugin:
                 title=f"Server {await stripVersion(updateResult.cachedServer)} went down!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.red(),
+                footer = updateResult.reason.reason,
             )
         else:
 
@@ -106,6 +109,7 @@ class NotificationsPlugin:
                 title=f"Server {await stripVersion(updateResult.cachedServer)} went up!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.green(),
+                footer = updateResult.reason.reason,
             )
         return embed
 
@@ -124,6 +128,10 @@ class NotificationsPlugin:
                 if (i[3] == 1):
                     # skip this record
                     continue
+                # if there is no key for current key create it
+                self.reasons.setdefault(updateResult.reason.reason,0)
+                # and increase the key value
+                self.reasons[updateResult.reason.reason] += 1
                 # try to get channel to send notification to
                 channel = self.updater.bot.get_channel(i[1])
                 # if channel is not found
