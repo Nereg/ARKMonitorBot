@@ -9,8 +9,9 @@ from cogs.utils.helpers import *
 import datetime
 import cogs.utils.menus
 import cogs.utils.classes as c
-import time 
+import time
 
+# enum respresenting status of a server
 class ServerStatus(Enum):
     SERVER_WENT_DOWN = 0
     SERVER_WENT_UP = 1
@@ -19,6 +20,7 @@ class ServerStatus(Enum):
 
     @classmethod
     def changed(self, status):
+        '''Return true if server went up or down'''
         # if something changed
         if (
             status == ServerStatus.SERVER_WENT_DOWN
@@ -67,14 +69,23 @@ class NotificationsPlugin:
         avgTime = sum(self.performance) / len(self.performance)
         minTime = min(self.performance)
         maxTime = max(self.performance)
-        await sendToMe(f'Notifications performance:\nAvg time: {avgTime:.4} sec.\nMin time: {minTime:.4}\nMax time: {maxTime:.4}', self.updater.bot)
-        await sendToMe(f'Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications\nReasons: {str(self.reasons)}', self.updater.bot)
+        await sendToMe(
+            f"Notifications performance:\nAvg time: {avgTime:.4} sec.\nMin time: {minTime:.4}\nMax time: {maxTime:.4}",
+            self.updater.bot,
+        )
+        await sendToMe(
+            f"Sent {self.sentNotifications}/{self.notificationsCache.__len__()} notifications\nReasons: {str(self.reasons)}",
+            self.updater.bot,
+        )
         # reset sent flag for all notifications records
-        await self.updater.makeAsyncRequest('UPDATE notifications SET Sent = 0')
+        await self.updater.makeAsyncRequest("UPDATE notifications SET Sent = 0")
         # reset number of sent notifications
         self.sentNotifications = 0
+        # reset reasons why notification were sent
+        self.reasons = {}
 
     async def serverStatus(self, updateResult):
+        '''Convert update result into server status enum'''
         # if update failed
         if updateResult.serverObj == None:
             # if last time server was online
@@ -95,43 +106,54 @@ class NotificationsPlugin:
             else:
                 return ServerStatus.SERVER_WAS_UP
 
-    async def makeEmbed(self, status, updateResult, notificationRecord):
+    async def makeEmbed(self, status, updateResult):
+        '''Creates notification embed'''
+        # set reason to went up if there is no reason
+        # else set it to reason whe update failed
+        reason = "Went up" if updateResult.reason == None else updateResult.reason.reason
+        # if server went down
         if status == ServerStatus.SERVER_WENT_DOWN:
+            # create embed
             embed = discord.Embed(
                 title=f"Server {await stripVersion(updateResult.cachedServer)} went down!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.red(),
-                footer = updateResult.reason.reason,
             )
+            #embed.set_footer(text=reason)
         else:
-
+            # create embed
             embed = discord.Embed(
                 title=f"Server {await stripVersion(updateResult.cachedServer)} went up!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.green(),
-                footer = updateResult.reason.reason,
             )
+            #embed.set_footer(text=reason)
+        # return created update
         return embed
 
     async def sendNotifications(self, updateResult, notificationRecords):
+        '''Sends a notification for a server'''
         # get status of the server (went or was down/up)
         status = await self.serverStatus(updateResult)
-        # print(updateResult.serverRecord)
-        # print(notificationRecords)
-        # print(f'Server {updateResult.Id}. Status: {status}')
-        # print(status.changed(status))
         # if something changed
         if status.changed(status):
             # for each notification in DB
             for i in notificationRecords:
                 # if we already sent the notification
-                if (i[3] == 1):
-                    # skip this record
+                if i[3] == 1:
+                    # skip the record
                     continue
-                # if there is no key for current key create it
-                self.reasons.setdefault(updateResult.reason.reason,0)
+                # set reason to went up if there is no reason
+                # else set it to reason whe update failed
+                reason = (
+                    "went up"
+                    if updateResult.reason == None
+                    else updateResult.reason.reason
+                )
+                # if there is no key for current reason create it
+                self.reasons.setdefault(reason, 0)
                 # and increase the key value
-                self.reasons[updateResult.reason.reason] += 1
+                self.reasons[reason] += 1
                 # try to get channel to send notification to
                 channel = self.updater.bot.get_channel(i[1])
                 # if channel is not found
@@ -163,18 +185,20 @@ class NotificationsPlugin:
                     )
                     # add one to number of sent notifications
                     self.sentNotifications += 1
-                    #print(f"Sent notification for {channel.id}")
+                    # print(f"Sent notification for {channel.id}")
         # nothing changed
         else:
             return
 
     async def searchForNotificationRecord(self, serverId):
+        '''Searches for notification in cache by server id'''
         return [i for i in self.notificationsCache if serverId in json.loads(i[4])]
 
     async def handle(self, updateResults):
         # start performance timer
         start = time.perf_counter()
-        #print(f"Handling notifications for {[res.Id for res in updateResults]}")
+        # print(f"Handling notifications for {[res.Id for res in updateResults]}")
+        # for each update result
         for i in updateResults:
             # search for every notification record
             # for current server
