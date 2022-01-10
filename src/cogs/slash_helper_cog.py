@@ -24,7 +24,7 @@ class SlashCommandsHelper(commands.Cog):
             # create it
             self.httpSession = aiohttp.ClientSession()
 
-    @commands.Cog.listener()
+    #@commands.Cog.listener()
     # on any interaction
     async def on_interaction(self, interaction):
         await sendToMe(interaction.data, self.bot)
@@ -51,8 +51,8 @@ class SlashCommandsHelper(commands.Cog):
             output += f'Command description: {command["description"] if command["description"] != "" else "No description"}\n'
         return output
 
-    @commands.command()
-    async def listAllCommands(self, ctx, GuildId: int = None):
+    @commands.command(slash_command=False)
+    async def listallcommands(self, ctx, guildid: int = None):
         # https://discord.com/api/v8/applications/<my_application_id>/commands
         resp = await self.httpSession.get(
             f"https://discord.com/api/v8/applications/{self.appId}/commands",
@@ -65,11 +65,11 @@ class SlashCommandsHelper(commands.Cog):
         text += self.listCommands(commands)
         if commands.__len__() <= 0:
             text += "No global commands\n"
-        if not GuildId:
-            GuildId = ctx.guild.id
-        text += f"List of **local** commands for guild `{GuildId}`\n"
+        if not guildid:
+            guildid = ctx.guild.id
+        text += f"List of **local** commands for guild `{guildid}`\n"
         resp = await self.httpSession.get(
-            f"https://discord.com/api/v8/applications/{self.appId}/guilds/{GuildId}/commands",
+            f"https://discord.com/api/v8/applications/{self.appId}/guilds/{guildid}/commands",
             headers=self.authheader,
         )
         localCommands = await resp.json()
@@ -81,20 +81,20 @@ class SlashCommandsHelper(commands.Cog):
         await ctx.send(text)
         pass
 
-    @commands.command()
-    async def addGuildCommand(
-        self, ctx, Name: str, Description: str, Type=1, guildId=None, *, RawJson=None
+    @commands.command(slash_command=False)
+    async def addguildcommand(
+        self, ctx, name: str, description: str, Type=1, guildId=None, *, rawjson=None
     ):
         if not guildId:
             guildId = ctx.guild.id
         url = f"https://discord.com/api/v8/applications/{self.appId}/guilds/{guildId}/commands"
         headers = self.authheader
         headers["Content-Type"] = "application/json"
-        if not RawJson:
+        if not rawjson:
             json = {
-                "name": Name,
+                "name": name,
                 "type": Type,
-                "description": Description,
+                "description": description,
                 "options": [
                     {
                         "name": "animal",
@@ -118,14 +118,14 @@ class SlashCommandsHelper(commands.Cog):
             await ctx.send(json)
             resp = await self.httpSession.post(url, headers=headers, json=json)
         else:
-            payload = RawJson
+            payload = rawjson
             await ctx.send(payload)
             resp = await self.httpSession.post(url, headers=headers, data=payload)
         await ctx.send(await resp.json())
         pass
 
-    @commands.command()
-    async def deleteCommand(self, ctx, Type: str, Id: int, GuildId: int = None):
+    @commands.command(slash_command=False)
+    async def deletecommand(self, ctx, Type: str, Id: int, guildid: int = None):
         await ctx.send(Type)
         if Type == "global":
             url = f"https://discord.com/api/v8/applications/{self.appId}/commands/{Id}"
@@ -134,7 +134,7 @@ class SlashCommandsHelper(commands.Cog):
             text = await resp.text()
             await ctx.send(text if text != "" else "No content")
         elif Type == "local":
-            url = f"https://discord.com/api/v8/applications/{self.appId}/guilds/{GuildId}/commands/{Id}"
+            url = f"https://discord.com/api/v8/applications/{self.appId}/guilds/{guildid}/commands/{Id}"
             await ctx.send(url)
             resp = await self.httpSession.delete(url, headers=self.authheader)
             text = await resp.text()

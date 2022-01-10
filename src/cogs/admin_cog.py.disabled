@@ -149,8 +149,8 @@ class Admin(commands.Cog):
         # remove `foo`
         return content.strip("` \n")
 
-    @commands.command(pass_context=True, hidden=True, name="eval")
-    async def _eval(self, ctx, *, body: str):
+    @commands.command(hidden=True, name="eval", slash_command=False)
+    async def eval(self, ctx, *, body: str):
         """Evaluates a code"""
 
         env = {
@@ -196,7 +196,7 @@ class Admin(commands.Cog):
                 self._last_result = ret
                 await ctx.send(f"```py\n{value}{ret}\n```")
 
-    @commands.command(pass_context=True, hidden=True)
+    @commands.command(hidden=True, slash_command=False)
     async def repl(self, ctx):
         """Launches an interactive REPL session."""
         variables = {
@@ -301,7 +301,7 @@ class Admin(commands.Cog):
             except discord.HTTPException as e:
                 await ctx.send(f"Unexpected error: `{e}`")
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, slash_command=False)
     async def sudo(
         self, ctx, channel: Optional[GlobalChannel], who: discord.User, *, command: str
     ):
@@ -315,7 +315,7 @@ class Admin(commands.Cog):
         # new_ctx._db = ctx._db
         await self.bot.invoke(new_ctx)
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, slash_command=False)
     async def do(self, ctx, times: int, *, command):
         """Repeats a command a specified number of times."""
         msg = copy.copy(ctx.message)
@@ -327,7 +327,7 @@ class Admin(commands.Cog):
         for i in range(times):
             await new_ctx.reinvoke()
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, slash_command=False)
     async def sh(self, ctx, *, command):
         """Runs a shell command."""
         async with ctx.typing():
@@ -343,7 +343,7 @@ class Admin(commands.Cog):
         except Exception as e:
             await ctx.send(str(e))
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, slash_command=False)
     async def perf(self, ctx, *, command):
         """Checks the timing of a command, attempting to suppress HTTP and DB calls."""
 
@@ -378,13 +378,13 @@ class Admin(commands.Cog):
             f"Status: {ctx.tick(success)} Time: {(end - start) * 1000:.2f}ms"
         )
 
-    @commands.command()
+    @commands.command(slash_command=False)
     async def exec(self, ctx, sql):
         data = await makeAsyncRequest(sql)
         await ctx.send(data)
 
-    @commands.command()
-    async def setMessage(self, ctx, message):
+    @commands.command(slash_command=False)
+    async def setmessage(self, ctx, message):
         result = await makeAsyncRequest("SELECT * FROM settings WHERE GuildId=1")
         if result.__len__() <= 0:
             await makeAsyncRequest(
@@ -395,8 +395,8 @@ class Admin(commands.Cog):
         )
         await ctx.send("Done!")
 
-    @commands.command()
-    async def deleteMessage(self, ctx, channelId: int, messageId: int):
+    @commands.command(slash_command=False)
+    async def deletemessage(self, ctx, channelId: int, messageId: int):
         channel = self.bot.get_channel(channelId)
         if channel == None:
             await ctx.send("Wrong channel id")
@@ -410,18 +410,18 @@ class Admin(commands.Cog):
             await message.delete()
             await ctx.send("Done !")
 
-    @commands.command()
+    @commands.command(slash_command=False)
     async def restart(self, ctx):
         await ctx.send("Good bye my friend!")
         exit(12121312)
         return
 
-    @commands.command()
-    async def deleteServer(self, ctx, serverIp: str):
+    @commands.command(slash_command=False)
+    async def deleteserver(self, ctx, serverIp: str):
         await deleteServer(serverIp)
 
-    @commands.command()
-    async def setCmdCountChannel(
+    @commands.command(slash_command=False)
+    async def setсmdсountсhannel(
         self, ctx, value: str = None, channel: discord.VoiceChannel = None
     ):
         """
@@ -467,8 +467,8 @@ class Admin(commands.Cog):
         await ctx.send("Deleted servers!")
         return
 
-    @commands.command()
-    async def purgeServers(self, ctx, *argv):
+    @commands.command(slash_command=False)
+    async def purgeservers(self, ctx, *argv):
         if argv.__len__() <= 0:
             await ctx.send("Not every parameter was supplied!")
             return
@@ -506,8 +506,8 @@ class Admin(commands.Cog):
                 await self.msg.clear_reactions()
                 await self.purge(ctx, value)
 
-    @commands.command()
-    async def setServersCountChannel(
+    @commands.command(slash_command=False)
+    async def setserverscountchannel(
         self, ctx, value: str = None, channel: discord.VoiceChannel = None
     ):
         if channel == None:
@@ -563,16 +563,16 @@ class Admin(commands.Cog):
             print("edited")
             i += 1  # increase i
 
-    @commands.command()
-    async def getIpLocation(self, ctx, ip: str):
+    @commands.command(slash_command=False)
+    async def getiplocation(self, ctx, ip: str):
         session = aiohttp.ClientSession()
         loc = location.Location(session)
         code = await loc.get(ip)
         emoji = await loc.getEmoji(code)
         await ctx.send(f"Ip: `{ip}`\nCountry code: `{code}`\nCountry emoji: {emoji}")
 
-    @commands.command()
-    async def bulkServerAdd(self, ctx, servers: str):
+    @commands.command(slash_command=False)
+    async def bulkserveradd(self, ctx, servers: str):
         array = servers.split("\n")  # split by newline
         for ip in array:
             await AddServer(ip, ctx)
@@ -588,12 +588,12 @@ class Admin(commands.Cog):
         print("Fail in fromJSON!")
         return "Failed"
 
-    @commands.command()
+    @commands.command(slash_command=False)
     async def test(self, ctx):
         selector = menus.Selector(ctx, self.bot, c.Translation())
         await ctx.send(await selector.select())
 
-    @commands.command()
+    @commands.command(slash_command=False)
     async def error(self, ctx):
         await ctx.send("A" * 5000)
 

@@ -147,21 +147,21 @@ class NotificationsCog(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
-    async def watch(self, ctx, discordChannel: discord.TextChannel = None, *argv):
+    @commands.command(brief="Setup notification. Bot will send notification each time server goes up or down.")
+    async def watch(self, ctx, discordсhannel: discord.TextChannel = None, *argv):
         # if no channel is supplied
         # TODO: add bulk adding of servers
         # if no channel was supplied
-        if discordChannel == None:
+        if discordсhannel == None:
             # send warning message
             await ctx.send(
                 "No optional channel provided. Notifications will be sent to this channel."
             )
             # sent discord channel to current
-            discordChannel = ctx.channel
+            discordсhannel = ctx.channel
 
         # check if the bot can write to channel
-        if not await self.canWrite(ctx, discordChannel):
+        if not await self.canWrite(ctx, discordсhannel):
             return
 
         # if no additional args
@@ -182,7 +182,7 @@ class NotificationsCog(commands.Cog):
                 # select any record for the discord channel
                 notifications = await makeAsyncRequest(
                     "SELECT * FROM notifications WHERE Type=3 AND DiscordChannelId=%s",
-                    (discordChannel.id,),
+                    (discordсhannel.id,),
                 )
                 # if there are some record for it
                 if notifications.__len__() > 0:
@@ -191,7 +191,7 @@ class NotificationsCog(commands.Cog):
                     # if the channel already receives notifications
                     if server[0][0] in serverList:
                         # send error message
-                        await self.alreadyReceives(ctx, server, discordChannel)
+                        await self.alreadyReceives(ctx, server, discordсhannel)
                     # we need to update record for the channel
                     else:
                         # add id of the new server to list
@@ -214,9 +214,9 @@ class NotificationsCog(commands.Cog):
                     await makeAsyncRequest(
                         'INSERT INTO notifications (DiscordChannelId,ServersIds,Type,Sent,Data,GuildId) VALUES (%s,%s,3,0,"{}",%s)',
                         (
-                            discordChannel.id,
+                            discordсhannel.id,
                             json.dumps(serverList),
-                            discordChannel.guild.id,
+                            discordсhannel.guild.id,
                         ),
                     )
                     # send success message
@@ -231,24 +231,24 @@ class NotificationsCog(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
-    async def unwatch(self, ctx, discordChannel: discord.TextChannel = None):
-        if discordChannel == None:
+    @commands.command(brief="Stop notifications from appearing in a channel")
+    async def unwatch(self, ctx, discordсhannel: discord.TextChannel = None):
+        if discordсhannel == None:
             # send warning message
             await ctx.send(
                 "No optional channel provided. Notifications will be deleted from this channel."
             )
             # sent discord channel to current
-            discordChannel = ctx.channel
+            discordсhannel = ctx.channel
         # select any records for the discord channel
         notifications = await makeAsyncRequest(
             "SELECT * FROM notifications WHERE Type=3 AND DiscordChannelId=%s",
-            (discordChannel.id,),
+            (discordсhannel.id,),
         )
         # if we have no notifications for current channel
         if notifications.__len__() <= 0:
             # send error message
-            await self.noNotificationsInChannel(ctx, discordChannel)
+            await self.noNotificationsInChannel(ctx, discordсhannel)
             # return
             return
         # create server selector
@@ -281,11 +281,11 @@ class NotificationsCog(commands.Cog):
                     ),
                 )
                 # and send embed
-                await self.deletedServer(ctx, server[0], discordChannel)
+                await self.deletedServer(ctx, server[0], discordсhannel)
             # else
             else:
                 # send error message
-                await self.noNotificationsForThisServer(ctx, discordChannel, server[0])
+                await self.noNotificationsForThisServer(ctx, discordсhannel, server[0])
 
 
 def setup(bot: commands.Bot) -> None:

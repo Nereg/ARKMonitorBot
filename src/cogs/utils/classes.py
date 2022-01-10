@@ -14,7 +14,7 @@ import discord
 import time
 import discord.utils
 
-MISSING = discord.utils.MISSING
+MISSING = None
 
 class fakeCtx:
     """

@@ -21,8 +21,8 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
-        self.slashCommands = {'info' : self.slashInfo}
-        self.fakeCtxCommands = {'ticketinfo' : self.ticketInfo}
+        #self.slashCommands = {'info' : self.slashInfo}
+        #self.fakeCtxCommands = {'ticketinfo' : self.ticketInfo}
 
     async def slashHandler(self, interaction, name = None):
         # if this is a command
@@ -440,7 +440,7 @@ class MiscCommands(commands.Cog):
 
     @commands.bot_has_permissions(send_messages=True)
     @commands.command()
-    async def ticketInfo(self, ctx):
+    async def ticketinfo(self, ctx):
         text = ""
         text += f"Your guild id is: {ctx.guild.id}\n"
         permissions = ctx.channel.permissions_for(ctx.guild.me)

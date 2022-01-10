@@ -17,8 +17,8 @@ class Slash(commands.Cog):
             # create it
             self.httpSession = aiohttp.ClientSession()
 
-    @commands.command()
-    async def validateSlash(self, ctx):
+    @commands.command(slash_command=False)
+    async def validateslash(self, ctx):
         # get local slash commands
         resp = await self.httpSession.get(
             f"https://discord.com/api/v8/applications/{self.appId}/guilds/{ctx.guild.id}/commands",

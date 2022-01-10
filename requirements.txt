@@ -13,7 +13,8 @@ dblpy==0.4.0
 deepdiff==5.0.2
 # it doesn't support slash commands (F d.py F danny)
 # discord.py==1.7.3
--e git+https://github.com/Rapptz/discord.py.git@45d498c1b76deaf3b394d17ccf56112fa691d160#egg=discord.py
+#-e git+https://github.com/Rapptz/discord.py.git@45d498c1b76deaf3b394d17ccf56112fa691d160#egg=discord.py
+discord.py @ git+https://github.com/iDevision/enhanced-discord.py@925539d3eb4913492bdb4afd12776d8679fa645e
 idna==2.9
 importlib-metadata==1.0.0
 jsonpickle==1.4.1

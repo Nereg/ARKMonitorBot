@@ -117,7 +117,7 @@ class Campfire(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
+    @commands.command(slash_command=False)
     async def campfire(self, ctx, ammount: int = None, camps: int = 1):
         time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
         if ammount == None:

@@ -1,12 +1,12 @@
 # from charcoal import Charcoal
-import cogs.utils.classes as c  # our classes
+# import cogs.utils.classes as c  # our classes
 from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
 
 # import commands as cmd  # import all our commands
-from cogs.utils.menus import *  # menus like selector of servers
+# from cogs.utils.menus import *  # menus like selector of servers
 
 # from server_cmd import *  # !server command
 import json  # json module
@@ -31,9 +31,16 @@ debug = Debuger("main")  # create debuger (see helpers.py)
 conf = config.Config()  # load config
 # set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
 game = discord.Game("ping me to get prefix")
+intents = discord.Intents(messages=True, guilds=True)
 # create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
-    command_prefix=get_prefix, help_command=None, activity=game
+    intents=intents,
+    command_prefix=get_prefix,
+    help_command=None,
+    activity=game,
+    slash_commands=True,
+    slash_command_guilds=[349178138258833418],
+    strip_after_prefix=True,
 )
 bot.cfg = conf
 bot.myCogs = []
@@ -82,9 +89,9 @@ def setup():
     manage_messages=True,
     external_emojis=True,
 )
-@bot.command()
-async def prefix(ctx, *args):
-    if args.__len__() <= 0:  # if no additional parameters
+@bot.command(brief="Change prefix lol", slash_command=False)
+async def prefix(ctx, prefix: str = commands.Option(None, description="Prefix")):
+    if not prefix:  # if no prefix
         # send current prefix and return
         await ctx.send(t.l["curr_prefix"].format(ctx.prefix))
         return
@@ -95,8 +102,6 @@ async def prefix(ctx, *args):
         needed_perms = discord.Permissions(manage_roles=True)
         if needed_perms <= permissions:  # check permissions
             # if check successed
-            # get new prefix from params
-            prefix = args[0]
             # if @ in prefix
             if "@" in prefix:
                 # send error message
@@ -136,7 +141,7 @@ async def prefix(ctx, *args):
 
 
 # main help command
-@bot.command()
+@bot.command(brief="Need help with the bot? This is the right command!")
 async def help(ctx):
     time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
     # set title and timestamp of embed
@@ -146,7 +151,7 @@ async def help(ctx):
     # set footer for embed
     message.set_footer(
         text=f"Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ",
-        icon_url=ctx.author.display_avatar,
+        icon_url=ctx.author.avatar.url,
     )
     # define value for Server section
     serverValue = f"""**`{prefix}server info`- select and view info about added server (only Steam servers both official and not)
@@ -175,12 +180,6 @@ async def help(ctx):
     message.add_field(name=f"**Miscellaneous:**", value=miscValue, inline=False)
     # and send it
     await ctx.send(embed=message)
-
-
-# some old command
-@bot.command()
-async def share(ctx):
-    await ctx.send(t.l["share_msg"].format(conf.inviteUrl))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
