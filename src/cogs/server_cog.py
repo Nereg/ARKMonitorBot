@@ -1,3 +1,4 @@
+from os import name
 from cogs.utils.helpers import *
 import cogs.utils.classes as c
 from cogs.utils.menus import *
@@ -83,9 +84,86 @@ class ServerCmd(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
+    @commands.group(
+        invoke_without_command=True,
+        case_insensitive=True,
+        brief="Base command for many features of the bot",
+    )
+    @commands.cooldown(10, 60, type=commands.BucketType.user)
+    async def server(self, ctx):
+        embed = discord.Embed(title="No subcommand selected!")
+        embed.add_field(
+            name="Possible subcommands:", value="```add\ndelete\ninfo\nalias```"
+        )
+        await ctx.send(embed=embed)
+
+    @server.command(brief="Add an ARK server to your list")
+    async def add(self, ctx, server_ip: str) -> None:
+        # if ip isn't correct
+        if not IpCheck(server_ip):
+            # crete embed
+            embed = discord.Embed(
+                color=discord.Colour.red(), title="Something is wring with ip!"
+            )
+            # and send it
+            await ctx.send(embed=embed)
+            return
+        # get any servers with such ip
+        servers = await makeAsyncRequest("SELECT * FROM servers WHERE Ip=%s", (server_ip,))
+        # if server is already in DB
+        if servers.__len__() > 0:
+            # get it's ID from DB
+            id = servers[0][0]
+        # else
+        else:
+            # try to add server
+            id = await AddServer(server_ip, ctx)
+            # if it wasn't added
+            if id is None:
+                return
+        settings = await makeAsyncRequest('SELECT ServersId FROM settings WHERE GuildId=%s', (ctx.guild.id,))
+        if len(settings) <= 0:
+            pass
+        else:
+            pass
+        pass
+
+    @server.command(brief="Get info about an ARK server")
+    async def info(self, ctx) -> None:
+        pass
+
+    @server.command(brief="Delete an ARK server from your list")
+    async def delete(self, ctx) -> None:
+        pass
+
+    @server.group(brief="Base command for server aliases")
+    async def alias(self, ctx) -> None:
+        embed = discord.Embed(title="No subcommand selected!")
+        embed.add_field(name="Possible subcommands:", value="```add\ndelete\nlist```")
+        await ctx.send(embed=embed)
+
+    @alias.command(brief="Add an alias for your ARK server")
+    async def add(self, ctx) -> None:
+        await ctx.send("Sub sub command")
+
+    @alias.command(brief="Delete an alias for your ARK server")
+    async def delete(self, ctx) -> None:
+        await ctx.send("Sub sub command")
+
+    @alias.command(brief="List aliases for your ARK servers")
+    async def list(self, ctx) -> None:
+        await ctx.send("Sub sub command")
+
+    @commands.bot_has_permissions(
+        add_reactions=True,
+        read_messages=True,
+        send_messages=True,
+        manage_messages=True,
+        external_emojis=True,
+    )
     @commands.command()
     @commands.cooldown(10, 60, type=commands.BucketType.user)
-    async def server(self, ctx, *args):  # /server command handler
+    async def old_server(self, ctx, *args):  # /server command handler
         self.ctx = ctx
         debug = Debuger("Server_command")  # create debugger
         lang = c.Translation()  # load translation
@@ -324,33 +402,33 @@ class ServerCmd(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
-    async def ipfix(self, ctx, *args):
+    @commands.command(brief="This command will try to fix IP address of a server")
+    async def ipfix(self, ctx, ip: str = commands.Option(description="IP to fix")):
+        await ctx.defer()  # it will be long
         start = time.perf_counter()  # start timer
-        if args == ():  # if no additional args
-            await ctx.send("No IP!")  # send error message
+        if ip is None:  # if no additional args
+            embed = discord.Embed(title="No IP!")
+            await ctx.send(embed=embed)
             return
-        ip = args[0]  # else get the ip
-        if IpCheck(ip) != True:  # IP check
-            await ctx.send("Something is wrong with **IP**!")  # and send error
+        if IpCheck(ip, checkPort=False) != True:  # IP check
+            embed = discord.Embed(title="Something is wrong with **IP**!")
+            await ctx.send(embed=embed)
             return
         splitted = ip.split(":")  # split the ip to port and IP
         HEADERS = {"User-Agent": "Magic Browser"}
-        await ctx.trigger_typing()  # it will be long
+
         # get data from steam API
         async with aiohttp.request(
             "GET",
             f"http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr={splitted[0]}",
             headers=HEADERS,
         ) as resp:
-            text = await resp.text()  # get
-            text = json.loads(text)  # and decode JSON data
+            text = await resp.json()  # get
             # start of message we will send
             message = """
 List of detected servers on that ip by steam:
 
 """
-            await ctx.trigger_typing()  # it is junkiest way I know but I can't speed up (or can I ?) fetching of the info
             # idea 1 : search in DB for those servers ?
             # idea 2 : steam master server queries ? (nope there is no such data there)
             # idea 3 : query only name not whole class worth of data
@@ -374,7 +452,6 @@ List of detected servers on that ip by steam:
                         # extract port from 'ip:port' pair
                         port = ip.split(":")[1]
                         try:
-                            await ctx.trigger_typing()  # will trigger typing on each iteration
                             # get only name of the server (not whole class worth of data)
                             response = await a2s.ainfo((addr, port))
                             # strip version from server's name
@@ -390,7 +467,7 @@ List of detected servers on that ip by steam:
                     else:  # if server is found in DB
                         serverObj = c.ARKServer.fromJSON(
                             search[0][0]
-                        )  # constuct our class from DB
+                        )  # construct our class from DB
                         if bool(search[0][1]):  # if server was online
                             # append to the message
                             message += f"{i}. {discord.utils.escape_mentions(ip)} - {serverObj.name} (Online) \n"

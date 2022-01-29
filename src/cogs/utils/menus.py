@@ -160,7 +160,7 @@ class Selector:
         # context
         self.ctx = ctx
         # if we are using slash commands
-        if isinstance(self.ctx, c.fakeCtx):
+        if ctx.interaction is not None:
             # use slash version
             self.select = self.interactionSelect
             # set interaction

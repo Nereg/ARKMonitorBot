@@ -82,24 +82,33 @@ def Debuger(name):
     return log_obj
 
 
-def IpCheck(Ip):
-    try:  # try just for fun
-        splitted = Ip.split(":")
-        if splitted.__len__() <= 1:  # if port is not present
+def IpCheck(Ip: str, checkPort: bool = True, delimiter: str = ":"):
+    '''
+    Checks ip + port or just ip for validity 
+    '''
+    splitted = Ip.split(delimiter)
+    if splitted.__len__() <= 1 and checkPort:  # if port is not present and we need to check port
+        return False # fail
+    try:  # if
+        ipaddress.ip_address(splitted[0])  # extracted ip address
+    except ValueError:  # is not valid ip address
+        return False  # return false
+    # if we need to check port
+    if checkPort:
+        # extract port and convert to int
+        try:
+            port = int(splitted[1])
+        # if it isn't int
+        except ValueError:
+            # fail
             return False
-        try:  # if
-            ipaddress.ip_address(splitted[0])  # extracted ip address
-        except:  # is not valid ip address
-            return False  # return false
-        # exstract port and convert to int (if not int exeption is cathced)
-        port = int(splitted[1])
+        # test if this is a valid port
         if (
             port > 65535 or port <= 0
         ):  # http://stackoverflow.com/questions/113224/ddg#113228
             return False  # if port is not a valid port return false
-        return True  # if all if passed return true
-    except:
-        return False  # if any error return false
+    # if all passed
+    return True
 
 
 async def fixIp(ip: str):
