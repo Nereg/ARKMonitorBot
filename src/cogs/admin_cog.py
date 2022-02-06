@@ -273,7 +273,7 @@ class Admin(commands.Cog):
 
             try:
                 if fmt is not None:
-                    if len(fmt) > 2000:
+                    if len(fmt) > 4000:
                         await ctx.send("Content too big to be printed.")
                     else:
                         await ctx.send(fmt)

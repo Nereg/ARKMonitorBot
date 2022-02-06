@@ -20,7 +20,7 @@ class ServerStatus(Enum):
 
     @classmethod
     def changed(self, status):
-        '''Return true if server went up or down'''
+        """Return true if server went up or down"""
         # if something changed
         if (
             status == ServerStatus.SERVER_WENT_DOWN
@@ -85,7 +85,7 @@ class NotificationsPlugin:
         self.reasons = {}
 
     async def serverStatus(self, updateResult):
-        '''Convert update result into server status enum'''
+        """Convert update result into server status enum"""
         # if update failed
         if updateResult.serverObj == None:
             # if last time server was online
@@ -107,10 +107,12 @@ class NotificationsPlugin:
                 return ServerStatus.SERVER_WAS_UP
 
     async def makeEmbed(self, status, updateResult):
-        '''Creates notification embed'''
+        """Creates notification embed"""
+        #embed = discord.Embed(title="test")
+        #return
         # set reason to went up if there is no reason
         # else set it to reason whe update failed
-        reason = "Went up" if updateResult.reason == None else updateResult.reason.reason
+        # reason = "Went up" if updateResult.reason == None else updateResult.reason.reason
         # if server went down
         if status == ServerStatus.SERVER_WENT_DOWN:
             # create embed
@@ -119,7 +121,7 @@ class NotificationsPlugin:
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.red(),
             )
-            #embed.set_footer(text=reason)
+            # embed.set_footer(text=reason)
         else:
             # create embed
             embed = discord.Embed(
@@ -127,18 +129,20 @@ class NotificationsPlugin:
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.green(),
             )
-            #embed.set_footer(text=reason)
+            # embed.set_footer(text=reason)
         # return created update
         return embed
 
     async def sendNotifications(self, updateResult, notificationRecords):
-        '''Sends a notification for a server'''
+
+        """Sends a notification for a server"""
         # get status of the server (went or was down/up)
         status = await self.serverStatus(updateResult)
         # if something changed
         if status.changed(status):
+            #await sendToMe("Entered send corutine", self.updater.bot)
             # for each notification in DB
-            for i in notificationRecords:
+            for i in notificationRecords:           
                 # if we already sent the notification
                 if i[3] == 1:
                     # skip the record
@@ -156,10 +160,11 @@ class NotificationsPlugin:
                 self.reasons[reason] += 1
                 # try to get channel to send notification to
                 channel = self.updater.bot.get_channel(i[1])
+                #await sendToMe(i, self.updater.bot)
                 # if channel is not found
                 if channel == None:
-                    # print(f"Channel {i[1]} isn`t found!")
-                    # delete the record (in background)
+                    await sendToMe(f"Channel {i[1]} isn`t found!", self.updater.bot)
+                    # delete the record (in background)s
                     asyncio.create_task(
                         self.updater.makeAsyncRequest(
                             "DELETE FROM notifications WHERE Id=%s", (i[0],)
@@ -168,14 +173,22 @@ class NotificationsPlugin:
                     # continue with other records
                     continue
                 else:
-                    try:
+                    try:                       
+                        #await sendToMe(
+                        #    f"Sending message to {channel}", self.updater.bot
+                        #)
+                        embed = await self.makeEmbed(status, updateResult)
+                        #embed = discord.Embed(title="test")
+                        #await sendToMe(
+                        #    f"Sending message {embed}", self.updater.bot
+                        #)
                         # send the notification
-                        await channel.send(
-                            embed=await self.makeEmbed(status, updateResult, i)
-                        )
+                        await channel.send(embed=embed)
+                        #await sendToMe("Sent notification!", self.updater.bot)
                     except discord.errors.Forbidden:
                         # I will implement delete logic later
                         # for now skip this record
+                        await sendToMe("Forbidden", self.updater.bot)
                         continue
                     # change the status in DB to sent in background
                     asyncio.create_task(
@@ -191,7 +204,7 @@ class NotificationsPlugin:
             return
 
     async def searchForNotificationRecord(self, serverId):
-        '''Searches for notification in cache by server id'''
+        """Searches for notification in cache by server id"""
         return [i for i in self.notificationsCache if serverId in json.loads(i[4])]
 
     async def handle(self, updateResults):
