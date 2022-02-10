@@ -109,7 +109,9 @@ class ServerCmd(commands.Cog):
             await ctx.send(embed=embed)
             return
         # get any servers with such ip
-        servers = await makeAsyncRequest("SELECT * FROM servers WHERE Ip=%s", (server_ip,))
+        servers = await makeAsyncRequest(
+            "SELECT Id FROM servers WHERE Ip=%s", (server_ip,)
+        )
         # if server is already in DB
         if servers.__len__() > 0:
             # get it's ID from DB
@@ -121,12 +123,39 @@ class ServerCmd(commands.Cog):
             # if it wasn't added
             if id is None:
                 return
-        settings = await makeAsyncRequest('SELECT ServersId FROM settings WHERE GuildId=%s', (ctx.guild.id,))
-        if len(settings) <= 0:
-            pass
+        # get added servers from server settings
+        added_servers = await makeAsyncRequest(
+            "SELECT ServersId FROM settings WHERE GuildId=%s", (ctx.guild.id,)
+        )
+        # if list isn't empty and isn't None
+        if len(added_servers) > 0 and added_servers is not None:
+            # load added servers
+            added_servers = json.loads(added_servers[0][0])
+            # if server is already added
+            if id in added_servers:
+                # create
+                embed = discord.Embed(
+                    title="Server already added!", color=discord.Color.red()
+                )
+                # and send embed
+                await ctx.send(embed=embed)
+                return
+            # if not
+            else:
+                # update server list
+                updated_servers = added_servers + [id]
         else:
-            pass
-        pass
+            # create server list
+            updated_servers = [id]
+        # update settings
+        await makeAsyncRequest(
+            "UPDATE settings SET ServersId = %s WHERE GuildId=%s",
+            (json.dumps(updated_servers), ctx.guild.id),
+        )
+        # create
+        embed = discord.Embed(title="Done!", color=discord.Color.green())
+        # and send
+        await ctx.send(embed=embed)
 
     @server.command(brief="Get info about an ARK server")
     async def info(self, ctx) -> None:
@@ -142,12 +171,12 @@ class ServerCmd(commands.Cog):
         embed.add_field(name="Possible subcommands:", value="```add\ndelete\nlist```")
         await ctx.send(embed=embed)
 
-    @alias.command(brief="Add an alias for your ARK server")
-    async def add(self, ctx) -> None:
+    @alias.command(brief="Add an alias for your ARK server", name="add")
+    async def add_alias(self, ctx) -> None:
         await ctx.send("Sub sub command")
 
-    @alias.command(brief="Delete an alias for your ARK server")
-    async def delete(self, ctx) -> None:
+    @alias.command(brief="Delete an alias for your ARK server", name="delete")
+    async def delete_alias(self, ctx) -> None:
         await ctx.send("Sub sub command")
 
     @alias.command(brief="List aliases for your ARK servers")
