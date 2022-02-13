@@ -29,7 +29,7 @@ class ServerCmd(commands.Cog):
         # get list of players
         playersList = playersList.list
         # get alias for server
-        aliases = await getAlias(serverRecord[0], self.ctx.guild.id)
+        aliases = await getAlias(serverRecord[0], ctx.guild.id)
         # if we have no alias set name to original server name
         # else set it to the alias
         name = server.name if aliases == "" else aliases
@@ -44,7 +44,6 @@ class ServerCmd(commands.Cog):
         timeValue = ""
         # pick random color for embed
         color = randomColor()
-        print(playersList)
         # for each player in player list
         for player in playersList:
             # add it's name to value
@@ -67,15 +66,14 @@ class ServerCmd(commands.Cog):
         server.online = server.online if online else 0
         emb2 = discord.Embed(color=color, timestamp=time.utcnow())  # second embed
         emb2.set_footer(
-            text=f"Requested by {ctx.author.name} • Bot {self.cfg.version} • GPLv3 ",
+            text=f"Requested by {ctx.author.name} • Bot {self.cfg.version}",
             icon_url=ctx.author.display_avatar,
         )
         emb2.add_field(name="IP:", value=server.ip)
         emb2.add_field(name="Players:", value=f"{server.online}/{server.maxPlayers}")
         emb2.add_field(name="Map:", value=server.map)
         emb2.add_field(name="Ping:", value=f"{server.ping} ms.")
-        await ctx.send(embed=emb1)
-        await ctx.send(embed=emb2)
+        await ctx.send(embeds=[emb1, emb2])
 
     @commands.bot_has_permissions(
         add_reactions=True,
@@ -159,7 +157,18 @@ class ServerCmd(commands.Cog):
 
     @server.command(brief="Get info about an ARK server")
     async def info(self, ctx) -> None:
-        pass
+        selector = Selector(ctx, ctx.bot, c.Translation())
+        server = await selector.select()
+        if server == "":
+            return
+        # else get ip
+        ip = server.ip
+        # get server by ip
+        servers = await makeAsyncRequest("SELECT * FROM servers WHERE Ip=%s", (ip,))
+        # get first match
+        server = servers[0]
+        # send server info
+        await self.serverInfo(server, ctx)
 
     @server.command(brief="Delete an ARK server from your list")
     async def delete(self, ctx) -> None:

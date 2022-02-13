@@ -69,6 +69,7 @@ class ButtonHandler(discord.ui.Button):
                 await self.updateMessage()
         # we need to select server
         if str(self.emoji) == self.labels[2]:
+            self.view.selected = True
             # stop view and do cleanup
             await self.view.clear()
         # if we need to go to next server

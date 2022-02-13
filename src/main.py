@@ -31,7 +31,7 @@ debug = Debuger("main")  # create debuger (see helpers.py)
 conf = config.Config()  # load config
 # set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
 game = discord.Game("ping me to get prefix")
-intents = discord.Intents(messages=True, guilds=True)
+intents = discord.Intents(messages=True, guilds=True, reactions=True)
 # create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
     intents=intents,
