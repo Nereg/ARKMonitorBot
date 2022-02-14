@@ -1,4 +1,3 @@
-from os import name
 from cogs.utils.helpers import *
 import cogs.utils.classes as c
 from cogs.utils.menus import *
@@ -172,7 +171,67 @@ class ServerCmd(commands.Cog):
 
     @server.command(brief="Delete an ARK server from your list")
     async def delete(self, ctx) -> None:
-        pass
+        # create selector class
+        selector = Selector(ctx, ctx.bot, c.Translation())
+        # let the user select
+        server = await selector.select()
+        # if nothing was selected
+        if server == "":
+            # return
+            return
+        # else get ip
+        ip = server.ip
+        # get server id by ip
+        server_id = await makeAsyncRequest("SELECT Id FROM servers WHERE Ip=%s", (ip,))
+        server_id = server_id[0][0]
+        # get guild settings
+        settings = await makeAsyncRequest(
+            "SELECT ServersId FROM settings WHERE GuildId=%s", (ctx.guild.id,)
+        )
+        # load array of server id's
+        servers = json.loads(settings[0][0])
+        # remove server id from list
+        servers.remove(server_id)
+        # update record in DB
+        await makeAsyncRequest(
+            "UPDATE settings SET ServersId=%s WHERE GuildId=%s",
+            (
+                json.dumps(servers),
+                ctx.guild.id,
+            ),
+        )
+        # get guild notifications
+        notifications = await makeAsyncRequest(
+            "SELECT Id, ServersIds FROM notifications WHERE GuildId=%s", (ctx.guild.id,)
+        )
+        # for each notification
+        for notification in notifications:
+            # load servers ids
+            notif_servers = json.loads(notification[1])       
+            # if current server id is in list of servers
+            if server_id in notif_servers:
+                # remove it from list
+                notif_servers.remove(server_id)
+                # and update DB
+                await makeAsyncRequest(
+                    "UPDATE notifications SET ServersIds=%s WHERE Id=%s",
+                    (
+                        json.dumps(notif_servers),
+                        notification[0],
+                    ),
+                )
+        # delete all auto messages from DB with current guild id and server id
+        await makeAsyncRequest(
+            "DELETE FROM automessages WHERE ServerId = %s AND DiscordGuildId = %s",
+            (
+                server_id,
+                ctx.guild.id,
+            ),
+        )
+        # create embed
+        embed = discord.Embed(title="Done!", color=discord.Color.green())
+        # and send it
+        await ctx.send(embed=embed)
 
     @server.group(brief="Base command for server aliases")
     async def alias(self, ctx) -> None:
