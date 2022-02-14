@@ -43,7 +43,6 @@ class ServerCmd(commands.Cog):
         timeValue = ""
         # pick random color for embed
         color = randomColor()
-        print(playersList)
         # for each player in player list
         for player in playersList:
             # add it's name to value
@@ -51,7 +50,7 @@ class ServerCmd(commands.Cog):
             # and how much time it played
             timeValue += player.time + "\n"
         # if server is offline or there is no players on it
-        if not online or server.online == 0:
+        if not online or server.online == 0 or len(playersList) <= 0:
             # set defaults
             playersValue = "No one is on the server"
             timeValue = "\u200B"
@@ -73,8 +72,7 @@ class ServerCmd(commands.Cog):
         emb2.add_field(name="Players:", value=f"{server.online}/{server.maxPlayers}")
         emb2.add_field(name="Map:", value=server.map)
         emb2.add_field(name="Ping:", value=f"{server.ping} ms.")
-        await ctx.send(embed=emb1)
-        await ctx.send(embed=emb2)
+        await ctx.send(embeds=[emb1, emb2])
 
     @commands.bot_has_permissions(
         add_reactions=True,
