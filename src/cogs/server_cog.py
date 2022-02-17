@@ -125,7 +125,7 @@ class ServerCmd(commands.Cog):
             "SELECT ServersId FROM settings WHERE GuildId=%s", (ctx.guild.id,)
         )
         # if list isn't empty and isn't None
-        if len(added_servers) > 0 and added_servers is not None:
+        if len(added_servers) > 0:
             # load added servers
             added_servers = json.loads(added_servers[0][0])
             # if server is already added
@@ -207,7 +207,7 @@ class ServerCmd(commands.Cog):
         # for each notification
         for notification in notifications:
             # load servers ids
-            notif_servers = json.loads(notification[1])       
+            notif_servers = json.loads(notification[1])
             # if current server id is in list of servers
             if server_id in notif_servers:
                 # remove it from list
@@ -233,7 +233,11 @@ class ServerCmd(commands.Cog):
         # and send it
         await ctx.send(embed=embed)
 
-    @server.group(brief="Base command for server aliases")
+    @server.group(
+        brief="Base command for server aliases",
+        invoke_without_command=True,
+        case_insensitive=True,
+    )
     async def alias(self, ctx) -> None:
         embed = discord.Embed(title="No subcommand selected!")
         embed.add_field(name="Possible subcommands:", value="```add\ndelete\nlist```")
@@ -249,7 +253,53 @@ class ServerCmd(commands.Cog):
 
     @alias.command(brief="List aliases for your ARK servers")
     async def list(self, ctx) -> None:
-        await ctx.send("Sub sub command")
+        # get aliases from DB
+        aliases = await makeAsyncRequest(
+            "SELECT Aliases FROM settings WHERE GuildId = %s", (ctx.guild.id,)
+        )
+        # if we got something
+        if len(aliases) > 0:
+            # check if array isn't empty
+            if aliases[0][0] != "[]" and aliases[0][0] is not None:
+                # if not load the array
+                aliases_dec = json.loads(aliases[0][0])
+            # if array is empty
+            else:
+                # create
+                embed = discord.Embed(
+                    title="No aliases added!", color=discord.Color.green()
+                )
+                # and send embed
+                await ctx.send(embed=embed)
+                return
+        # if there is nothing
+        else:
+            # create
+            embed = discord.Embed(
+                title="No aliases added!", color=discord.Color.green()
+            )
+            # and send embed
+            await ctx.send(embed=embed)
+            return
+        # create base embed
+        embed = discord.Embed(title="Added aliases:")
+        embed.color = randomColor()
+        number = 1
+        # for each server id
+        for server_index in range(0, len(aliases_dec), 2):
+            # get server record from DB
+            server_record = await makeAsyncRequest(
+                "SELECT ServerObj FROM servers WHERE Id = %s", (aliases_dec[server_index],)
+            )
+            # and decode it
+            server_obj = c.ARKServer.fromJSON(server_record[0][0])
+            # get alias
+            alias = aliases_dec[server_index + 1]
+            # add field in embed
+            embed.add_field(
+                name=f"{number}. Alias for {server_obj.name}:", value=alias
+            )
+        await ctx.send(embed=embed)
 
     @commands.bot_has_permissions(
         add_reactions=True,
