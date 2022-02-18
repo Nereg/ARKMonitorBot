@@ -244,12 +244,81 @@ class ServerCmd(commands.Cog):
         await ctx.send(embed=embed)
 
     @alias.command(brief="Add an alias for your ARK server", name="add")
-    async def add_alias(self, ctx) -> None:
-        await ctx.send("Sub sub command")
+    async def add_alias(
+        self,
+        ctx,
+        alias: str = commands.Option(description="Alias to assign to a server"),
+    ) -> None:
+        # create selector
+        selector = Selector(ctx, ctx.bot, c.Translation())
+        # and present selector
+        server_obj = await selector.select()
+        # if nothing was selected
+        if server_obj == "":
+            # return
+            return
+        # else get ip
+        ip = server_obj.ip
+        # get server id by ip
+        server_id = await makeAsyncRequest("SELECT Id FROM servers WHERE Ip=%s", (ip,))
+        server_id = server_id[0][0]
+        # get guild aliases
+        aliases = await makeAsyncRequest(
+            "SELECT Aliases FROM settings WHERE GuildId=%s", (ctx.guild.id,)
+        )
+        # if we have some aliases
+        if aliases[0][0] != "[]" and aliases[0][0] is not None:
+            # load all aliases
+            aliases_dec = json.loads(aliases[0][0])
+            # if aliases for this server already exist
+            if server_id in aliases_dec:
+                # get index of the server in the list
+                server_index = aliases_dec.index(server_id)
+                # record old alias
+                old_alias = aliases_dec[server_index + 1]
+                # change existing alias
+                aliases_dec[server_index + 1] = alias
+                # create embed
+                embed = discord.Embed(title="Done!", color=discord.Color.green())
+                # add field
+                embed.add_field(
+                    name=f"Changed alias for `{server_obj.name}`",
+                    value=f"from `{old_alias}` to `{alias}`",
+                )
+            # if we need to add it
+            else:
+                # add server id
+                aliases_dec.append(server_id)
+                # add alias itself
+                aliases_dec.append(alias)
+                # create embed
+                embed = discord.Embed(title="Done!", color=discord.Color.green())
+                # add field
+                embed.add_field(
+                    name=f"Added alias for `{server_obj.name}`",
+                    value=f"New alias is `{alias}`",
+                )
+        # if we have no aliases
+        else:
+            # create alias record
+            aliases_dec = [server_id, alias]
+            # create embed
+            embed = discord.Embed(title="Done!", color=discord.Color.green())
+            # add field
+            embed.add_field(
+                name=f"Added alias for `{server_obj.name}`",
+                value=f"New alias is `{alias}`",
+            )
+        await ctx.send(aliases_dec)
+        await makeAsyncRequest(
+            "UPDATE settings SET Aliases=%s WHERE GuildId=%s",
+            (json.dumps(aliases_dec), ctx.guild.id),
+        )
+        await ctx.send(embed=embed)
 
     @alias.command(brief="Delete an alias for your ARK server", name="delete")
     async def delete_alias(self, ctx) -> None:
-        await ctx.send("Sub sub command")
+        pass
 
     @alias.command(brief="List aliases for your ARK servers")
     async def list(self, ctx) -> None:
@@ -289,16 +358,15 @@ class ServerCmd(commands.Cog):
         for server_index in range(0, len(aliases_dec), 2):
             # get server record from DB
             server_record = await makeAsyncRequest(
-                "SELECT ServerObj FROM servers WHERE Id = %s", (aliases_dec[server_index],)
+                "SELECT ServerObj FROM servers WHERE Id = %s",
+                (aliases_dec[server_index],),
             )
             # and decode it
             server_obj = c.ARKServer.fromJSON(server_record[0][0])
             # get alias
             alias = aliases_dec[server_index + 1]
             # add field in embed
-            embed.add_field(
-                name=f"{number}. Alias for {server_obj.name}:", value=alias
-            )
+            embed.add_field(name=f"{number}. Alias for {server_obj.name}:", value=alias)
         await ctx.send(embed=embed)
 
     @commands.bot_has_permissions(
