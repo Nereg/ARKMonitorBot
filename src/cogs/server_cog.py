@@ -309,7 +309,6 @@ class ServerCmd(commands.Cog):
                 name=f"Added alias for `{server_obj.name}`",
                 value=f"New alias is `{alias}`",
             )
-        await ctx.send(aliases_dec)
         await makeAsyncRequest(
             "UPDATE settings SET Aliases=%s WHERE GuildId=%s",
             (json.dumps(aliases_dec), ctx.guild.id),
@@ -318,7 +317,68 @@ class ServerCmd(commands.Cog):
 
     @alias.command(brief="Delete an alias for your ARK server", name="delete")
     async def delete_alias(self, ctx) -> None:
-        pass
+        # create selector
+        selector = Selector(ctx, ctx.bot, c.Translation())
+        # and present selector
+        server_obj = await selector.select()
+        # if nothing was selected
+        if server_obj == "":
+            # return
+            return
+        # else get ip
+        ip = server_obj.ip
+        # get server id by ip
+        server_id = await makeAsyncRequest("SELECT Id FROM servers WHERE Ip=%s", (ip,))
+        server_id = server_id[0][0]
+        # get guild aliases
+        aliases = await makeAsyncRequest(
+            "SELECT Aliases FROM settings WHERE GuildId=%s", (ctx.guild.id,)
+        )
+        # if we have some aliases
+        if aliases[0][0] != "[]" and aliases[0][0] is not None:
+            # load them
+            aliases_dec = json.loads(aliases[0][0])
+            # if we have alias for current server
+            if server_id in aliases_dec:
+                # get server index
+                server_index = aliases_dec.index(server_id)
+                # record old alias
+                old_alias = aliases_dec[server_index + 1]
+                # remove server id from records
+                aliases_dec.pop(server_index)
+                # now the alias itself is at server id position so remove it
+                aliases_dec.pop(server_index)
+                # update DB
+                await makeAsyncRequest(
+                    "UPDATE settings SET Aliases=%s WHERE GuildId=%s",
+                    (json.dumps(aliases_dec), ctx.guild.id),
+                )
+                # create embed
+                embed = discord.Embed(title="Done!", color=discord.Color.green())
+                # add field to it
+                embed.add_field(name=f"Removed alias `{old_alias}` for", value=f'`{server_obj.name}`')
+                # send it
+                await ctx.send(embed=embed)
+                return
+            # if we don't
+            else:
+                # create embed
+                embed = discord.Embed(
+                    title="You have no alias for this server!",
+                    color=discord.Color.red(),
+                )
+                # send it
+                await ctx.send(embed=embed)
+                return
+        else:
+            # create embed
+            embed = discord.Embed(
+                title="You have no alias for this server!",
+                color=discord.Color.red(),
+            )
+            # send it
+            await ctx.send(embed=embed)
+            return
 
     @alias.command(brief="List aliases for your ARK servers")
     async def list(self, ctx) -> None:
