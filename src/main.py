@@ -73,6 +73,10 @@ def setup():
         print(f"cogs.{cog}")
         bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
+    # load jishaku
+    bot.load_extension('jishaku')
+    # hide it's command 
+    bot.get_command("jsk").hidden = True
     print("Finished setup function")
 
 
