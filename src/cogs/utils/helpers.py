@@ -223,6 +223,10 @@ async def AddServer(ip, ctx):
     return Id[0][0]  # and return id of a new server
 
 
+def is_slash(ctx) -> bool:
+    '''Returns True if in slash context false otherwise'''
+    return ctx.interaction is not None
+
 async def get_prefix(bot, message):
     """
     returns prefix for a guild
@@ -238,7 +242,6 @@ async def get_prefix(bot, message):
         return conf.defaultPrefix  # return default prefix
     else:
         return data[0][2]  # return prefix of the guild
-
 
 async def getAlias(serverId, guildId, serverIp=""):
     if serverIp != "":

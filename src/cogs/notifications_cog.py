@@ -23,7 +23,7 @@ class NotificationsCog(commands.Cog):
         # get server from server record
         server = c.ARKServer.fromJSON(serverRecord[0][4])
         # get prefix for this guild
-        prefix = await get_prefix(self.bot, ctx.message)
+        prefix = ctx.prefix
         # construct error embed
         embed = discord.Embed()
         # set it's title

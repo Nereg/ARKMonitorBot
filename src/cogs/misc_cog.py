@@ -301,7 +301,7 @@ class MiscCommands(commands.Cog):
         )
         embed.add_field(
             name=":grey_exclamation: Current prefix",
-            value=f"{await get_prefix(1,ctx.message)}",
+            value=f"{ctx.prefix}",
             inline=True,
         )
         embed.add_field(
