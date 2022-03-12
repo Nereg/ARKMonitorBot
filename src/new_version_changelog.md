@@ -8,3 +8,7 @@ Changed the type of timeout error in ARK classes
 Removed `(unknown player)` TODO: remove them from player count too
 Formatted many documents using black
 Ipfix now doesn't require port 
+Removed command counter
+Changed the way how automessage command works
+Added missing parameter error handler
+Added subcommand examples for reworked commands

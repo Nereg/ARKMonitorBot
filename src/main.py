@@ -74,8 +74,8 @@ def setup():
         bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
     # load jishaku
-    bot.load_extension('jishaku')
-    # hide it's command 
+    bot.load_extension("jishaku")
+    # hide it's command
     bot.get_command("jsk").hidden = True
     print("Finished setup function")
 
@@ -189,38 +189,6 @@ async def help(ctx):
 # ~~~~~~~~~~~~~~~~~~~~~
 #        EVENTS
 # ~~~~~~~~~~~~~~~~~~~~~
-
-# used to count executed commands
-# doesn't work at all
-@bot.event
-async def on_command_completion(ctx):
-    name = ctx.command.name  # extract name of command
-    if (
-        name == "server"
-    ):  # if it is a server command (I am too lazy to chop the into subcommands or smth like that)
-        try:
-            command = ctx.args[2]  # get the "subcommand"
-        except IndexError:  # that happens if we write just //server
-            return
-        correctCommands = [
-            "add",
-            "info",
-            "delete",
-            "alias",
-        ]  # list of valid "subcommands"
-        if command not in correctCommands:  # if it isn't correct
-            return  # return
-        else:  # else
-            name += " " + command  # append name of "subcommand" to main name
-    # CREATE TABLE `bot`.`commandsused` ( `Id` INT NOT NULL AUTO_INCREMENT , `Name` VARCHAR(100) NOT NULL , `Uses` INT NOT NULL DEFAULT '0' , PRIMARY KEY (`Id`), UNIQUE `Id` (`Name`)) ENGINE = InnoDB;
-    # INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1 - SQL to update table (+1 to uses value) and insert if not in table
-    # update or insert record into DB
-    await makeAsyncRequest(
-        "INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1",
-        (name),
-    )
-    # see admin_cog.py for how this data is used
-
 
 # will respond for ping of the bot
 @bot.event
@@ -459,6 +427,16 @@ async def on_command_error(ctx, error):
         except discord.Forbidden:
             # return
             return
+    # if required parameter is missing
+    elif errorType == discord.ext.commands.errors.MissingRequiredArgument:
+        embed = discord.Embed(
+            title="Required parameter is missing!", color=discord.Color.red()
+        )
+        embed.add_field(
+            name=f"Parameter `{error.param.name}` is required!", value="\u200B"
+        )
+        await ctx.send(embed=embed)
+        return
     # debug
     # I really need some good logging system
     debug.debug("Entered error handler")

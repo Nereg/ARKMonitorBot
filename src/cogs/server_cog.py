@@ -90,12 +90,21 @@ class ServerCmd(commands.Cog):
     async def server(self, ctx):
         embed = discord.Embed(title="No subcommand selected!")
         embed.add_field(
-            name="Possible subcommands:", value="```add\ndelete\ninfo\nalias```"
+            name="Possible subcommands:", value="```\nadd\ndelete\ninfo\nalias```"
+        )
+        embed.add_field(
+            name="Example of `add` subcommand:", value=f"`{ctx.prefix}server add`"
         )
         await ctx.send(embed=embed)
 
     @server.command(brief="Add an ARK server to your list")
-    async def add(self, ctx, server_ip: str) -> None:
+    async def add(
+        self,
+        ctx,
+        server_ip: str = commands.Option(
+            description="IP:Port of a server you want to add"
+        ),
+    ) -> None:
         # if ip isn't correct
         if not IpCheck(server_ip):
             # crete embed
@@ -240,7 +249,10 @@ class ServerCmd(commands.Cog):
     )
     async def alias(self, ctx) -> None:
         embed = discord.Embed(title="No subcommand selected!")
-        embed.add_field(name="Possible subcommands:", value="```add\ndelete\nlist```")
+        embed.add_field(name="Possible subcommands:", value="```\nadd\ndelete\nlist```")
+        embed.add_field(
+            name="Example of `add` subcommand:", value=f"`{ctx.prefix}server alias add`"
+        )
         await ctx.send(embed=embed)
 
     @alias.command(brief="Add an alias for your ARK server", name="add")
