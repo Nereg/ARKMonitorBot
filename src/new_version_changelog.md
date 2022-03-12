@@ -12,3 +12,4 @@ Removed command counter
 Changed the way how automessage command works
 Added missing parameter error handler
 Added subcommand examples for reworked commands
+Improved prefix on mention detection

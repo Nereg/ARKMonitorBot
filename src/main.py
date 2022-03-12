@@ -203,9 +203,9 @@ async def on_message(msg):  # on every message
         except BaseException as e:  # catch error
             return
         return  # ignore it we have no way to notify the user anyway
-    # if content contains ping with id of our bot
+    # if content starts with ping with id of our bot
     # (first case is desktop ping and second is mobile ping)
-    if msg.content == f"<@!{bot.user.id}>" or msg.content == f"<@{bot.user.id}>":
+    if msg.content.startswith(f"<@!{bot.user.id}>") or msg.content.startswith(f"<@{bot.user.id}>"):
         try:
             # send message and return
             await msg.channel.send(
