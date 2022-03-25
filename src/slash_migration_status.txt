@@ -8,4 +8,4 @@ misc_cog.py - adapted and working
 dbl_cog.py - no commands
 charcoal_cog.py - disabled
 campfire_cog.py - disabled
- 
+automessage_cog.py - rewritten and working
