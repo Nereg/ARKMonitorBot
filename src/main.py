@@ -5,9 +5,6 @@ import config  # config
 import discord  # main discord libary
 from discord.ext import commands  # import commands extension
 
-# import commands as cmd  # import all our commands
-# from cogs.utils.menus import *  # menus like selector of servers
-
 # from server_cmd import *  # !server command
 import json  # json module
 import traceback  # traceback
@@ -43,7 +40,9 @@ bot = commands.AutoShardedBot(
     strip_after_prefix=True,
 )
 bot.cfg = conf
-bot.myCogs = []
+# key: guild id
+# value: how many times this guild seen deprecation warning
+bot.deprecation_warnings = {}
 debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
 
@@ -328,19 +327,29 @@ async def channelNotFound(ctx, error):
 
 @bot.check
 async def check_commands(ctx):
+    # 1661904000 - 31'th of August 2022 in unix timestamp
+    # https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Privileged-Intent-for-Verified-Bots
     if getattr(conf, "deprecation", True):
+        messages_left = bot.deprecation_warnings.get(ctx.guild.id,3)
+        if messages_left < 0:
+            return True
         embed = discord.Embed()
         embed.title = "Notice!"
         embed.colour = discord.Colour.red()
         embed.add_field(
-            name="Regular commands will stop working in <t:1634294539:R>!",
+            name="Regular commands will **stop** working on <t:1661904000:D> (<t:1661904000:R>)!",
             value="Instead there will be new slash commands.",
         )
         embed.add_field(
-            name="To check if you are ready for the change use `validateSlash` command.",
+            name=f"To check if you are ready for the change use `{ctx.prefix}validateSlash` command.",
             value="No data will be lost after the transition!",
         )
-        await ctx.send(embed=embed)
+        embed.set_footer(text=f"You will get {messages_left} more warnings today.")
+        try:
+            await ctx.send(embed=embed)
+        except:
+            return True
+        bot.deprecation_warnings[ctx.guild.id] = messages_left - 1
     return True
 
 

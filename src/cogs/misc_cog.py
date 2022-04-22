@@ -2,6 +2,7 @@ from cogs.utils.helpers import *  # all our helpers
 import cogs.utils.classes as c  # all our classes
 import discord  # main discord lib
 from discord.ext import commands
+from discord.ext import tasks
 import cogs.utils.menus as m
 
 # import /server command module (see server_cmd.py)
@@ -21,6 +22,12 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
+        # start warnings reset task
+        self.reset_warnings.start()
+
+    @tasks.loop(hours=24.0)
+    async def reset_warnings(self):
+        self.bot.deprecation_warnings = {}
 
     async def selectServersByIds(self, ids):
         # empty statement
@@ -332,4 +339,3 @@ class MiscCommands(commands.Cog):
 def setup(bot: commands.Bot) -> None:
     cog = MiscCommands(bot)
     bot.add_cog(cog)
-    bot.myCogs.append(cog)
