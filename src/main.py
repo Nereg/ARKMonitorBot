@@ -329,7 +329,7 @@ async def channelNotFound(ctx, error):
 async def check_commands(ctx):
     # 1661904000 - 31'th of August 2022 in unix timestamp
     # https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Privileged-Intent-for-Verified-Bots
-    if getattr(conf, "deprecation", True):
+    if getattr(conf, "deprecation", True) and not is_slash(ctx):
         messages_left = bot.deprecation_warnings.get(ctx.guild.id,3)
         if messages_left < 0:
             return True
