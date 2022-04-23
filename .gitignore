@@ -5,3 +5,4 @@ sql
 Lib
 temp
 pyvenv.cfg
+docker-compose.yaml
