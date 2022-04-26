@@ -114,6 +114,7 @@ class ServerCmd(commands.Cog):
             # and send it
             await ctx.send(embed=embed)
             return
+        
         # get any servers with such ip
         servers = await makeAsyncRequest(
             "SELECT Id FROM servers WHERE Ip=%s", (server_ip,)
@@ -129,12 +130,24 @@ class ServerCmd(commands.Cog):
             # if it wasn't added
             if id is None:
                 return
+        
         # get added servers from server settings
         added_servers = await makeAsyncRequest(
             "SELECT ServersId FROM settings WHERE GuildId=%s", (ctx.guild.id,)
         )
-        # if list isn't empty and isn't None
-        if len(added_servers) > 0:
+        await ctx.send(added_servers)
+        # if no record is found
+        if added_servers == ():
+            # create one
+            await makeAsyncRequest(
+                "INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)",
+                (
+                    ctx.guild.id,
+                    ctx.prefix,
+                ),
+            )
+        # if list isn't empty and record is found and it contains needed data
+        if len(added_servers) > 0 and added_servers != () and added_servers != ((None,),):
             # load added servers
             added_servers = json.loads(added_servers[0][0])
             # if server is already added
@@ -160,7 +173,7 @@ class ServerCmd(commands.Cog):
         )
         # create
         embed = discord.Embed(title="Done!", color=discord.Color.green())
-        # and send
+        # and send embed
         await ctx.send(embed=embed)
 
     @server.command(brief="Get info about an ARK server")
