@@ -135,7 +135,6 @@ class ServerCmd(commands.Cog):
         added_servers = await makeAsyncRequest(
             "SELECT ServersId FROM settings WHERE GuildId=%s", (ctx.guild.id,)
         )
-        await ctx.send(added_servers)
         # if no record is found
         if added_servers == ():
             # create one
