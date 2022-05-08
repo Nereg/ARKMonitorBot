@@ -18,7 +18,7 @@ class Slash(commands.Cog):
             self.httpSession = aiohttp.ClientSession()
 
     @commands.command(slash_command=False)
-    async def validateslash(self, ctx):
+    async def testslash(self, ctx):
         # get local slash commands
         resp = await self.httpSession.get(
             f"https://discord.com/api/v8/applications/{self.appId}/guilds/{ctx.guild.id}/commands",
@@ -38,11 +38,12 @@ class Slash(commands.Cog):
         elif resp.status == 403:
             # construct error with reinvite link
             embed = discord.Embed()
-            embed.title = "You need to re-invite the bot!"
+            embed.title = "You need to reinvite the bot!"
             embed.add_field(
-                name="Discord requires re-inviting for some older servers.",
-                value="You **should** re-invite the bot with [this](https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot%20applications.commands&permissions=1141189696) link!",
+                name="Discord requires reinviting for some older servers.",
+                value="You **should** reinvite the bot with [this](https://discord.com/oauth2/authorize?client_id=713272720053239808&scope=bot%20applications.commands&permissions=1141189696) link!",
             )
+            embed.set_footer(text="No data will be lost when you reinvite the bot!")
             embed.colour = discord.Colour.red()
         # something bad happened
         else:
@@ -52,19 +53,19 @@ class Slash(commands.Cog):
             embed.description = (
                 "Please retry in a few minutes. Report this issue if it persists"
             )
-            embed.colour = discord.Colour.green()
+            embed.colour = discord.Colour.red()
         # get permissions for current user
         perms = ctx.channel.permissions_for(ctx.author)
         # if the user can use slash commands
         if perms.use_slash_commands:
             embed2 = discord.Embed()
             embed2.title = "You can execute slash commands!"
-            embed2.description = "I've cheched your permissions and you can execute slash command in current channel."
+            embed2.description = "I've checked your permissions and you can execute slash command in current channel."
             embed2.colour = discord.Colour.green()
         else:
             embed2 = discord.Embed()
             embed2.title = "You **can't** execute slash commands!"
-            embed2.description = "I've cheched your permissions and you **can't** execute slash command in current channel. Please check your permissions. You should turn on [Use Application Commands](https://cdn.discordapp.com/attachments/801142940595912728/893528552505483364/unknown.png) permission."
+            embed2.description = "I've checked your permissions and you **can't** execute slash command in current channel. Please check your permissions. You should turn on [Use Application Commands](https://cdn.discordapp.com/attachments/801142940595912728/893528552505483364/unknown.png) permission."
             embed2.colour = discord.Colour.red()
         await ctx.send(embeds=[embed, embed2])
 
