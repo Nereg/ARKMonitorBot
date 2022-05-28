@@ -12,6 +12,7 @@ import concurrent.futures._base as base
 import socket
 import discord
 import time
+import discord.utils
 
 
 class ARKServerError(Exception):  # ARK server error

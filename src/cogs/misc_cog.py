@@ -2,6 +2,7 @@ from cogs.utils.helpers import *  # all our helpers
 import cogs.utils.classes as c  # all our classes
 import discord  # main discord lib
 from discord.ext import commands
+from discord.ext import tasks
 import cogs.utils.menus as m
 
 # import /server command module (see server_cmd.py)
@@ -21,11 +22,12 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
-        self.slashCommands = ["info"]
+        # start warnings reset task
+        self.reset_warnings.start()
 
-    async def slashHandler(self, interaction):
-        await self.slashInfo(interaction)
-        pass
+    @tasks.loop(hours=24.0)
+    async def reset_warnings(self):
+        self.bot.deprecation_warnings = {}
 
     async def selectServersByIds(self, ids):
         # empty statement
@@ -212,7 +214,7 @@ class MiscCommands(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
+    @commands.command(brief="List everything you can create in this bot")
     async def list(self, ctx):
         # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
         # IDEA maybe you can select what you are trying to list ? like :
@@ -225,12 +227,11 @@ class MiscCommands(commands.Cog):
         ]
         # run them concurrently
         embeds = await asyncio.gather(*coroutines)
-        # for each embed
-        for embed in embeds:
-            # if we have some embed
-            if embed != None:
-                # send it
-                await ctx.send(embed=embed)
+        # remove none's
+        embeds = list(filter(None, embeds))
+        # await ctx.send(embeds)
+        # send them
+        await ctx.send(embeds=embeds)
 
     @commands.bot_has_permissions(
         add_reactions=True,
@@ -239,7 +240,7 @@ class MiscCommands(commands.Cog):
         manage_messages=True,
         external_emojis=True,
     )
-    @commands.command()
+    @commands.command(brief="Get info about this bot")
     async def info(self, ctx):
         # get how many servers we have in DB
         count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
@@ -307,7 +308,7 @@ class MiscCommands(commands.Cog):
         )
         embed.add_field(
             name=":grey_exclamation: Current prefix",
-            value=f"{await get_prefix(1,ctx.message)}",
+            value=f"{ctx.prefix}",
             inline=True,
         )
         embed.add_field(
@@ -324,118 +325,17 @@ class MiscCommands(commands.Cog):
         embed.add_field(name="Message from creator", value=message)
         await ctx.send(embed=embed)
 
-    async def slashInfo(self, interaction):
-        # get how many servers we have in DB
-        count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
-        # get object to get time
-        time = datetime.datetime(2000, 1, 1, 0, 0, 0, 0)
-        # get total and used memory in the system
-        RAM = f"{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}"
-        # get bot's role
-        role = (
-            interaction.guild.me.top_role.mention
-            if interaction.guild.me.top_role != "@everyone"
-            else "No role"
-        )
-        # create embed
-        embed = discord.Embed(
-            title=f"Info about {self.bot.user.name}",
-            timestamp=time.utcnow(),
-            color=randomColor(),
-        )
-        # set footer
-        embed.set_footer(
-            text=f"Requested by {interaction.user.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ",
-            icon_url=interaction.user.display_avatar,
-        )
-        # create view
-        view = discord.ui.View()
-        # add buttons (yay)
-        view.add_item(
-            discord.ui.Button(
-                style=discord.ButtonStyle.link,
-                label="Our support guild",
-                emoji="<:Discord:739476979782254633>",
-                url="https://bit.ly/ARKDiscord",
-            )
-        )
-        view.add_item(
-            discord.ui.Button(
-                style=discord.ButtonStyle.link,
-                label="GitHub",
-                emoji="<:Github:739476979631521886>",
-                url="https://github.com/Nereg/ARKMonitorBot",
-            )
-        )
-        view.add_item(
-            discord.ui.Button(
-                style=discord.ButtonStyle.link,
-                label="Invite link",
-                emoji="<:Link:739476980004814898>",
-                url="https://bit.ly/ARKTop",
-            )
-        )
-        # add fields
-        embed.add_field(
-            name="<:DB:739476980075986976> Servers in database",
-            value=f"{count[0][0]}",
-            inline=True,
-        )
-        embed.add_field(name="<:RAM:739476925852155914> RAM", value=RAM, inline=True)
-        embed.add_field(
-            name="<:Bot:748958111456296961> Version",
-            value=self.cfg.version,
-            inline=True,
-        )
-        embed.add_field(
-            name=":ping_pong: Ping",
-            value=f"{int(self.bot.latency * 1000)} ms",
-            inline=True,
-        )
-        embed.add_field(
-            name="<:me:739473644874367007> Creator", value=f"Nereg#7006", inline=True
-        )
-        embed.add_field(
-            name="<:Discord:739476979782254633> Currently in",
-            value=f"{len(self.bot.guilds)} servers",
-            inline=True,
-        )
-        embed.add_field(
-            name="<:Role:739476980076118046> Role on this server",
-            value=role,
-            inline=True,
-        )
-        embed.add_field(
-            name=":grey_exclamation: Current prefix",
-            value=f"You are using slash commands!",
-            inline=True,
-        )
-        embed.add_field(
-            name="<:Cpu:739492057990693005> Current CPU utilization",
-            value=f"{round(statistics.mean(psutil.getloadavg()),1)}",
-            inline=True,
-        )
-        # guild 1 is special value
-        message = await makeAsyncRequest("SELECT * FROM settings WHERE GuildId=1")
-        if message.__len__() <= 0:
-            message = "No current message"
-        else:
-            message = message[0][4]
-        embed.add_field(name="Message from creator", value=message)
-        await interaction.response.send_message(embed=embed, view=view)
-
     @commands.bot_has_permissions(send_messages=True)
-    @commands.command()
-    async def ticketInfo(self, ctx):
+    @commands.command(brief="Get information to give to support team")
+    async def ticketinfo(self, ctx):
         text = ""
         text += f"Your guild id is: {ctx.guild.id}\n"
         permissions = ctx.channel.permissions_for(ctx.guild.me)
-        text += f"My current permissions in current channel are: {permissions.value}"
-        text += f"My current prefix is: {ctx.prefix}"
+        text += f"My current permissions in current channel are: {permissions.value}\n"
+        text += f"Is using slash commands?: {True if ctx.interaction is not None else False}"
         await ctx.send(discord.utils.escape_mentions(text))
 
 
 def setup(bot: commands.Bot) -> None:
     cog = MiscCommands(bot)
     bot.add_cog(cog)
-    bot.myCogs.append(cog)

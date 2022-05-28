@@ -3,6 +3,7 @@ services:
   db:
     image: mysql:8.0.19
     restart: always
+    command: --disable-log-bin --max-connections=100
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: bot
@@ -21,16 +22,15 @@ services:
       options:
         max-size: "50m"
     depends_on:
-      - "db"
-    volumes:
-      - ./temp:/app/temp
+      - "db"   
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.0.1
+    image: phpmyadmin
     restart: always
-    environment:
-      PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: secret
     ports:
       - "8080:80"
+    environment:
+      - PMA_HOST=db
+      - HIDE_PHP_VERSION=true
+    depends_on:
+      - "db"

@@ -82,24 +82,35 @@ def Debuger(name):
     return log_obj
 
 
-def IpCheck(Ip):
-    try:  # try just for fun
-        splitted = Ip.split(":")
-        if splitted.__len__() <= 1:  # if port is not present
+def IpCheck(Ip: str, checkPort: bool = True, delimiter: str = ":"):
+    """
+    Checks ip + port or just ip for validity 
+    """
+    splitted = Ip.split(delimiter)
+    if (
+        splitted.__len__() <= 1 and checkPort
+    ):  # if port is not present and we need to check port
+        return False  # fail
+    try:  # if
+        ipaddress.ip_address(splitted[0])  # extracted ip address
+    except ValueError:  # is not valid ip address
+        return False  # return false
+    # if we need to check port
+    if checkPort:
+        # extract port and convert to int
+        try:
+            port = int(splitted[1])
+        # if it isn't int
+        except ValueError:
+            # fail
             return False
-        try:  # if
-            ipaddress.ip_address(splitted[0])  # extracted ip address
-        except:  # is not valid ip address
-            return False  # return false
-        # exstract port and convert to int (if not int exeption is cathced)
-        port = int(splitted[1])
+        # test if this is a valid port
         if (
             port > 65535 or port <= 0
         ):  # http://stackoverflow.com/questions/113224/ddg#113228
             return False  # if port is not a valid port return false
-        return True  # if all if passed return true
-    except:
-        return False  # if any error return false
+    # if all passed
+    return True
 
 
 async def fixIp(ip: str):
@@ -147,8 +158,7 @@ async def AddServer(ip, ctx):
     Checks for common error and, if possible, fixes them or notifies user
     If successful returns id of added server else returns None
     """
-    debug = Debuger("AddServer")
-    await ctx.trigger_typing()
+    await ctx.defer()
     if IpCheck(ip) != True:  # check IP address
         if ">" in ip or "<" in ip:  # if we have < or > in string
             # tell the user that they aren't needed
@@ -164,13 +174,12 @@ async def AddServer(ip, ctx):
     try:  # else
         server = c.ARKServer(ip)  # construct our classes
         playersList = c.PlayersList(ip)
-        await playersList.AgetPlayersList()  # and get data
-        await server.AGetInfo()
+        players = playersList.AgetPlayersList()  # construct corotines
+        server_info = server.AGetInfo()
+        await asyncio.gather(*[players, server_info])
         if not server.isARK:  # if the server isn't an ARK server
             # send an error about it
-            await ctx.send(
-                f"This server is not ARK! Possible Steam AppId: {server.game_id}"
-            )
+            await ctx.send(f"This server is not ARK! Steam AppId: {server.game_id}")
             return  # and return
         # debug.debug(f"Server {ip} is up!") # and debug
     except Exception as e:  # if any exception
@@ -187,14 +196,14 @@ async def AddServer(ip, ctx):
                 if not server.isARK:  # if the server isn't an ARK server
                     # send an error about it
                     await ctx.send(
-                        f"This server is not ARK! Possible Steam AppId: {server.game_id}"
+                            f"This server is not ARK! Steam AppId: {server.game_id}"
                     )
                     return  # and return
                 ip = newIp  # I don't want to mess with the rest of the code
             except:  # if exeption
                 # send an error message
                 await ctx.send(
-                    f"Server `{discord.utils.escape_mentions(newIp)}` is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`"
+                        f"Server `{discord.utils.escape_mentions(ip)}` is offline! Tip: if you **certain** that server is up try `{ctx.prefix}ipfix`"
                 )
                 return
         else:
@@ -211,9 +220,12 @@ async def AddServer(ip, ctx):
     )
     # search it's id
     Id = await makeAsyncRequest("SELECT * FROM servers WHERE Ip=%s", (ip,))
-    debug.debug(f"added server : {ip} with id : {Id[0][0]}!")  # debug
     return Id[0][0]  # and return id of a new server
 
+
+def is_slash(ctx) -> bool:
+    '''Returns True if in slash context false otherwise'''
+    return ctx.interaction is not None
 
 async def get_prefix(bot, message):
     """
@@ -230,7 +242,6 @@ async def get_prefix(bot, message):
         return conf.defaultPrefix  # return default prefix
     else:
         return data[0][2]  # return prefix of the guild
-
 
 async def getAlias(serverId, guildId, serverIp=""):
     if serverIp != "":

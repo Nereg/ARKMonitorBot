@@ -301,7 +301,7 @@ class AutoMessageCog(commands.Cog):
 
     async def checkPermissions(self, channel, ctx):
         # return True
-        # get our bot memeber in current guild
+        # get our bot member in current guild
         botMember = ctx.guild.me
         # get permissions
         perms = channel.permissions_for(botMember)
@@ -318,41 +318,27 @@ class AutoMessageCog(commands.Cog):
             # return false
             return False
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
+    @commands.group(
+        invoke_without_command=True,
+        case_insensitive=True,
+        brief="Base command for auto messages of the bot",
     )
-    @commands.command()
-    async def automessage(self, ctx, *agrs):
-        # construct converter
-        channel_converter = discord.ext.commands.TextChannelConverter()
-        try:
-            # try to convert first arg
-            channel = await channel_converter.convert(ctx, agrs[0])
-        # if we can't
-        except discord.ext.commands.BadArgument as e:
-            # and we don't need to delete server
-            if agrs[0] != "delete":
-                # re-raise
-                # error handle will handle this
-                raise e
-            # if we need to delete server
-            else:
-                await self.deleteAutoMessage(ctx)
-                return
-        # we need to list all servers
-        except IndexError:
-            # select all auto messages for this server
-            messages = await makeAsyncRequest(
-                "SELECT * FROM automessages WHERE DiscordGuildId=%s", (ctx.guild.id,)
-            )
-            # and list them
-            await self.listMessages(ctx, messages)
-            return
-        # we need to add record in db
+    async def automessage(self, ctx):
+        embed = discord.Embed(title="No subcommand selected!")
+        embed.add_field(name="Possible subcommands:", value="```\nadd\ndelete\nlist```")
+        embed.add_field(
+            name="Example of `add` subcommand:", value=f"`{ctx.prefix}automessage add`"
+        )
+        await ctx.send(embed=embed)
+
+    @automessage.command(brief="A command to create an automessage")
+    async def add(
+        self,
+        ctx,
+        channel: discord.TextChannel = commands.Option(
+            description="Channel where to send the automessage"
+        ),
+    ):
         # check perms
         if not await self.checkPermissions(channel, ctx):
             # if failed return
@@ -361,36 +347,39 @@ class AutoMessageCog(commands.Cog):
         # create selector
         selector = m.Selector(ctx, self.bot, c.Translation())
         # present selector
-        serverIp = await selector.select()
+        server_obj = await selector.select()
         # if nothing was selected
-        if serverIp == "":
+        if server_obj == "":
             # return
             return
         # select server record by ip returned by selector
         server = await makeAsyncRequest(
-            "SELECT * FROM servers WHERE Ip=%s", (serverIp.ip,)
+            "SELECT * FROM servers WHERE Ip=%s", (server_obj.ip,)
         )
         # select all automessage records for current ARK server
         automessages = await makeAsyncRequest(
             "SELECT * FROM automessages WHERE ServerId = %s", (server[0][0])
         )
-        # if we have some record
+        # if we have some records
         if automessages.__len__() >= 1:
-            # and it is for the same channel
-            if automessages[0][1] == channel.id:
-                # notify user about it
-                await self.alreadyHave(ctx, server[0], automessages[0])
-                return
+            # for each record
+            for automessage in automessages:
+                # check if it is for current channel
+                if automessage[1] == channel.id:
+                    # if so then notify user about it
+                    await self.alreadyHave(ctx, server[0], automessages[0])
+                    # and return
+                    return
         # else
         try:
             # try to send message
             message = await channel.send(
-                embed=await self.makeMessage(0, channel.guild.id, serverIp.ip)
+                embed=await self.makeMessage(0, channel.guild.id, server_obj.ip)
             )
         # if we can't
         except discord.Forbidden:
             # notify user
-            await ctx.send("Cannot send message to selected channel!")
+            await ctx.send("Failed to send message to selected channel!")
             return
         # else
         # make new record
@@ -405,6 +394,113 @@ class AutoMessageCog(commands.Cog):
         )
         # and notify user
         await self.done(ctx, server[0], message.id, channel)
+
+    @automessage.command(brief="A command list all automessages with links to them")
+    async def list(
+        self,
+        ctx,
+    ):
+        # select all auto messages for this server
+        messages = await makeAsyncRequest(
+            "SELECT * FROM automessages WHERE DiscordGuildId=%s", (ctx.guild.id,)
+        )
+        # and list them
+        await self.listMessages(ctx, messages)
+
+    @automessage.command(brief="A command to delete an automessage")
+    async def delete(
+        self,
+        ctx,
+    ):
+        await self.deleteAutoMessage(ctx)
+
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True,
+    # )
+    # @commands.command()
+    # async def old_automessage(self, ctx, *agrs):
+    #     # construct converter
+    #     channel_converter = discord.ext.commands.TextChannelConverter()
+    #     try:
+    #         # try to convert first arg
+    #         channel = await channel_converter.convert(ctx, agrs[0])
+    #     # if we can't
+    #     except discord.ext.commands.BadArgument as e:
+    #         # and we don't need to delete server
+    #         if agrs[0] != "delete":
+    #             # re-raise
+    #             # error handle will handle this
+    #             raise e
+    #         # if we need to delete server
+    #         else:
+    #             await self.deleteAutoMessage(ctx)
+    #             return
+    #     # we need to list all servers
+    #     except IndexError:
+    #         # select all auto messages for this server
+    #         messages = await makeAsyncRequest(
+    #             "SELECT * FROM automessages WHERE DiscordGuildId=%s", (ctx.guild.id,)
+    #         )
+    #         # and list them
+    #         await self.listMessages(ctx, messages)
+    #         return
+    #     # we need to add record in db
+    #     # check perms
+    #     if not await self.checkPermissions(channel, ctx):
+    #         # if failed return
+    #         # function handled error message
+    #         return
+    #     # create selector
+    #     selector = m.Selector(ctx, self.bot, c.Translation())
+    #     # present selector
+    #     serverIp = await selector.select()
+    #     # if nothing was selected
+    #     if serverIp == "":
+    #         # return
+    #         return
+    #     # select server record by ip returned by selector
+    #     server = await makeAsyncRequest(
+    #         "SELECT * FROM servers WHERE Ip=%s", (serverIp.ip,)
+    #     )
+    #     # select all automessage records for current ARK server
+    #     automessages = await makeAsyncRequest(
+    #         "SELECT * FROM automessages WHERE ServerId = %s", (server[0][0])
+    #     )
+    #     # if we have some record
+    #     if automessages.__len__() >= 1:
+    #         # and it is for the same channel
+    #         if automessages[0][1] == channel.id:
+    #             # notify user about it
+    #             await self.alreadyHave(ctx, server[0], automessages[0])
+    #             return
+    #     # else
+    #     try:
+    #         # try to send message
+    #         message = await channel.send(
+    #             embed=await self.makeMessage(0, channel.guild.id, serverIp.ip)
+    #         )
+    #     # if we can't
+    #     except discord.Forbidden:
+    #         # notify user
+    #         await ctx.send("Cannot send message to selected channel!")
+    #         return
+    #     # else
+    #     # make new record
+    #     await makeAsyncRequest(
+    #         "INSERT INTO automessages (`DiscordChannelId`, `DiscordMsgId`, `ServerId`, `DiscordGuildId`) VALUES (%s,%s,%s,%s)",
+    #         (
+    #             channel.id,
+    #             message.id,
+    #             server[0][0],
+    #             ctx.guild.id,
+    #         ),
+    #     )
+    #     # and notify user
+    #     await self.done(ctx, server[0], message.id, channel)
 
 
 def setup(bot: commands.Bot) -> None:

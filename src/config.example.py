@@ -10,7 +10,7 @@ class Config:
         self.DBLToken = ''  # API token for https://top.gg
         self.inviteUrl = 'https://cutt.ly/ARKBot'  # invite URL to use in bot
         self.debug = True  # if output debug messages
-        self.client_id = 12131313  # client id of the bot
+        self.app_id = 713272720053239808  # app id of the bot
         self.client_secret = '12131'  # client secret from discord's oauth page
         self.redirect_url = ''  # redirect url to log all users
         self.version = 'DEBUG!'  # version displayed

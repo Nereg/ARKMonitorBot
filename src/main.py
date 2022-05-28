@@ -1,9 +1,11 @@
-import cogs.utils.classes as c  # our classes
+# from charcoal import Charcoal
+# import cogs.utils.classes as c  # our classes
 from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord library
 from discord.ext import commands  # import commands extension
-from cogs.utils.menus import *  # menus like selector of servers
+
+# from server_cmd import *  # !server command
 import json  # json module
 import traceback  # traceback
 import time  # time
@@ -21,13 +23,22 @@ debug = Debuger("main")  # create debugger (see helpers.py)
 conf = config.Config()  # load config
 # set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
 game = discord.Game("ping me to get prefix")
+intents = discord.Intents(messages=True, guilds=True, reactions=True)
 # create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
-    command_prefix=get_prefix, help_command=None, activity=game
+    intents=intents,
+    command_prefix=get_prefix,
+    help_command=None,
+    activity=game,
+    slash_commands=True,
+    slash_command_guilds=[349178138258833418],
+    strip_after_prefix=True,
 )
 bot.cfg = conf
-bot.myCogs = []
-debug.debug("Initted DB and Bot!")  # debug into console !
+# key: guild id
+# value: how many times this guild seen deprecation warning
+bot.deprecation_warnings = {}
+debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
 
 # if conf.debug is True asyncio will output additional debug info into logs
@@ -43,7 +54,11 @@ def setup():
         print(f"cogs.{cog}")
         bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
-    print("Finished loading cogs")
+    # load jishaku
+    bot.load_extension("jishaku")
+    # hide it's command
+    bot.get_command("jsk").hidden = True
+    print("Finished setup function")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -59,9 +74,9 @@ def setup():
     manage_messages=True,
     external_emojis=True,
 )
-@bot.command()
-async def prefix(ctx, *args):
-    if args.__len__() <= 0:  # if no additional parameters
+@bot.command(brief="Change prefix lol", slash_command=False)
+async def prefix(ctx, prefix: str = commands.Option(None, description="Prefix")):
+    if not prefix:  # if no prefix
         # send current prefix and return
         await ctx.send(t.l["curr_prefix"].format(ctx.prefix))
         return
@@ -71,9 +86,7 @@ async def prefix(ctx, *args):
         # set needed permissions (manage roles)
         needed_perms = discord.Permissions(manage_roles=True)
         if needed_perms <= permissions:  # check permissions
-            # if check successes
-            # get new prefix from params
-            prefix = args[0]
+            # if check successed
             # if @ in prefix
             if "@" in prefix:
                 # send error message
@@ -113,7 +126,7 @@ async def prefix(ctx, *args):
 
 
 # main help command
-@bot.command()
+@bot.command(brief="Need help with the bot? This is the right command!")
 async def help(ctx):
     time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
     # set title and timestamp of embed
@@ -123,7 +136,7 @@ async def help(ctx):
     # set footer for embed
     message.set_footer(
         text=f"Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ",
-        icon_url=ctx.author.display_avatar,
+        icon_url=ctx.author.avatar.url,
     )
     # define value for Server section
     serverValue = f"""**`{prefix}server info`- View info about added server
@@ -154,47 +167,9 @@ async def help(ctx):
     await ctx.send(embed=message)  
 
 
-# some old command
-@bot.command()
-async def share(ctx):
-    await ctx.send(t.l["share_msg"].format(conf.inviteUrl))
-
-
 # ~~~~~~~~~~~~~~~~~~~~~
 #        EVENTS
 # ~~~~~~~~~~~~~~~~~~~~~
-
-# used to count executed commands
-# doesn't work at all
-@bot.event
-async def on_command_completion(ctx):
-    name = ctx.command.name  # extract name of command
-    if (
-        name == "server"
-    ):  # if it is a server command (I am too lazy to chop the into subcommands or smth like that)
-        try:
-            command = ctx.args[2]  # get the "subcommand"
-        except IndexError:  # that happens if we write just //server
-            return
-        correctCommands = [
-            "add",
-            "info",
-            "delete",
-            "alias",
-        ]  # list of valid "subcommands"
-        if command not in correctCommands:  # if it isn't correct
-            return  # return
-        else:  # else
-            name += " " + command  # append name of "subcommand" to main name
-    # CREATE TABLE `bot`.`commandsused` ( `Id` INT NOT NULL AUTO_INCREMENT , `Name` VARCHAR(100) NOT NULL , `Uses` INT NOT NULL DEFAULT '0' , PRIMARY KEY (`Id`), UNIQUE `Id` (`Name`)) ENGINE = InnoDB;
-    # INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1 - SQL to update table (+1 to uses value) and insert if not in table
-    # update or insert record into DB
-    await makeAsyncRequest(
-        "INSERT INTO commandsused (Name) VALUES (%s) ON DUPLICATE KEY UPDATE Uses=Uses+1",
-        (name),
-    )
-    # see admin_cog.py for how this data is used
-
 
 # will respond for ping of the bot
 @bot.event
@@ -210,9 +185,9 @@ async def on_message(msg):  # on every message
         except BaseException as e:  # catch error
             return
         return  # ignore it we have no way to notify the user anyway
-    # if content contains ping with id of our bot
+    # if content starts with ping with id of our bot
     # (first case is desktop ping and second is mobile ping)
-    if msg.content == f"<@!{bot.user.id}>" or msg.content == f"<@{bot.user.id}>":
+    if msg.content.startswith(f"<@!{bot.user.id}>") or msg.content.startswith(f"<@{bot.user.id}>"):
         try:
             # send message and return
             await msg.channel.send(
@@ -333,19 +308,29 @@ async def channelNotFound(ctx, error):
 
 @bot.check
 async def check_commands(ctx):
-    if getattr(conf, "deprecation", True):
+    # 1661904000 - 31'th of August 2022 in unix timestamp
+    # https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Privileged-Intent-for-Verified-Bots
+    if getattr(conf, "deprecation", True) and not is_slash(ctx):
+        messages_left = bot.deprecation_warnings.get(ctx.guild.id,3)
+        if messages_left < 0:
+            return True
         embed = discord.Embed()
         embed.title = "Notice!"
         embed.colour = discord.Colour.red()
         embed.add_field(
-            name="Regular commands will stop working in <t:1634294539:R>!",
+            name="Regular commands will **stop** working on <t:1661904000:D> (<t:1661904000:R>)!",
             value="Instead there will be new slash commands.",
         )
         embed.add_field(
-            name="To check if you are ready for the change use `validateSlash` command.",
+            name=f"To check if you are ready for the change use `{ctx.prefix}validateSlash` command.",
             value="No data will be lost after the transition!",
         )
-        await ctx.send(embed=embed)
+        embed.set_footer(text=f"You will get {messages_left} more warnings today.")
+        try:
+            await ctx.send(embed=embed)
+        except:
+            return True
+        bot.deprecation_warnings[ctx.guild.id] = messages_left - 1
     return True
 
 
@@ -432,6 +417,16 @@ async def on_command_error(ctx, error):
         except discord.Forbidden:
             # return
             return
+    # if required parameter is missing
+    elif errorType == discord.ext.commands.errors.MissingRequiredArgument:
+        embed = discord.Embed(
+            title="Required parameter is missing!", color=discord.Color.red()
+        )
+        embed.add_field(
+            name=f"Parameter `{error.param.name}` is required!", value="\u200B"
+        )
+        await ctx.send(embed=embed)
+        return
     # debug
     # I really need some good logging system
     debug.debug("Entered error handler")
