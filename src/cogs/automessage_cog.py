@@ -9,7 +9,6 @@ class AutoMessageCog(commands.Cog):
         self.bot = bot
 
     async def done(self, ctx, serverRecord, msgId, channel):
-        print(serverRecord)
         # make link to that message
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{channel.id}/{msgId}"
         # construct server object
@@ -135,24 +134,29 @@ class AutoMessageCog(commands.Cog):
             return
         # if we have some records
         else:
-            # create embed
-            embed = discord.Embed(title="Delete that message?")
             # create server object from server record
             serverObj = c.ARKServer.fromJSON(server[4])
             # get alias (if any)
             alias = await getAlias(server[0], ctx.guild.id)
             # set name to alias if we have one
-            # else set it ti name of the server
+            # else set it to name of the server
             name = await stripVersion(serverObj) if alias == "" else alias
-            # make link to discord message
-            link = f"https://discordapp.com/channels/{ctx.guild.id}/{messages[0][1]}/{messages[0][2]}"
-            # make channel mention
-            channelMention = f"<#{messages[0][1]}>"
-            # add info about message
-            embed.add_field(
-                name=f"For server {name}",
-                value=f"[Message]({link}) in {channelMention}",
-            )
+            # create embed
+            embed = discord.Embed(title=f"Delete all messages for `{name}`?")
+            i = 1
+            # for each message
+            for message in messages:
+                # make link to discord message
+                link = f"https://discordapp.com/channels/{ctx.guild.id}/{message[1]}/{message[2]}"
+                # make channel mention
+                channelMention = f"<#{message[1]}>"
+                # add info about message
+                embed.add_field(
+                    name=f"Message №{i}",
+                    value=f"[Message]({link}) in {channelMention}",
+                )
+                # increase i
+                i += 1
             # send embed
             msg = await ctx.send(embed=embed)
             # workaround
@@ -252,7 +256,7 @@ class AutoMessageCog(commands.Cog):
         status = (
             ":green_circle: Online" if server[0][6] == 1 else ":red_circle: Offline"
         )
-        # add other info about servesr
+        # add other info about server
         embed.add_field(name="Status", value=status, inline=False)
         embed.add_field(name="Ping", value=f"{serverObj.ping} ms", inline=True)
         embed.add_field(name="Map", value=serverObj.map, inline=True)

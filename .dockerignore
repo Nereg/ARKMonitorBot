@@ -4,3 +4,5 @@ Scripts
 logos
 emojis
 .vscode
+.git
+__pycache__

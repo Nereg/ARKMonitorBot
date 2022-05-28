@@ -323,7 +323,7 @@ async def sendToMe(text, bot, ping=False):
 
 async def deleteServer(serverIp, Id=-1):
     """
-    Delets server from DB by it's ip
+    Deletes server from DB by it's ip
     Parameters:
     serverIp - str - server's ip
     Id - int - server's id (optional Ip is ignored if supplied)
