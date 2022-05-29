@@ -1,9 +1,8 @@
-./Lib
-./Scripts
 pyvenv.cfg
-./src/__pycache__
-__pycache__
-./sql
 Lib
 Scripts
-./src/steam
+logos
+emojis
+.vscode
+.git
+__pycache__

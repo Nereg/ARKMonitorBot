@@ -1,0 +1,12 @@
+{
+    "python.formatting.provider": "black",
+    "cSpell.words": [
+        "ainfo",
+        "aplayers",
+        "dblpy",
+        "notifRecords",
+        "SESSIONISPVE_i",
+        "sharded",
+        "unwatch"
+    ]
+}

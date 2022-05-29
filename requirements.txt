@@ -1,19 +1,25 @@
 aiodns==2.0.0
-aiohttp==3.6.*
-aiomysql==0.0.20
+aiohttp==3.6.3
+aiomysql==0.0.21
 APScheduler==3.6.3
 arrow==0.15.6
+astunparse==1.6.3
 async-timeout==3.0.1
 attrs==19.3.0
+braceexpand==0.1.7
 certifi==2020.4.5.1
 cffi==1.14.3
 chardet==3.0.4
+click==8.0.4
 cryptography==3.3.2
 dblpy==0.4.0
 deepdiff==5.0.2
-discord.py==1.7.3
+discord.py @ git+https://github.com/iDevision/enhanced-discord.py@925539d3eb4913492bdb4afd12776d8679fa645e
+emoji-country-flag==1.2.4
 idna==2.9
+import-expression==1.1.4
 importlib-metadata==1.0.0
+jishaku==2.3.2
 jsonpickle==1.4.1
 multidict==4.7.6
 mysql-connector-python==8.0.20
@@ -24,9 +30,7 @@ psutil==5.7.2
 pycares==3.1.1
 pycparser==2.20
 PyMySQL==0.9.2
-# my fork of python-a2s with more debug
--e git+https://github.com/Nereg/python-a2s.git@f16f34c07d246ad7a1c6f0ced9dc6a593abed1ee#egg=python-a2s
-#python-a2s==1.3
+-e git+https://github.com/Nereg/python-a2s.git@f16f34c07d246ad7a1c6f0ced9dc6a593abed1ee#egg=python_a2s
 python-dateutil==2.8.1
 pytz==2020.1
 ratelimiter==1.2.0.post0
@@ -38,4 +42,3 @@ urllib3==1.25.9
 websockets==10.0
 yarl==1.4.2
 zipp==3.1.0
-emoji-country-flag==1.2.4

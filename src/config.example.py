@@ -10,7 +10,7 @@ class Config:
         self.DBLToken = ''  # API token for https://top.gg
         self.inviteUrl = 'https://cutt.ly/ARKBot'  # invite URL to use in bot
         self.debug = True  # if output debug messages
-        self.client_id = 12131313  # client id of the bot
+        self.app_id = 713272720053239808  # app id of the bot
         self.client_secret = '12131'  # client secret from discord's oauth page
         self.redirect_url = ''  # redirect url to log all users
         self.version = 'DEBUG!'  # version displayed
@@ -19,3 +19,4 @@ class Config:
         self.backupWebhookUrl = ''  # discord webhook url to use in backup script
         self.logsGuildId = 349178138258833418 # id of a guild where bot will send it's logs
         self.logsChannelId = 874715094645346395 # id of a channel where bot will send it's logs
+        self.deprecation = False # set to True to display deprecation warning on every command

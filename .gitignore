@@ -5,5 +5,4 @@ sql
 Lib
 temp
 pyvenv.cfg
-# sorry )
-src/steam/
+docker-compose.yaml
