@@ -106,7 +106,7 @@ class NotificationsPlugin:
             else:
                 return ServerStatus.SERVER_WAS_UP
 
-    async def makeEmbed(self, status, updateResult):
+    async def makeEmbed(self, status, updateResult, channel):
         """Creates notification embed"""
         #embed = discord.Embed(title="test")
         #return
@@ -114,10 +114,12 @@ class NotificationsPlugin:
         # else set it to reason whe update failed
         # reason = "Went up" if updateResult.reason == None else updateResult.reason.reason
         # if server went down
+        alias = await getAlias(updateResult.Id, channel.guild.id)
+        name = alias if alias != "" else await stripVersion(updateResult.cachedServer)
         if status == ServerStatus.SERVER_WENT_DOWN:
             # create embed
             embed = discord.Embed(
-                title=f"Server {await stripVersion(updateResult.cachedServer)} went down!",
+                title=f"Server {name} went down!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.red(),
             )
@@ -125,7 +127,7 @@ class NotificationsPlugin:
         else:
             # create embed
             embed = discord.Embed(
-                title=f"Server {await stripVersion(updateResult.cachedServer)} went up!",
+                title=f"Server {name} went up!",
                 timestamp=self.time.utcnow(),
                 color=discord.Colour.green(),
             )
@@ -177,7 +179,7 @@ class NotificationsPlugin:
                         #await sendToMe(
                         #    f"Sending message to {channel}", self.updater.bot
                         #)
-                        embed = await self.makeEmbed(status, updateResult)
+                        embed = await self.makeEmbed(status, updateResult, channel)
                         #embed = discord.Embed(title="test")
                         #await sendToMe(
                         #    f"Sending message {embed}", self.updater.bot
