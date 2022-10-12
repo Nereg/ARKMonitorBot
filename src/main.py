@@ -22,7 +22,7 @@ from pathlib import Path
 debug = Debuger("main")  # create debugger (see helpers.py)
 conf = config.Config()  # load config
 # set custom status for bot (sadly it isn't possible to put buttons like in user's profiles)
-game = discord.Game("ping me to get prefix")
+game = discord.Game("slash commands! Ping me to learn more")
 intents = discord.Intents(messages=True, guilds=True, reactions=True)
 # create auto sharded bot with default prefix and no help command
 bot = commands.AutoShardedBot(
@@ -161,10 +161,11 @@ async def help(ctx):
     # define misc sections value
     miscValue = f"**`{prefix}info`- Get info about this bot (e.g. support server, GitHub etc.)**"
     # add misc section to the embed
-    message.add_field(name=f'**Miscellaneous Commands:**', value=miscValue,
-                      inline=False)
-    # and send it  
-    await ctx.send(embed=message)  
+    message.add_field(
+        name=f"**Miscellaneous Commands:**", value=miscValue, inline=False
+    )
+    # and send it
+    await ctx.send(embed=message)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -180,19 +181,24 @@ async def on_message(msg):  # on every message
             # send error message
 
             await msg.channel.send(
-                "Sorry you can't use this bot in DMs! You can add me to some server by this link: https://bit.ly/ARKTop"
+                "Sorry you can't use this bot in DMs! You can add me to a server by this link: https://bit.ly/ARKTop"
             )
         except BaseException as e:  # catch error
             return
         return  # ignore it we have no way to notify the user anyway
     # if content starts with ping with id of our bot
     # (first case is desktop ping and second is mobile ping)
-    if msg.content.startswith(f"<@!{bot.user.id}>") or msg.content.startswith(f"<@{bot.user.id}>"):
+    if msg.content.startswith(f"<@!{bot.user.id}>") or msg.content.startswith(
+        f"<@{bot.user.id}>"
+    ):
         try:
-            # send message and return
-            await msg.channel.send(
-                t.l["curr_prefix"].format(await get_prefix(bot, msg))
+            embed = discord.Embed(title="Slash commands!", color=randomColor())
+            embed.add_field(
+                name="This bot now supports only slash commands!",
+                value="If you don't know how to use them just assume the the prefix now is `/` and find the bot there!",
             )
+            # send message and return
+            await msg.channel.send(embed=embed)
             return
         except discord.errors.Forbidden:  # it was spaming me in DM's lol
             return
@@ -285,7 +291,7 @@ async def insufficientPerms(ctx, perms):
     # paint it red
     embed.color = discord.Colour.red()
     # add title
-    embed.title = 'I am missing some permissions in this channel!'
+    embed.title = "I am missing some permissions in this channel!"
     # add info
     embed.add_field(name="I need:", value=f"```{joined}```")
     # send embed
@@ -298,11 +304,13 @@ async def channelNotFound(ctx, error):
     # paint it red
     embed.color = discord.Colour.red()
     # add title
-    embed.title = 'That channel could not be found!'
+    embed.title = "That channel could not be found!"
     # add info
-    embed.add_field(name=f"Channel with id `{error.argument[2:-1]}` isn't found!",
-                    value="Maybe you copied this channel from another server? ")
-    # send embed 
+    embed.add_field(
+        name=f"Channel with id `{error.argument[2:-1]}` isn't found!",
+        value="Maybe you copied this channel from another server? ",
+    )
+    # send embed
     await ctx.send(embed=embed)
 
 
@@ -311,7 +319,7 @@ async def check_commands(ctx):
     # 1661904000 - 31'th of August 2022 in unix timestamp
     # https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Privileged-Intent-for-Verified-Bots
     if getattr(conf, "deprecation", True) and not is_slash(ctx):
-        messages_left = bot.deprecation_warnings.get(ctx.guild.id,3)
+        messages_left = bot.deprecation_warnings.get(ctx.guild.id, 3)
         if messages_left < 0:
             return True
         embed = discord.Embed()
