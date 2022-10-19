@@ -13,7 +13,7 @@ from datetime import datetime
 from discord import permissions
 from discord.ext.commands import has_permissions, CheckFailure
 from pathlib import Path
-
+from typing import Optional
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -41,23 +41,20 @@ bot.deprecation_warnings = {}
 debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
 
-# if conf.debug is True asyncio will output additional debug info into logs
-bot.loop.set_debug(conf.debug)
-
 # setup function
-def setup():
+async def setup():
     print("Started loading cogs")
     # search for cogs
     cogs = [p.stem for p in Path(".").glob("./src/cogs/*.py")]
     print(cogs)
     for cog in cogs:
         print(f"cogs.{cog}")
-        bot.load_extension(f"cogs.{cog}")
+        await bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
     # load jishaku
-    bot.load_extension("jishaku")
+    #bot.load_extension("jishaku")
     # hide it's command
-    bot.get_command("jsk").hidden = True
+    #bot.get_command("jsk").hidden = True
     print("Finished setup function")
 
 
@@ -65,68 +62,8 @@ def setup():
 #       COMMANDS
 # ~~~~~~~~~~~~~~~~~~~~~
 
-# !prefix command
-# default permissions check
-@commands.bot_has_permissions(
-    add_reactions=True,
-    read_messages=True,
-    send_messages=True,
-    manage_messages=True,
-    external_emojis=True,
-)
-@bot.command(brief="Change prefix lol", slash_command=False)
-async def prefix(ctx, prefix: str = commands.Option(None, description="Prefix")):
-    if not prefix:  # if no prefix
-        # send current prefix and return
-        await ctx.send(t.l["curr_prefix"].format(ctx.prefix))
-        return
-    else:  # if not
-        # get permissions of caller in current channel
-        permissions = ctx.channel.permissions_for(ctx.author)
-        # set needed permissions (manage roles)
-        needed_perms = discord.Permissions(manage_roles=True)
-        if needed_perms <= permissions:  # check permissions
-            # if check successed
-            # if @ in prefix
-            if "@" in prefix:
-                # send error message
-                await ctx.send("You can`t set prefix that contains @!")
-                return
-            # get settings for current guild
-            data = await makeAsyncRequest(
-                "SELECT * FROM settings WHERE GuildId = %s", (ctx.guild.id,)
-            )
-            # if we have record for current guild
-            if data.__len__() > 0:
-                # update it
-                await makeAsyncRequest(
-                    "UPDATE settings SET Prefix=%s WHERE GuildId=%s",
-                    (
-                        prefix,
-                        ctx.guild.id,
-                    ),
-                )
-            # else
-            else:
-                # create one
-                await makeAsyncRequest(
-                    "INSERT INTO settings (GuildId,Prefix,Type) VALUES (%s,%s,0)",
-                    (
-                        ctx.guild.id,
-                        prefix,
-                    ),
-                )
-            # send done message
-            await ctx.send(t.l["done"])
-        # if check failed
-        else:
-            # send error message
-            await ctx.send("You need manage roles permission to change my prefix!")
-            return
-
-
 # main help command
-@bot.command(brief="Need help with the bot? This is the right command!")
+@bot.hybrid_command(brief="Need help with the bot? This is the right command!")
 async def help(ctx):
     time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
     # set title and timestamp of embed
@@ -496,7 +433,13 @@ Error : {e}""",
         await sendToMe(message, bot, True)
 
 
-setup()
+async def main():
+    async with bot:
+        await setup()
+        # if conf.debug is True asyncio will output additional debug info into logs
+        bot.loop.set_debug(conf.debug)
+        bot.start(conf.token)
+
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
 bot.run(conf.token)  # get our discord token and FIRE IT UP !

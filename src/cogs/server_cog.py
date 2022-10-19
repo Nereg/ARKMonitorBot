@@ -557,5 +557,5 @@ List of detected servers on that ip by steam:
             )
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(ServerCmd(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(ServerCmd(bot))

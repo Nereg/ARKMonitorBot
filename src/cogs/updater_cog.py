@@ -405,5 +405,5 @@ class NeoUpdater(commands.Cog):
         print("Destroyed updater loop!")
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(NeoUpdater(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(NeoUpdater(bot))

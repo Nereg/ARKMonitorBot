@@ -503,5 +503,5 @@ class AutoMessageCog(commands.Cog):
     #     await self.done(ctx, server[0], message.id, channel)
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(AutoMessageCog(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(AutoMessageCog(bot))

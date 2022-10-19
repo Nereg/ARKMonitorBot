@@ -298,5 +298,5 @@ class NotificationsCog(commands.Cog):
                 await self.noNotificationsForThisServer(ctx, discord_channel, server[0])
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(NotificationsCog(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(NotificationsCog(bot))

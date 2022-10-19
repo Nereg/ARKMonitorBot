@@ -336,6 +336,6 @@ class MiscCommands(commands.Cog):
         await ctx.send(discord.utils.escape_mentions(text))
 
 
-def setup(bot: commands.Bot) -> None:
+async def setup(bot: commands.Bot) -> None:
     cog = MiscCommands(bot)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
