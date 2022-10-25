@@ -231,6 +231,7 @@ async def get_prefix(bot, message):
     """
     returns prefix for a guild
     """
+    return 'ark/'
     conf = config.Config()  # load our config
     guildId = message.guild.id  # get id of the guild
     # search in DB for settings of the guild

@@ -11,9 +11,10 @@ import traceback  # traceback
 import time  # time
 from datetime import datetime
 from discord import permissions
-from discord.ext.commands import has_permissions, CheckFailure
+from discord.ext.commands import has_permissions, CheckFailure, Greedy, Context
 from pathlib import Path
 from typing import Optional
+import typing
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -35,9 +36,6 @@ bot = commands.AutoShardedBot(
     strip_after_prefix=True,
 )
 bot.cfg = conf
-# key: guild id
-# value: how many times this guild seen deprecation warning
-bot.deprecation_warnings = {}
 debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
 
@@ -45,35 +43,67 @@ t = c.Translation()  # load default english translation
 async def setup():
     print("Started loading cogs")
     # search for cogs
-    cogs = [p.stem for p in Path(".").glob("./src/cogs/*.py")]
+    cogs = [p.stem for p in Path(".").glob("./src/cogs/*_cog.py")]
     print(cogs)
     for cog in cogs:
         print(f"cogs.{cog}")
         await bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
     # load jishaku
-    #bot.load_extension("jishaku")
+    await bot.load_extension("jishaku")
     # hide it's command
-    #bot.get_command("jsk").hidden = True
+    bot.get_command("jsk").hidden = True
     print("Finished setup function")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
 #       COMMANDS
 # ~~~~~~~~~~~~~~~~~~~~~
+@bot.command()
+@commands.guild_only()
+@commands.is_owner()
+async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: Optional[typing.Literal["~", "*", "^"]] = None) -> None:
+    if not guilds:
+        if spec == "~":
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "*":
+            ctx.bot.tree.copy_global_to(guild=ctx.guild)
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "^":
+            ctx.bot.tree.clear_commands(guild=ctx.guild)
+            await ctx.bot.tree.sync(guild=ctx.guild)
+            synced = []
+        else:
+            synced = await ctx.bot.tree.sync()
+
+        await ctx.send(
+            f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+        )
+        return
+
+    ret = 0
+    for guild in guilds:
+        try:
+            await ctx.bot.tree.sync(guild=guild)
+        except discord.HTTPException as e:
+            await ctx.send(e)
+        else:
+            ret += 1
+
+    await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 # main help command
-@bot.hybrid_command(brief="Need help with the bot? This is the right command!")
-async def help(ctx):
+@bot.tree.command(description="Need help with the bot? This is the right command!")
+async def help(interaction: discord.Interaction):
     time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
     # set title and timestamp of embed
     message = discord.Embed(title="List of commands", timestamp=time.utcnow())
     # get current prefix
-    prefix = ctx.prefix
+    prefix = '/'
     # set footer for embed
     message.set_footer(
-        text=f"Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ",
-        icon_url=ctx.author.avatar.url,
+        text=f"Requested by {interaction.user.name} • Bot {conf.version} • GPLv3 ",
+        icon_url=interaction.user.avatar.url,
     )
     # define value for Server section
     serverValue = f"""**`{prefix}server info`- View info about added server
@@ -102,7 +132,7 @@ async def help(ctx):
         name=f"**Miscellaneous Commands:**", value=miscValue, inline=False
     )
     # and send it
-    await ctx.send(embed=message)
+    await interaction.response.send_message(embed=message)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -112,6 +142,8 @@ async def help(ctx):
 # will respond for ping of the bot
 @bot.event
 async def on_message(msg):  # on every message
+    await bot.process_commands(msg)
+    return
     # if we in DMs  AND it isn't our message
     if msg.guild == None and msg.author != bot.user:
         try:
@@ -250,35 +282,6 @@ async def channelNotFound(ctx, error):
     # send embed
     await ctx.send(embed=embed)
 
-
-@bot.check
-async def check_commands(ctx):
-    # 1661904000 - 31'th of August 2022 in unix timestamp
-    # https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Privileged-Intent-for-Verified-Bots
-    if getattr(conf, "deprecation", True) and not is_slash(ctx):
-        messages_left = bot.deprecation_warnings.get(ctx.guild.id, 3)
-        if messages_left < 0:
-            return True
-        embed = discord.Embed()
-        embed.title = "Notice!"
-        embed.colour = discord.Colour.red()
-        embed.add_field(
-            name="Regular commands will **stop** working on <t:1661904000:D> (<t:1661904000:R>)!",
-            value="Instead there will be new slash commands.",
-        )
-        embed.add_field(
-            name=f"To check if you are ready for the change use `{ctx.prefix}validateSlash` command.",
-            value="No data will be lost after the transition!",
-        )
-        embed.set_footer(text=f"You will get {messages_left} more warnings today.")
-        try:
-            await ctx.send(embed=embed)
-        except:
-            return True
-        bot.deprecation_warnings[ctx.guild.id] = messages_left - 1
-    return True
-
-
 @bot.event
 async def on_command_error(ctx, error):
     # get original error from d.py error
@@ -380,23 +383,23 @@ async def on_command_error(ctx, error):
     # get current time
     Time = int(time.time())
     # insert error record into DB
-    await makeAsyncRequest(
-        "INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)",
-        (
-            json.dumps(errors),
-            Time,
-            ctx.author.id,
-            ctx.channel.id,
-            ctx.guild.id,
-            ctx.message.content,
-        ),
-    )
+    # await makeAsyncRequest(
+    #     "INSERT INTO errors(Error, Time, UserDiscordId, ChannelDiscordId, GuildDiscordId, Message) VALUES (%s,%s,%s,%s,%s,%s)",
+    #     (
+    #         json.dumps(errors),
+    #         Time,
+    #         ctx.author.id,
+    #         ctx.channel.id,
+    #         ctx.guild.id,
+    #         ctx.message.content,
+    #     ),
+    # )
     # select inserted error record
-    data = await makeAsyncRequest("SELECT * FROM errors WHERE Time=%s", (Time,))
-    # get it's id
-    Id = data[0][0]
+    # data = await makeAsyncRequest("SELECT * FROM errors WHERE Time=%s", (Time,))
+    # # get it's id
+    # Id = data[0][0]
     # send error embed with this id
-    await sendErrorEmbed(ctx, Id, error)
+    #await sendErrorEmbed(ctx, Id, error)
     # add each error together
     errors_str = "".join(errors)
     # format time
@@ -405,11 +408,11 @@ async def on_command_error(ctx, error):
     message = f"""
 Error happened! 
 `{errors_str}`
-Error id : `{Id}`
+Error id : `{0}`
 Message : `{ctx.message.content}`
 Error happened : `{date}`
-Guild name : `{ctx.guild.name}`
-Guild id : `{ctx.guild.id}`
+Guild name : `gfhfg`
+Guild id : `121`
     """
     # if message has over 2k characters
     if message.__len__() >= 2000:
@@ -421,11 +424,11 @@ Guild id : `{ctx.guild.id}`
         except BaseException as e:
             await sendToMe("Lenth of error message is over 4k!", bot, True)
             await sendToMe(
-                f"""Error id : `{Id}`
+                f"""Error id : `{0}`
 Message : `{ctx.message.content}`
 When this happened : `{date}`
-Guild name : `{ctx.guild.name}`
-Guild id : `{ctx.guild.id}`
+Guild name : `fgfdgfd`
+Guild id : `0`
 Error : {e}""",
                 bot,
             )
@@ -433,13 +436,16 @@ Error : {e}""",
         await sendToMe(message, bot, True)
 
 
+
 async def main():
     async with bot:
         await setup()
+        #await bot.tree.sync(guild=discord.Object(id=349178138258833418))
         # if conf.debug is True asyncio will output additional debug info into logs
         bot.loop.set_debug(conf.debug)
-        bot.start(conf.token)
+        await bot.start(conf.token)
 
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
-bot.run(conf.token)  # get our discord token and FIRE IT UP !
+#bot.run(conf.token)  # get our discord token and FIRE IT UP !
+asyncio.run(main())

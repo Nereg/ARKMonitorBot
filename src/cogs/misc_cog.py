@@ -2,7 +2,7 @@ from cogs.utils.helpers import *  # all our helpers
 import cogs.utils.classes as c  # all our classes
 import discord  # main discord lib
 from discord.ext import commands
-from discord.ext import tasks
+from discord import app_commands
 import cogs.utils.menus as m
 
 # import /server command module (see server_cmd.py)
@@ -13,7 +13,6 @@ import datetime
 import psutil
 from psutil._common import bytes2human
 import statistics
-import time
 import arrow
 
 
@@ -21,13 +20,6 @@ class MiscCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cfg = config.Config()
-        self.t = c.Translation()
-        # start warnings reset task
-        self.reset_warnings.start()
-
-    @tasks.loop(hours=24.0)
-    async def reset_warnings(self):
-        self.bot.deprecation_warnings = {}
 
     async def selectServersByIds(self, ids):
         # empty statement
@@ -38,7 +30,7 @@ class MiscCommands(commands.Cog):
         # return result
         return await makeAsyncRequest(statement.format(param))
 
-    def noServers(self, ctx):
+    def noServers(self, interaction: discord.Interaction):
         # create error embed
         embed = discord.Embed()
         # paint it
@@ -47,26 +39,26 @@ class MiscCommands(commands.Cog):
         embed.title = "Looks like you have no servers added!"
         # and description
         embed.description = (
-            f"You can add any steam server using `{ctx.prefix}server add` command!"
+            f"You can add any steam server using `/server add` command!"
         )
         # and return
         return embed
 
-    async def listServers(self, ctx):
+    async def listServers(self, interaction: discord.Interaction):
         # select settings of the guild
         settings = await makeAsyncRequest(
-            "SELECT * FROM settings WHERE GuildId=%s", (ctx.guild.id,)
+            "SELECT * FROM settings WHERE GuildId=%s", (interaction.guild_id,)
         )
         # if no settings found
         if settings.__len__() <= 0 or settings[0][3] == None:
             # send no servers embed
-            return self.noServers(ctx)
+            return self.noServers(interaction)
         # get ids of added servers in this guild
         serversIds = json.loads(settings[0][3])
         # if we have no servers added
         if serversIds.__len__() <= 0:
             # return no servers embed
-            return self.noServers(ctx)
+            return self.noServers(interaction)
         # select servers by ids
         servers = await self.selectServersByIds(serversIds)
         # create embed
@@ -99,11 +91,11 @@ class MiscCommands(commands.Cog):
         # return embed
         return embed
 
-    async def listNotifications(self, ctx):
+    async def listNotifications(self, interaction: discord.Interaction):
         # select all notifications for current guild
         # (won't work with old table format)
         notifications = await makeAsyncRequest(
-            "SELECT * FROM notifications WHERE GuildId = %s", (ctx.guild.id,)
+            "SELECT * FROM notifications WHERE GuildId = %s", (interaction.guild_id,)
         )
         # if there are no notifications
         if notifications.__len__() <= 0:
@@ -143,10 +135,10 @@ class MiscCommands(commands.Cog):
         # else return embed
         return embed
 
-    async def listAutoMessages(self, ctx):
+    async def listAutoMessages(self, interaction: discord.Interaction):
         # select all messages for this guild
         records = await makeAsyncRequest(
-            "SELECT * FROM automessages WHERE DiscordGuildId = %s", (ctx.guild.id,)
+            "SELECT * FROM automessages WHERE DiscordGuildId = %s", (interaction.guild_id,)
         )
         # if no records found
         if records.__len__() <= 0:
@@ -169,7 +161,7 @@ class MiscCommands(commands.Cog):
             # create server object from server record
             server = c.ARKServer.fromJSON(servers[i][4])
             # create link to message from auto message record
-            msgLink = f"https://discordapp.com/channels/{ctx.guild.id}/{record[1]}/{record[2]}"
+            msgLink = f"https://discordapp.com/channels/{interaction.guild_id}/{record[1]}/{record[2]}"
             # create name and value for field
             name = f"{index}. Message for `{await stripVersion(server)}`"
             value = f"[Message]({msgLink}) in <#{record[1]}>"
@@ -207,41 +199,27 @@ class MiscCommands(commands.Cog):
             # return full string
             return f"{days} days {hours:01}:{minutes:01}:{seconds:01}"
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="List everything you can create in this bot")
-    async def list(self, ctx):
-        # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
+    @app_commands.command(description='List everything you can create in this bot')
+    @app_commands.guild_only()
+    async def list(self, interaction: discord.Interaction):
         # IDEA maybe you can select what you are trying to list ? like :
         # /list servers, /list notifications
         # make all coroutines
         coroutines = [
-            self.listServers(ctx),
-            self.listNotifications(ctx),
-            self.listAutoMessages(ctx),
+            self.listServers(interaction),
+            self.listNotifications(interaction),
+            self.listAutoMessages(interaction),
         ]
         # run them concurrently
         embeds = await asyncio.gather(*coroutines)
         # remove none's
         embeds = list(filter(None, embeds))
-        # await ctx.send(embeds)
         # send them
-        await ctx.send(embeds=embeds)
+        await interaction.response.send_message(embeds=embeds)
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="Get info about this bot")
-    async def info(self, ctx):
+    @app_commands.command(description='Get info about this bot')
+    @app_commands.guild_only()
+    async def info(self, interaction: discord.Interaction):
         # get how many servers we have in DB
         count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
         # get object to get time
@@ -249,7 +227,7 @@ class MiscCommands(commands.Cog):
         # get total and used memory in the system
         RAM = f"{bytes2human(psutil.virtual_memory().used)}/{bytes2human(psutil.virtual_memory().total)}"
         # get bot's role
-        role = ctx.me.top_role.mention if ctx.me.top_role != "@everyone" else "No role"
+        role = interaction.guild.me.top_role.mention if interaction.guild.me.top_role != "@everyone" else "No role"
         # create embed
         embed = discord.Embed(
             title=f"Info about {self.bot.user.name}",
@@ -258,8 +236,8 @@ class MiscCommands(commands.Cog):
         )
         # set footer
         embed.set_footer(
-            text=f"Requested by {ctx.author.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ",
-            icon_url=ctx.author.display_avatar,
+            text=f"Requested by {interaction.user.name} • Bot {self.cfg.version} • Uptime: {self.getUptime()} ",
+            icon_url=interaction.user.display_avatar,
         )
         # add fields
         embed.add_field(
@@ -308,7 +286,7 @@ class MiscCommands(commands.Cog):
         )
         embed.add_field(
             name=":grey_exclamation: Current prefix",
-            value=f"{ctx.prefix}",
+            value="/",
             inline=True,
         )
         embed.add_field(
@@ -323,17 +301,16 @@ class MiscCommands(commands.Cog):
         else:
             message = message[0][4]
         embed.add_field(name="Message from creator", value=message)
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.bot_has_permissions(send_messages=True)
-    @commands.command(brief="Get information to give to support team")
-    async def ticketinfo(self, ctx):
+    @app_commands.command(description='Get debug info for support tickets')
+    @app_commands.guild_only()
+    async def ticketinfo(self, interaction: discord.Interaction):
         text = ""
-        text += f"Your guild id is: {ctx.guild.id}\n"
-        permissions = ctx.channel.permissions_for(ctx.guild.me)
+        text += f"Your guild id is: {interaction.guild_id}\n"
+        permissions = interaction.channel.permissions_for(interaction.guild.me)
         text += f"My current permissions in current channel are: {permissions.value}\n"
-        text += f"Is using slash commands?: {True if ctx.interaction is not None else False}"
-        await ctx.send(discord.utils.escape_mentions(text))
+        await interaction.response.send_message(discord.utils.escape_mentions(text))
 
 
 async def setup(bot: commands.Bot) -> None:
