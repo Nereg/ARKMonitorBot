@@ -1,8 +1,9 @@
 from cogs.utils.helpers import *
 import discord
+import typing
 import cogs.utils.menus as m
 import datetime
-
+from discord import app_commands
 
 class AutoMessageCog(commands.Cog):
     def __init__(self, bot):
@@ -318,7 +319,7 @@ class AutoMessageCog(commands.Cog):
             # return false
             return False
 
-    @commands.group(
+    @commands.hybrid_group(
         invoke_without_command=True,
         case_insensitive=True,
         brief="Base command for auto messages of the bot",
@@ -331,13 +332,12 @@ class AutoMessageCog(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @automessage.command(brief="A command to create an automessage")
+    @automessage.command(description="A command to create an automessage")
+    @app_commands.describe(channel='Channel where to send the automessage')
     async def add(
         self,
         ctx,
-        channel: discord.TextChannel = commands.Option(
-            description="Channel where to send the automessage"
-        ),
+        channel: typing.Optional[discord.TextChannel],
     ):
         # check perms
         if not await self.checkPermissions(channel, ctx):
@@ -395,7 +395,7 @@ class AutoMessageCog(commands.Cog):
         # and notify user
         await self.done(ctx, server[0], message.id, channel)
 
-    @automessage.command(brief="A command list all automessages with links to them")
+    @automessage.command(description="A command list all automessages with links to them")
     async def list(
         self,
         ctx,

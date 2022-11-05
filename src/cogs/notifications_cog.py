@@ -9,7 +9,8 @@ from cogs.utils.helpers import *
 import datetime
 import cogs.utils.menus as menus
 import cogs.utils.classes as c
-
+import typing
+from discord import app_commands
 
 class NotificationsCog(commands.Cog):
     def __init__(self, bot):
@@ -140,22 +141,21 @@ class NotificationsCog(commands.Cog):
         embed.color = randomColor()
         await ctx.send(embed=embed)
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True, 
+    # )
+    @commands.hybrid_command(
+        description="Setup notification. Bot will send notification each time server goes up or down."
     )
-    @commands.command(
-        brief="Setup notification. Bot will send notification each time server goes up or down."
-    )
+    @app_commands.describe(discord_channel='Channel to send notification to')
     async def watch(
         self,
         ctx,
-        discord_channel: discord.TextChannel = commands.Option(
-            None, description="Channel to send notification to"
-        ),
+        discord_channel: typing.Optional[discord.TextChannel]
     ):
         # if no channel is supplied
         # TODO: add bulk adding of servers
@@ -228,20 +228,19 @@ class NotificationsCog(commands.Cog):
                 # send success message
                 await self.success(ctx, server)
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="Stop notifications from appearing in a channel")
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True, Channel to remove notifications from
+    # )
+    @commands.hybrid_command(description="Stop notifications from appearing in a channel")
+    @app_commands.describe(discord_channel='Channel to remove notifications from')
     async def unwatch(
         self,
         ctx,
-        discord_channel: discord.TextChannel = commands.Option(
-            None, description="Channel to remove notifications from"
-        ),
+        discord_channel: typing.Optional[discord.TextChannel],
     ):
         if discord_channel == None:
             # send warning message

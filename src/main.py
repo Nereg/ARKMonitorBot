@@ -4,6 +4,7 @@ from cogs.utils.helpers import *  # our helpers
 import config  # config
 import discord  # main discord library
 from discord.ext import commands  # import commands extension
+from discord.ext.commands import HybridCommand
 
 # from server_cmd import *  # !server command
 import json  # json module
@@ -31,8 +32,6 @@ bot = commands.AutoShardedBot(
     command_prefix=get_prefix,
     help_command=None,
     activity=game,
-    slash_commands=True,
-    slash_command_guilds=[349178138258833418],
     strip_after_prefix=True,
 )
 bot.cfg = conf
@@ -46,7 +45,7 @@ async def setup():
     cogs = [p.stem for p in Path(".").glob("./src/cogs/*_cog.py")]
     print(cogs)
     for cog in cogs:
-        print(f"cogs.{cog}")
+        #print(f"cogs.{cog}")
         await bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
     # load jishaku
@@ -92,18 +91,17 @@ async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: Optional[typi
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
-# main help command
-@bot.tree.command(description="Need help with the bot? This is the right command!")
-async def help(interaction: discord.Interaction):
+@bot.hybrid_command(description="Need help with the bot? This is the right command!")
+async def help(ctx):
     time = datetime(2000, 1, 1, 0, 0, 0, 0)  # get time object
     # set title and timestamp of embed
     message = discord.Embed(title="List of commands", timestamp=time.utcnow())
     # get current prefix
-    prefix = '/'
+    prefix = ctx.prefix
     # set footer for embed
     message.set_footer(
-        text=f"Requested by {interaction.user.name} • Bot {conf.version} • GPLv3 ",
-        icon_url=interaction.user.avatar.url,
+        text=f"Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ",
+        icon_url=ctx.author.avatar.url,
     )
     # define value for Server section
     serverValue = f"""**`{prefix}server info`- View info about added server
@@ -128,11 +126,10 @@ async def help(interaction: discord.Interaction):
     # define misc sections value
     miscValue = f"**`{prefix}info`- Get info about this bot (e.g. support server, GitHub etc.)**"
     # add misc section to the embed
-    message.add_field(
-        name=f"**Miscellaneous Commands:**", value=miscValue, inline=False
-    )
-    # and send it
-    await interaction.response.send_message(embed=message)
+    message.add_field(name=f'**Miscellaneous Commands:**', value=miscValue,
+                      inline=False)
+    # and send it  
+    await ctx.send(embed=message)  
 
 
 # ~~~~~~~~~~~~~~~~~~~~~

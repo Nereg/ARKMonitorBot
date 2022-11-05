@@ -9,7 +9,8 @@ import cogs.utils.classes as c
 import a2s
 import time
 from discord.ext import commands
-
+import typing
+from discord import app_commands
 
 class ServerCmd(commands.Cog):
     def __init__(self, bot):
@@ -74,14 +75,14 @@ class ServerCmd(commands.Cog):
         emb2.add_field(name="Ping:", value=f"{server.ping} ms.")
         await ctx.send(embeds=[emb1, emb2])
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.group(
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True,
+    # )
+    @commands.hybrid_group(
         invoke_without_command=True,
         case_insensitive=True,
         brief="Base command for many features of the bot",
@@ -97,13 +98,13 @@ class ServerCmd(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @server.command(brief="Add an ARK server to your list")
+
+    @server.command(description="Add an ARK server to your list")
+    @app_commands.describe(server_ip='IP:Port of a server you want to add')
     async def add(
         self,
         ctx,
-        server_ip: str = commands.Option(
-            description="IP:Port of a server you want to add"
-        ),
+        server_ip: typing.Optional[str],
     ) -> None:
         # if ip isn't correct
         if not IpCheck(server_ip):
@@ -175,7 +176,7 @@ class ServerCmd(commands.Cog):
         # and send embed
         await ctx.send(embed=embed)
 
-    @server.command(brief="Get info about an ARK server")
+    @server.command(description="Get info about an ARK server")
     async def info(self, ctx) -> None:
         selector = Selector(ctx, ctx.bot, c.Translation())
         server = await selector.select()
@@ -190,7 +191,7 @@ class ServerCmd(commands.Cog):
         # send server info
         await self.serverInfo(server, ctx)
 
-    @server.command(brief="Delete an ARK server from your list")
+    @server.command(description="Delete an ARK server from your list")
     async def delete(self, ctx) -> None:
         # create selector class
         selector = Selector(ctx, ctx.bot, c.Translation())
@@ -255,7 +256,7 @@ class ServerCmd(commands.Cog):
         await ctx.send(embed=embed)
 
     @server.group(
-        brief="Base command for server aliases",
+        description="Base command for server aliases",
         invoke_without_command=True,
         case_insensitive=True,
     )
@@ -267,11 +268,12 @@ class ServerCmd(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @alias.command(brief="Add an alias for your ARK server", name="add")
+    @alias.command(description="Add an alias for your ARK server", name="add")
+    @app_commands.describe(alias='Alias to assign to a server')
     async def add_alias(
         self,
         ctx,
-        alias: str = commands.Option(description="Alias to assign to a server"),
+        alias: typing.Optional[str],
     ) -> None:
         # create selector
         selector = Selector(ctx, ctx.bot, c.Translation())
@@ -339,7 +341,7 @@ class ServerCmd(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @alias.command(brief="Delete an alias for your ARK server", name="delete")
+    @alias.command(description="Delete an alias for your ARK server", name="delete")
     async def delete_alias(self, ctx) -> None:
         # create selector
         selector = Selector(ctx, ctx.bot, c.Translation())
@@ -407,7 +409,7 @@ class ServerCmd(commands.Cog):
             await ctx.send(embed=embed)
             return
 
-    @alias.command(brief="List aliases for your ARK servers")
+    @alias.command(description="List aliases for your ARK servers")
     async def list(self, ctx) -> None:
         # get aliases from DB
         aliases = await makeAsyncRequest(
@@ -456,15 +458,16 @@ class ServerCmd(commands.Cog):
             embed.add_field(name=f"{number}. Alias for {server_obj.name}:", value=alias)
         await ctx.send(embed=embed)
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="This command will try to fix IP address of a server")
-    async def ipfix(self, ctx, ip: str = commands.Option(description="IP to fix")):
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True,
+    # ) 
+    @commands.hybrid_command(description="This command will try to fix IP address of a server")
+    @app_commands.describe(ip='ip:port to fix')
+    async def ipfix(self, ctx, ip: typing.Optional[str]):
         await ctx.defer()  # it will be long
         start = time.perf_counter()  # start timer
         if ip is None:  # if no additional args
