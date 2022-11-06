@@ -104,7 +104,7 @@ class ServerCmd(commands.Cog):
     async def add(
         self,
         ctx,
-        server_ip: typing.Optional[str],
+        server_ip: str,
     ) -> None:
         # if ip isn't correct
         if not IpCheck(server_ip):
@@ -273,7 +273,7 @@ class ServerCmd(commands.Cog):
     async def add_alias(
         self,
         ctx,
-        alias: typing.Optional[str],
+        alias: str,
     ) -> None:
         # create selector
         selector = Selector(ctx, ctx.bot, c.Translation())
@@ -467,7 +467,7 @@ class ServerCmd(commands.Cog):
     # ) 
     @commands.hybrid_command(description="This command will try to fix IP address of a server")
     @app_commands.describe(ip='ip:port to fix')
-    async def ipfix(self, ctx, ip: typing.Optional[str]):
+    async def ipfix(self, ctx, ip: str):
         await ctx.defer()  # it will be long
         start = time.perf_counter()  # start timer
         if ip is None:  # if no additional args

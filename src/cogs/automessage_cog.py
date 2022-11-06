@@ -337,7 +337,7 @@ class AutoMessageCog(commands.Cog):
     async def add(
         self,
         ctx,
-        channel: typing.Optional[discord.TextChannel],
+        channel: discord.TextChannel,
     ):
         # check perms
         if not await self.checkPermissions(channel, ctx):
