@@ -101,7 +101,7 @@ async def help(ctx):
     # set footer for embed
     message.set_footer(
         text=f"Requested by {ctx.author.name} • Bot {conf.version} • GPLv3 ",
-        icon_url=ctx.author.avatar.url,
+        icon_url=ctx.author.display_avatar.url,
     )
     # define value for Server section
     serverValue = f"""**`{prefix}server info`- View info about added server
@@ -115,8 +115,8 @@ async def help(ctx):
     # define value for notifications section
     notificationsValue = f"""**`{prefix}watch`- Bot will send a message when selected server goes online/offline in current channel
 `{prefix}unwatch` - Stop watching server
-`{prefix}automessage #any_channel` - Bot will send and update message about a server!
-`{prefix}automessage` - List any automessages you have
+`{prefix}automessage add #any_channel` - Bot will send and update message about a server!
+`{prefix}automessage list` - List any automessages you have
 `{prefix}automessage delete` - Delete **all** automessages for a server
 **"""
     # add notifications section to the embed
