@@ -17,5 +17,5 @@ class TopGG(commands.Cog):
         )  # Autopost will post your guild count every 30 minutes
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(TopGG(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(TopGG(bot))

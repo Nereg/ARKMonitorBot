@@ -4,6 +4,7 @@ import discord  # main discord lib
 from discord.ext import commands
 from discord.ext import tasks
 import cogs.utils.menus as m
+from discord.ext.commands import HybridCommand
 
 # import /server command module (see server_cmd.py)
 # import server_cmd as server
@@ -22,12 +23,6 @@ class MiscCommands(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         self.t = c.Translation()
-        # start warnings reset task
-        self.reset_warnings.start()
-
-    @tasks.loop(hours=24.0)
-    async def reset_warnings(self):
-        self.bot.deprecation_warnings = {}
 
     async def selectServersByIds(self, ids):
         # empty statement
@@ -207,15 +202,15 @@ class MiscCommands(commands.Cog):
             # return full string
             return f"{days} days {hours:01}:{minutes:01}:{seconds:01}"
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="List everything you can create in this bot")
-    async def list(self, ctx):
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True,
+    # )
+    @commands.hybrid_command(description="List everything you can create in this bot")
+    async def list(self, ctx: commands.context):
         # TODO re-do this to use multiple embeds in one message (need d.py 2.0 for that)
         # IDEA maybe you can select what you are trying to list ? like :
         # /list servers, /list notifications
@@ -233,14 +228,14 @@ class MiscCommands(commands.Cog):
         # send them
         await ctx.send(embeds=embeds)
 
-    @commands.bot_has_permissions(
-        add_reactions=True,
-        read_messages=True,
-        send_messages=True,
-        manage_messages=True,
-        external_emojis=True,
-    )
-    @commands.command(brief="Get info about this bot")
+    # @commands.bot_has_permissions(
+    #     add_reactions=True,
+    #     read_messages=True,
+    #     send_messages=True,
+    #     manage_messages=True,
+    #     external_emojis=True,
+    # )
+    @commands.hybrid_command(description="Get info about this bot")
     async def info(self, ctx):
         # get how many servers we have in DB
         count = await makeAsyncRequest("SELECT COUNT(Id) FROM servers")
@@ -326,7 +321,7 @@ class MiscCommands(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.bot_has_permissions(send_messages=True)
-    @commands.command(brief="Get information to give to support team")
+    @commands.hybrid_command(description="Get information to give to support team")
     async def ticketinfo(self, ctx):
         text = ""
         text += f"Your guild id is: {ctx.guild.id}\n"
@@ -336,6 +331,6 @@ class MiscCommands(commands.Cog):
         await ctx.send(discord.utils.escape_mentions(text))
 
 
-def setup(bot: commands.Bot) -> None:
+async def setup(bot: commands.Bot) -> None:
     cog = MiscCommands(bot)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
