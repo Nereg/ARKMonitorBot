@@ -17,7 +17,6 @@ import cogs.utils.menus as m
 import concurrent.futures._base as base
 import asyncio
 import aiohttp
-from cogs.updatePlugins.automessage import AutoMessagesPlugin
 from cogs.updatePlugins.battlemetrics import BattlemetricsPlugin
 from cogs.updatePlugins.notifications import NotificationsPlugin
 
@@ -359,9 +358,9 @@ class NeoUpdater(commands.Cog):
                 await self.save(results)
                 # add chunk time to array
                 chunksTime.append(time.perf_counter() - localStart)
+                #print(f"Updated {[i.Id for i in results]}")
                 # reset timer
-                localStart = time.perf_counter()
-                print(f"Updated {[i.Id for i in results]}")
+                localStart = time.perf_counter()              
         # if there is some tasks left
         if tasks.__len__() != 0:
             # run them concurrently

@@ -408,8 +408,8 @@ Error happened!
 Error id : `{0}`
 Message : `{ctx.message.content}`
 Error happened : `{date}`
-Guild name : `gfhfg`
-Guild id : `121`
+Guild name : `{ctx.guild.name}`
+Guild id : `{ctx.guild.id}`
     """
     # if message has over 2k characters
     if message.__len__() >= 2000:
@@ -424,8 +424,8 @@ Guild id : `121`
                 f"""Error id : `{0}`
 Message : `{ctx.message.content}`
 When this happened : `{date}`
-Guild name : `fgfdgfd`
-Guild id : `0`
+Guild name : `{ctx.guild.name}`
+Guild id : `{ctx.guild.id}`
 Error : {e}""",
                 bot,
             )
