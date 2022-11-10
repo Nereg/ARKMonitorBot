@@ -139,8 +139,8 @@ async def help(ctx):
 # will respond for ping of the bot
 @bot.event
 async def on_message(msg):  # on every message
-    await bot.process_commands(msg)
-    return
+    #await bot.process_commands(msg)
+    #return
     # if we in DMs  AND it isn't our message
     if msg.guild == None and msg.author != bot.user:
         try:
