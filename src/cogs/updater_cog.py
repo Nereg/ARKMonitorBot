@@ -113,6 +113,7 @@ class NeoUpdater(commands.Cog):
             None  # list of ids of the servers from local cache for faster searching
         )
         self.update.start()  # start main loop
+        print('started updater task!')
 
     # let's do anything normal __init__ can't do
     async def init(self):
@@ -133,7 +134,7 @@ class NeoUpdater(commands.Cog):
         # add notifications plugin
         self.plugins.append(NotificationsPlugin(self))
         # add auto messages plugin
-        self.plugins.append(AutoMessagesPlugin(self))
+        #self.plugins.append(AutoMessagesPlugin(self))
         # call async inits of every plugin
         # print([i.init for i in self.plugins])
         await asyncio.gather(*[i.init() for i in self.plugins])
