@@ -12,7 +12,7 @@ class AutoMessageUpdaterCog(commands.Cog):
         self.bot = bot
         self.cfg = config.Config()
         # count of concurrent functions to run
-        self.workersCount = self.cfg.workersCount
+        self.workersCount = self.cfg.autoMsgWorkersCount
         self.refresh.start()  # start main loop
         self.updatedMessages = 0
         # list of defective auto messages
