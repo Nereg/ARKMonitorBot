@@ -5,6 +5,7 @@ import cogs.utils.menus as m
 import datetime
 import time
 import traceback
+import random
 
 class AutoMessageUpdaterCog(commands.Cog):
     def __init__(self, bot) -> None:
@@ -189,7 +190,7 @@ class AutoMessageUpdaterCog(commands.Cog):
             self.bot,
         )
 
-    @tasks.loop(seconds=100.0)
+    @tasks.loop(seconds=1000.0)
     async def refresh(self):
         globalStart = time.perf_counter()  # start performance timer
         chunksTime = []  # array to hold time each chunk took to process
@@ -197,6 +198,8 @@ class AutoMessageUpdaterCog(commands.Cog):
         self.updatedMessages = 0
         # get all messages
         messages = await makeAsyncRequest("SELECT * FROM automessages")
+        # randomise array to decrease chance of hitting ratelimits 
+        messages = tuple(random.sample(messages, len(messages)))
         tasks = []
         localStart = time.perf_counter()  # start performance timer for this chunk
         # for each record
