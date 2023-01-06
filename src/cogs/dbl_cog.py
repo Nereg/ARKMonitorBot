@@ -13,7 +13,7 @@ class TopGG(commands.Cog):
         if self.token == "":
             pass
         self.dblpy = dbl.DBLClient(
-            self.bot, self.token, autopost=True
+            self.bot, self.token, autopost=True, post_shard_count=True
         )  # Autopost will post your guild count every 30 minutes
 
 
