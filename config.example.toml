@@ -1,2 +1,4 @@
 [discord]
-token='...'
+token = '...' # discord bot token
+[debug]
+debugGuildId = 349178138258833418 # if -1 declares slash commands globally else declares them to the guild

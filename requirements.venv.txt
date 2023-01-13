@@ -16,7 +16,7 @@ colorlog==6.7.0
 distlib==0.3.6
 filelock==3.8.0
 frozenlist==1.3.3
-hikari==2.0.0.dev113
+hikari==2.0.0.dev115
 hikari-tanjun==2.10.1a1
 idna==3.4
 multidict==6.0.4

@@ -15,4 +15,4 @@ class Config():
         '''
         with open(CONFIG_PATH, 'r') as f:
             _cfg_str: str = f.read()
-            self.c: list = tomllib.loads(_cfg_str)
+            self.c: dict = tomllib.loads(_cfg_str)

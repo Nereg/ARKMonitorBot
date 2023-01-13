@@ -5,11 +5,25 @@ import tanjun
 import config
 
 # read 
-cfg = config.Config().c
+cfg: dict = config.Config().c
 
-def main():
+def main() -> None:
+    # if True slash commands will be declare globally
+    declareCommands = True
+    # if there is debug guild
+    if cfg['debug']['debugGuildId'] != -1:
+        # declare slash commands to that guild only
+       declareCommands = [cfg['debug']['debugGuildId']] 
+    # declare intents for bot
+    # TODO: declare less intents
+    intents = hikari.Intents.ALL_UNPRIVILEGED
     # create bot object
-    bot = hikari.GatewayBot(token=cfg['discord']['token'], intents=hikari.Intents.ALL_UNPRIVILEGED)
+    bot = hikari.GatewayBot(cfg['discord']['token'], intents=intents)
+    # create command handler
+    client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=declareCommands, mention_prefix=True)
+    # loading all components from components directory
+    client.load_directory("./src/components", namespace="src.components")
+    
     # if we are running not in windows
     if os.name != "nt":
         # import uvloop
