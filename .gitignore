@@ -3,3 +3,6 @@ Scripts
 pyvenv.cfg
 */__pycache__
 config.toml
+*.secret
+storage
+*/*/__pycache__

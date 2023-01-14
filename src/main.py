@@ -4,7 +4,7 @@ import hikari
 import tanjun
 import config
 
-# read 
+# read config
 cfg: dict = config.Config().c
 
 def main() -> None:
@@ -22,7 +22,7 @@ def main() -> None:
     # create command handler
     client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=declareCommands, mention_prefix=True)
     # loading all components from components directory
-    client.load_directory("./src/components", namespace="src.components")
+    client.load_directory("components", namespace="components")
     
     # if we are running not in windows
     if os.name != "nt":

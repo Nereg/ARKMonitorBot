@@ -1,7 +1,7 @@
 import tomllib # import native TOML reader
 
 # path to config
-CONFIG_PATH = './config.toml'
+CONFIG_PATH = './configs/config.toml'
 
 class Config():
     def __init__(self) -> None:

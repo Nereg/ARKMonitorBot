@@ -1,3 +1,20 @@
 services:
   bot:
     build: .
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD_FILE: /configs/dbPassword.secret
+    volumes:
+      - ./storage/db:/var/lib/postgresql/data # data storage
+      - ./configs/:/configs/ # for configurations
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
