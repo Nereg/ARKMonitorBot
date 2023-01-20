@@ -1,0 +1,10 @@
+# for use in venv
+# only boots DB + adminer
+# to use: docker-compose -f docker-compose.yaml -f docker-compose.venv.yaml ...
+services:
+  bot:
+    entrypoint: ["echo", "Service bot disabled"]
+    restart: "no"
+  db:
+    expose:
+      - 5432:5432

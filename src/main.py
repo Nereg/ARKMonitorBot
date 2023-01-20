@@ -3,6 +3,10 @@ import asyncio
 import hikari
 import tanjun
 import config
+from db.db import Database
+import alluka
+import aiohttp
+import traceback
 
 # read config
 cfg: dict = config.Config().c
@@ -20,10 +24,30 @@ def main() -> None:
     # create bot object
     bot = hikari.GatewayBot(cfg['discord']['token'], intents=intents)
     # create command handler
-    client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=declareCommands, mention_prefix=True)
+    client: tanjun.Client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=declareCommands, mention_prefix=True)
     # loading all components from components directory
-    client.load_directory("components", namespace="components")
-    
+    client.load_directory("src/components", namespace="src.components")
+
+    @client.with_client_callback(tanjun.ClientCallbackNames.STARTING)
+    async def on_starting(client: alluka.Injected[tanjun.clients.Client]) -> None:
+        # create database object
+        database: Database = Database(client, cfg)
+        try:
+            # connect to DB
+            await database.connect()
+        except Exception as e:
+            # if failed print traceback and exit
+            print('DB connection failed!')
+            print(traceback.format_exc())
+            exit(1)
+        # injecting config TODO: make it a separate class to not inject std type
+        client.set_type_dependency(dict, cfg)
+        # inject connected DB instance
+        client.set_type_dependency(Database, database)
+        # inject http client
+        client.set_type_dependency(aiohttp.ClientSession, aiohttp.ClientSession())
+
+
     # if we are running not in windows
     if os.name != "nt":
         # import uvloop
