@@ -14,7 +14,7 @@ class Database:
         self._host = cfg['db']['host']
         self._db_name = cfg['db']['dbName']
         self._port = cfg['db']['dbPort']
-        self._password = cfg['db']['dbPort']
+        self._password = cfg['db']['password']
         self._pool: t.Optional[asyncpg.Pool] = None
         self._schema_version: t.Optional[int] = None
         self._is_closed: bool = False
@@ -72,7 +72,6 @@ class Database:
         """Start a new connection and create a connection pool."""
         if self._is_closed:
             raise DatabaseStateConflictError("The database is closed.")
-
         self._pool = await asyncpg.create_pool(dsn=self.dsn)
         #await self.build_schema()  # Always check and add missing tables on startup
         #self._schema_version = await self.pool.fetchval("""SELECT schema_version FROM schema_info""", column=0)

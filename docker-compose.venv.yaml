@@ -6,5 +6,5 @@ services:
     entrypoint: ["echo", "Service bot disabled"]
     restart: "no"
   db:
-    expose:
+    ports:
       - 5432:5432
