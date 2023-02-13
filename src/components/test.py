@@ -1,7 +1,7 @@
 import tanjun
 import alluka
 
-component = tanjun.Component()
+component = tanjun.Component(name=__name__)
 
 @component.with_command
 @tanjun.with_int_slash_option('test', 'testing option')

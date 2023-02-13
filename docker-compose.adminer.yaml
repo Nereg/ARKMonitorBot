@@ -1,0 +1,8 @@
+# to use: docker-compose -f docker-compose.yaml -f docker-compose.adminer.yaml ...
+services:
+  # adminer is not good to be enabled by default
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080

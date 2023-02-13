@@ -1,4 +1,4 @@
-import tomllib # import native TOML reader
+import tomllib  # import native TOML reader
 
 # path to config
 CONFIG_PATH = './configs/config.toml'

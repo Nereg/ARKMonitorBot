@@ -1,9 +1,15 @@
+# venv
 Lib
 Scripts
 pyvenv.cfg
+# python cache
 */__pycache__
-config.toml
-config.disabled.toml
-*.secret
-storage
 */*/__pycache__
+# persistent storage folder 
+storage
+# all the configs
+configs/*.*
+# except for .example files
+!configs/*.example
+
+

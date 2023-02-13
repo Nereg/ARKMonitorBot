@@ -1,10 +1,12 @@
 # default docker-compose
 services:
+  # main python process
   bot:
     build: .
     depends_on:
       - db
 
+  # postgres database
   db:
     image: postgres
     restart: always
@@ -13,9 +15,19 @@ services:
     volumes:
       - ./storage/db:/var/lib/postgresql/data # data storage
       - ./configs/:/configs/ # for configurations
+  
+  # grafana agent for metrics
+  agent:
+    image: grafana/agent:latest
+    entrypoint:
+      - /bin/agent
+      - -config.file=/configs/grafanaAgent.yaml
+    volumes:
+      - ./configs/:/configs/
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+  # promtail:
+  #   image: grafana/promtail:latest
+  #   volumes:
+  #     - ./logs:/bot_logs/
+  #     - ./cfg:/cfg/
+  #   command: -config.file=/cfg/promtail-config.yaml -print-config-stderr
