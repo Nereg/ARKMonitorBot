@@ -3,6 +3,9 @@ services:
   # main python process
   bot:
     build: .
+    restart: always
+    volumes:
+      - ./storage/logs/:/logs/
     depends_on:
       - db
 
@@ -19,15 +22,10 @@ services:
   # grafana agent for metrics
   agent:
     image: grafana/agent:latest
+    restart: always
     entrypoint:
       - /bin/agent
       - -config.file=/configs/grafanaAgent.yaml
     volumes:
       - ./configs/:/configs/
-
-  # promtail:
-  #   image: grafana/promtail:latest
-  #   volumes:
-  #     - ./logs:/bot_logs/
-  #     - ./cfg:/cfg/
-  #   command: -config.file=/cfg/promtail-config.yaml -print-config-stderr
+      - ./storage/logs/:/logs/
