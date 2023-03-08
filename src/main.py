@@ -38,12 +38,15 @@ def setupLogging() -> None:
 def loadComponents(client: tanjun.Client) -> None:
     # loading all components from components directory
     client.load_directory("./src/components/", namespace="components")
+    # load server updater
+    client.load_directory("./src/servers_updater")
     logger.info(f"Loaded components: {[c.name for c in client.components]}")
 
 def main() -> None:
+    setupLogging()
     # read config
     cfg: dict = config.Config().c
-    setupLogging()
+
     # if True slash commands will be declare globally
     declareCommands = True
     # if there is debug guild
@@ -60,6 +63,8 @@ def main() -> None:
     client: tanjun.Client = tanjun.Client.from_gateway_bot(
         bot, declare_global_commands=declareCommands, mention_prefix=True
     )
+    # injecting config TODO: make it a separate class to not inject std type
+    client.set_type_dependency(dict, cfg)
     loadComponents(client)
 
     @client.with_client_callback(tanjun.ClientCallbackNames.STARTING)
@@ -78,8 +83,6 @@ def main() -> None:
         metrics: PromMetrics = PromMetrics(bot)
         # inject metrics class
         client.set_type_dependency(PromMetrics, metrics)
-        # injecting config TODO: make it a separate class to not inject std type
-        client.set_type_dependency(dict, cfg)
         # inject connected DB instance
         client.set_type_dependency(Database, database)
         # inject http client
@@ -91,7 +94,7 @@ def main() -> None:
         import uvloop
 
         uvloop.install()
-        print("Added uvloop!")
+        logger.info("Added uvloop!")
     bot.run()
 
 

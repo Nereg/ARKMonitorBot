@@ -1,0 +1,16 @@
+# to use: docker-compose -f docker-compose.yaml -f docker-compose.pgadmin.yaml ...
+services:
+  # pgadmin is not good to be enabled by default
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=me@me.me
+      - PGADMIN_DEFAULT_PASSWORD_FILE=/configs/dbPassword.secret
+      - PGADMIN_DISABLE_POSTFIX=true
+    volumes:
+      - ./configs/:/configs/
+    depends_on:
+      - db
+    ports:
+      - 8080:80
