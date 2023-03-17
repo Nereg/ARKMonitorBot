@@ -1,6 +1,7 @@
 import logging
 import typing
 import asyncio
+import time 
 
 import tanjun
 import alluka
@@ -9,18 +10,21 @@ from apscheduler.executors.asyncio import AsyncIOExecutor
 import asyncpg
 
 from servers_updater.defaultA2S import DefaultA2S
+from components.dependencies.metrics import PromMetrics
 
 component = tanjun.Component(name=__name__)
 logger = logging.getLogger(__name__)
 
 class ServerUpdater:
-    def __init__(self, cfg: dict) -> None:
+    def __init__(self, cfg: dict, metrics: PromMetrics) -> None:
         # aps scheluler to be used
         self._scheduler: AsyncIOScheduler
         self._botCfg: dict = cfg
         self._db: asyncpg.Pool
         # list of workers
         self._workers: list[DefaultA2S] = []
+        # metrics class to be used
+        self._metrics = metrics
         self._setupScheduler()
 
     async def init(self) -> None:
@@ -46,6 +50,7 @@ class ServerUpdater:
         await self.updateAll()
         # create main updater task loop
         self._setupUpdaterTask()
+        logger.info('Started server updater!')
 
     def divide(self, n: int, iterable: typing.Iterable):
         """Divide the elements from iterable into n parts, maintaining order.
@@ -89,8 +94,13 @@ class ServerUpdater:
         self._scheduler = scheduler
 
     async def updateAll(self) -> None:
+        logger.info('started upddater task')
+        # start performance timer
+        startTime = time.perf_counter()
         # get needed info about every server
         servers = await self._db.fetch("SELECT id, ip FROM public.servers")
+        # set server count metric
+        self._metrics.updater_servers_count.set(len(servers))
         # create chunks for every worker
         chunks = self.divide(len(self._workers), servers)
         # DEBUG
@@ -101,18 +111,23 @@ class ServerUpdater:
             corutines.append(worker.refresh(chunk))
         # run in parallel
         await asyncio.gather(*corutines)
+        # end performance timer
+        endTime = time.perf_counter()
+        # set performance metric
+        self._metrics.updater_iteration_timing.set(endTime - startTime)
+
 
     @classmethod
-    async def build(cls, cfg) -> typing.Self:
+    async def build(cls, cfg: dict, metrics: PromMetrics) -> typing.Self:
         '''Correctly builds the class'''
-        inited = cls(cfg)
+        inited = cls(cfg, metrics)
         await inited.init()
         return inited
         
 
-@component.with_client_callback(tanjun.ClientCallbackNames.STARTING)
-async def start(client: alluka.Injected[tanjun.Client], cfg: alluka.Injected[dict]) -> None:
-    updater = await ServerUpdater.build(cfg)
+@component.with_client_callback(tanjun.ClientCallbackNames.STARTED)
+async def start(client: alluka.Injected[tanjun.Client], cfg: alluka.Injected[dict], metrics: alluka.Injected[PromMetrics]) -> None:
+    updater = await ServerUpdater.build(cfg, metrics)
     client.set_type_dependency(ServerUpdater, updater)
     logger.info("Inited and injected server updater!")
 

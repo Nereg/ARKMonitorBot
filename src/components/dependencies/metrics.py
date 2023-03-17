@@ -13,7 +13,7 @@ import alluka
 import hikari
 
 logger = logging.getLogger(__name__)
-component = tanjun.Component(name=__name__)
+component = tanjun.Component(name=__name__).load_from_scope()
 
 class PromMetrics:
     __slots__ = (
@@ -26,13 +26,14 @@ class PromMetrics:
         "cpu_usage",
         "ram_usage",
         "guilds",
+        "updater_iteration_timing",
+        "updater_servers_count",
     )
 
-    def __init__(self, bot: hikari.GatewayBot) -> None:
+    def __init__(self, bot: hikari.GatewayBot, client: alluka.Injected[tanjun.Client]) -> None:
         self._site = None
         self._bot = bot
         self._registry = prometheus_client.CollectorRegistry()
-
         self.heartbeat_latency = prometheus_client.Gauge(
             "bot_heartbeat_latency", "Bots heartbeat latency", unit="ms", registry=self._registry
         )
@@ -45,6 +46,9 @@ class PromMetrics:
         self.cpu_usage = prometheus_client.Gauge("bot_cpu_usage", "CPU usage", registry=self._registry)
         self.ram_usage = prometheus_client.Gauge("bot_ram_usage", "RAM usage", registry=self._registry)
         self.guilds = prometheus_client.Gauge("bot_guild_count", "Guilds", registry=self._registry)
+        self.updater_iteration_timing = prometheus_client.Gauge("updater_iteration_timing", "Duration of last updater iteration", registry=self._registry)
+        self.updater_servers_count = prometheus_client.Gauge("updater_servers_count", "Ammount of servers updated", registry=self._registry)
+        client.set_type_dependency(PromMetrics, self)
 
     async def gather_metrics(self) -> str:
         loop = asyncio.get_running_loop()
@@ -52,7 +56,7 @@ class PromMetrics:
         self.asyncio_tasks.set(len(asyncio.all_tasks(loop)))
         self.cpu_usage.set(psutil.cpu_percent())
         self.ram_usage.set(psutil.virtual_memory().percent)
-        self.guilds.set(await self._bot.rest.fetch_my_guilds().count())
+        #self.guilds.set(await self._bot.rest.fetch_my_guilds().count()) TODO redo to not fetch every time
         return prometheus_client.generate_latest(self._registry).decode("utf-8")
 
     async def serve_metrics(self, _: web.Request) -> web.Response:
@@ -92,4 +96,8 @@ async def stop_metrics_collection(_: hikari.StoppingEvent, metrics: alluka.Injec
 async def raw_event(event: hikari.ShardPayloadEvent, metrics: alluka.Injected[PromMetrics]) -> None:
     metrics.events_received.labels(name=event.name).inc()
 
-loader = component.make_loader()
+@tanjun.as_loader
+def load(client: tanjun.Client):
+    bot = client.get_type_dependency(hikari.GatewayBot)
+    PromMetrics(bot, client)
+    client.add_component(component)

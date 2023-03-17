@@ -11,7 +11,6 @@ import tanjun
 
 import config
 from db.db import Database
-from components.metrics import PromMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +35,14 @@ def setupLogging() -> None:
     rootLogger.setLevel(logging.INFO)
 
 def loadComponents(client: tanjun.Client) -> None:
+    client.load_directory('./src/components/dependencies/', namespace="components.dependencies")
     # loading all components from components directory
     client.load_directory("./src/components/", namespace="components")
     # load server updater
     client.load_directory("./src/servers_updater")
     logger.info(f"Loaded components: {[c.name for c in client.components]}")
 
-def main() -> None:
+async def amain() -> hikari.GatewayBot:
     setupLogging()
     # read config
     cfg: dict = config.Config().c
@@ -63,30 +63,27 @@ def main() -> None:
     client: tanjun.Client = tanjun.Client.from_gateway_bot(
         bot, declare_global_commands=declareCommands, mention_prefix=True
     )
+
+    # create database object
+    database: Database = Database(client, cfg)
+    try:
+        # connect to DB
+        await database.connect()
+    except Exception as e:
+        # if failed print traceback and exit
+        logger.critical("DB connection failed!", exc_info=True)
+        #logger.exception(traceback.format_exc())
+        exit(1)
+    # inject connected DB instance
+    client.set_type_dependency(Database, database)
+    # inject http client
+    client.set_type_dependency(aiohttp.ClientSession, aiohttp.ClientSession())
     # injecting config TODO: make it a separate class to not inject std type
     client.set_type_dependency(dict, cfg)
-    loadComponents(client)
+    client.set_type_dependency(hikari.GatewayBot, bot)
 
-    @client.with_client_callback(tanjun.ClientCallbackNames.STARTING)
-    async def on_starting() -> None: 
-        # create database object
-        database: Database = Database(client, cfg)
-        try:
-            # connect to DB
-            await database.connect()
-        except Exception as e:
-            # if failed print traceback and exit
-            logger.critical("DB connection failed!", exc_info=True)
-            #logger.exception(traceback.format_exc())
-            exit(1)
-        # create metrics server
-        metrics: PromMetrics = PromMetrics(bot)
-        # inject metrics class
-        client.set_type_dependency(PromMetrics, metrics)
-        # inject connected DB instance
-        client.set_type_dependency(Database, database)
-        # inject http client
-        client.set_type_dependency(aiohttp.ClientSession, aiohttp.ClientSession())
+    # load all the compenents after injecting everything
+    loadComponents(client)
 
     # if we are running not in windows
     if os.name != "nt":
@@ -95,6 +92,10 @@ def main() -> None:
 
         uvloop.install()
         logger.info("Added uvloop!")
+    return bot
+
+def main():
+    bot = asyncio.run(amain())
     bot.run()
 
 
