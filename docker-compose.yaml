@@ -8,6 +8,7 @@ services:
       - ./storage/logs/:/logs/
     depends_on:
       - db
+      - redis
 
   # postgres database
   db:
@@ -29,3 +30,8 @@ services:
     volumes:
       - ./configs/:/configs/
       - ./storage/logs/:/logs/
+  
+  # redis for queues
+  redis:
+    image: redis:alpine
+    restart: always
