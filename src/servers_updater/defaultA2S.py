@@ -41,6 +41,9 @@ class DefaultA2S():
         return results
 
     async def write(self, serverData: list[serverInfo]) -> None:
+        '''
+        Parses and write info into the DB
+        '''
         # SQL query with placeholders for values
         query: str = '''UPDATE public.servers
                         SET name = $1, map_name = $2, current_players = $3, max_players = $4,
@@ -75,7 +78,9 @@ class DefaultA2S():
         await self._db.executemany(query, parametersServers)
 
     async def refresh(self, serverList: list[asyncpg.Record]) -> None:
+        '''
+        Gathers info about a list of servers and write the updated info back
+        '''
         logger.info(serverList)
         serverData = await self.collect(serverList)
         await self.write(serverData)
-        pass

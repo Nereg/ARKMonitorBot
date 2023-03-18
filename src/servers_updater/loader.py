@@ -94,7 +94,10 @@ class ServerUpdater:
         self._scheduler = scheduler
 
     async def updateAll(self) -> None:
-        logger.info('started upddater task')
+        '''
+        Updates all the server found in DB
+        '''
+        logger.info('Started updater task')
         # start performance timer
         startTime = time.perf_counter()
         # get needed info about every server

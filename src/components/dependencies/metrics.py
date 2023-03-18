@@ -12,6 +12,8 @@ import tanjun
 import alluka
 import hikari
 
+from components.dependencies.serverCounter import ServerCounter
+
 logger = logging.getLogger(__name__)
 component = tanjun.Component(name=__name__).load_from_scope()
 
@@ -20,6 +22,7 @@ class PromMetrics:
         "_site",
         "_registry",
         "_bot",
+        "_client",
         "heartbeat_latency",
         "events_received",
         "asyncio_tasks",
@@ -30,9 +33,10 @@ class PromMetrics:
         "updater_servers_count",
     )
 
-    def __init__(self, bot: hikari.GatewayBot, client: alluka.Injected[tanjun.Client]) -> None:
+    def __init__(self, client: tanjun.Client) -> None:
         self._site = None
-        self._bot = bot
+        self._bot = client.get_type_dependency(hikari.GatewayBot)
+        self._client = client
         self._registry = prometheus_client.CollectorRegistry()
         self.heartbeat_latency = prometheus_client.Gauge(
             "bot_heartbeat_latency", "Bots heartbeat latency", unit="ms", registry=self._registry
@@ -52,11 +56,12 @@ class PromMetrics:
 
     async def gather_metrics(self) -> str:
         loop = asyncio.get_running_loop()
+        server_counter = self._client.get_type_dependency(ServerCounter)
         self.heartbeat_latency.set(self._bot.heartbeat_latency * 1_000)
         self.asyncio_tasks.set(len(asyncio.all_tasks(loop)))
         self.cpu_usage.set(psutil.cpu_percent())
         self.ram_usage.set(psutil.virtual_memory().percent)
-        #self.guilds.set(await self._bot.rest.fetch_my_guilds().count()) TODO redo to not fetch every time
+        self.guilds.set(server_counter.server_count())
         return prometheus_client.generate_latest(self._registry).decode("utf-8")
 
     async def serve_metrics(self, _: web.Request) -> web.Response:
@@ -98,6 +103,5 @@ async def raw_event(event: hikari.ShardPayloadEvent, metrics: alluka.Injected[Pr
 
 @tanjun.as_loader
 def load(client: tanjun.Client):
-    bot = client.get_type_dependency(hikari.GatewayBot)
-    PromMetrics(bot, client)
+    PromMetrics(client)
     client.add_component(component)

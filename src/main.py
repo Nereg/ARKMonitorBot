@@ -42,10 +42,13 @@ def loadComponents(client: tanjun.Client) -> None:
     client.load_directory("./src/servers_updater")
     logger.info(f"Loaded components: {[c.name for c in client.components]}")
 
-async def amain() -> hikari.GatewayBot:
+async def setup() -> hikari.GatewayBot:
+    '''
+    Sets up the bot object to be ran
+    '''
+    # read config and setup logging
+    cfg: dict = config.Config().c       
     setupLogging()
-    # read config
-    cfg: dict = config.Config().c
 
     # if True slash commands will be declare globally
     declareCommands = True
@@ -72,7 +75,6 @@ async def amain() -> hikari.GatewayBot:
     except Exception as e:
         # if failed print traceback and exit
         logger.critical("DB connection failed!", exc_info=True)
-        #logger.exception(traceback.format_exc())
         exit(1)
     # inject connected DB instance
     client.set_type_dependency(Database, database)
@@ -80,7 +82,6 @@ async def amain() -> hikari.GatewayBot:
     client.set_type_dependency(aiohttp.ClientSession, aiohttp.ClientSession())
     # injecting config TODO: make it a separate class to not inject std type
     client.set_type_dependency(dict, cfg)
-    client.set_type_dependency(hikari.GatewayBot, bot)
 
     # load all the compenents after injecting everything
     loadComponents(client)
@@ -89,13 +90,13 @@ async def amain() -> hikari.GatewayBot:
     if os.name != "nt":
         # import uvloop
         import uvloop
-
         uvloop.install()
         logger.info("Added uvloop!")
+    
     return bot
 
 def main():
-    bot = asyncio.run(amain())
+    bot = asyncio.run(setup())
     bot.run()
 
 
