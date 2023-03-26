@@ -1,26 +1,44 @@
 import asyncio
 import logging
+from enum import Enum
+from dataclasses import dataclass
 
 import a2s
 import asyncpg
+import redis.asyncio as redis
 
 import typing
 
 logger = logging.getLogger(__name__)
 
 a2sPlayers = list[a2s.Player]
-serverInfo = typing.Tuple[int, a2s.SourceInfo, a2sPlayers, dict]
+
+class ServerVerdict(Enum):
+    CRITICAL = -1 # the server isn't ARK one
+    OK = 0 # proceed with parsing
+    ERROR = 1 # server is offline
+
+@dataclass(slots=True)
+class ServerInfo():
+    id: int
+    info: a2s.SourceInfo | Exception
+    players: a2sPlayers | Exception
+    rules: dict | Exception
+
+    def __repr__(self) -> str:
+        return f'<ServerInfo ID: {self.id}>'
 
 class DefaultA2S():
     
-    def __init__(self, db: asyncpg.Pool) -> None:
+    def __init__(self, db: asyncpg.Pool, redisInst: redis.Redis) -> None:
         self._db = db
+        self._redis = redisInst
 
-    async def collect(self, serverList: list[asyncpg.Record]) -> list[serverInfo]:
+    async def collect(self, serverList: list[asyncpg.Record]) -> list[ServerInfo]:
         '''
         Gathers info about a range of servers
         '''
-        results: list[serverInfo] = [] # list of results in defined format
+        results: list[ServerInfo] = [] # list of results in defined format
         corutines: list[typing.Coroutine] = [] # list of corutines to be .gather'ed
         # for each server in supplied range
         for server in serverList:
@@ -35,47 +53,84 @@ class DefaultA2S():
         info = await asyncio.gather(*corutines, return_exceptions=True)
         logger.info(serverList)
         logger.info(info)
-        # form results with each element: [id, ainfo_result, aplayers_result, arules_result]
-        results = list(zip([i["id"] for i in serverList], info[::3], info[1::3], info[2::3]))
+        # form results with dataclasses
+        for id, tmpInfo, players, rules in zip([i["id"] for i in serverList], info[::3], info[1::3], info[2::3]):
+            results.append(ServerInfo(id, tmpInfo, players, rules))
         logger.info("Results: " + str(results))
         return results
 
-    async def write(self, serverData: list[serverInfo]) -> None:
+    def evaluateServer(self, server: ServerInfo) -> ServerVerdict:
+        # if any exceptions
+        if (isinstance(server.info, Exception) or isinstance(server.players, Exception) or isinstance(server.rules, Exception)):
+            # TODO: add metrcis on which errors it is
+            logger.info(server)
+            return ServerVerdict.ERROR
+        # check if it is ARK server
+        # see https://developer.valvesoftware.com/wiki/Server_queries#Response_Format for EDF 0x01
+        try:
+            # 346110 is ARK steam id and app_id is 0 because 346110 can't be fit in 16-bit storage
+            if (server.info.app_id != 0 or server.info.game_id != 346110):
+                return ServerVerdict.CRITICAL
+        # info.game_id may not be present
+        except AttributeError: 
+            return ServerVerdict.CRITICAL
+        # if all checks pass return OK
+        return ServerVerdict.OK
+
+    async def write(self, serverData: list[ServerInfo]) -> None:
         '''
-        Parses and write info into the DB
+        Parses and writes info into the DB
+        Also responsible for publishing up/down notifications to redis
         '''
-        # SQL query with placeholders for values
-        query: str = '''UPDATE public.servers
+        # task of cleaning up servers with more then X ammount of errors is left for the bot
+        # SQL query with placeholders for OK results
+        okQuery: str = '''UPDATE public.servers
                         SET name = $1, map_name = $2, current_players = $3, max_players = $4,
                         steam_id = $5, ping = $6, password_protected = $7, modded = $8,
-                        is_pve = $9, last_updated=TIMESTAMP 'now'
+                        is_pve = $9, last_updated=TIMESTAMP 'now', online = true, error_count = 0
                         WHERE id = $10;'''
-        # list of sets of parameters for the query
-        parametersServers: list = []
+        # SQL query with placeholders for ERROR results
+        errorQuery: str = '''UPDATE public.servers
+                        SET last_updated=TIMESTAMP 'now', online = false, error_count = error_count + 1
+                        WHERE id = $1;'''
+        # SQL query with placeholders for CRITICAL results
+        criticalQuery: str = '''UPDATE public.servers
+                        SET last_updated=TIMESTAMP 'now', online = false, error_count = error_count + 5
+                        WHERE id = $1;'''
+        # list of sets of parameters for the OK query
+        parametersOkQueries: list = []
+        # list of sets of parameters for the ERROR query
+        parametersErrorQueries: list = []
+        # list of sets of parameters for the CRITICAL query
+        parametersCriticalQueries: list = []
         # for each collected server
         for server in serverData:
             logger.info(server)
-            # make shortcuts
-            info: a2s.SourceInfo = server[1]
-            players: a2sPlayers = server[2]
-            rules: dict = server[3]
-            # TODO: check if it is ARK server, check what caused the exception
-            if (isinstance(info, Exception) or isinstance(players, Exception) or isinstance(rules, Exception)):
-                logger.warning("Exception with server id: " + str(server[0]))
-                continue # TODO: error handling (queues ?)
-            # extact some values
-            isPVE = bool(rules['SESSIONISPVE_i'])
-            modded = True if rules.get('MOD0_s') is not None else False
-            # convert ping to ms
-            ping = int(info.ping * 1000)
-            # constuct a set of arguments to the query
-            parametersServers.append((
-                info.server_name, info.map_name, info.player_count,
-                info.max_players, info.steam_id, ping,
-                info.password_protected, modded, isPVE, server[0]))
-        logger.info(parametersServers)
+            verdict = self.evaluateServer(server)
+            if (verdict == ServerVerdict.OK):
+                # some checks so type checker can shut up
+                assert type(server.info) == a2s.SourceInfo
+                assert type(server.rules) == a2sPlayers
+                assert type(server.rules) == dict
+                # extact some values
+                isPVE = bool(server.rules['SESSIONISPVE_i'])
+                modded = True if server.rules.get('MOD0_s') is not None else False
+                # convert ping to ms
+                ping = int(server.info.ping * 1000)
+                # constuct a set of arguments to the query
+                parametersOkQueries.append((
+                    server.info.server_name, server.info.map_name, server.info.player_count,
+                    server.info.max_players, server.info.steam_id, ping,
+                    server.info.password_protected, modded, isPVE, server.id))
+            if (verdict == ServerVerdict.ERROR):
+                parametersErrorQueries.append(server.id)
+            if (verdict == ServerVerdict.CRITICAL):
+                parametersCriticalQueries.append(server.id)
+        logger.info(parametersOkQueries)
         # execute them all
-        await self._db.executemany(query, parametersServers)
+        await asyncio.gather(*[self._db.executemany(okQuery, parametersOkQueries),
+                               self._db.executemany(errorQuery, parametersErrorQueries),
+                               self._db.executemany(criticalQuery, parametersCriticalQueries)])
 
     async def refresh(self, serverList: list[asyncpg.Record]) -> None:
         '''

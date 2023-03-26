@@ -8,6 +8,7 @@ import alluka
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.executors.asyncio import AsyncIOExecutor
 import asyncpg
+import redis.asyncio as redis
 
 from servers_updater.defaultA2S import DefaultA2S
 from components.dependencies.metrics import PromMetrics
@@ -16,11 +17,12 @@ component = tanjun.Component(name=__name__)
 logger = logging.getLogger(__name__)
 
 class ServerUpdater:
-    def __init__(self, cfg: dict, metrics: PromMetrics) -> None:
+    def __init__(self, cfg: dict, metrics: PromMetrics, redisInst: redis.Redis) -> None:
         # aps scheluler to be used
         self._scheduler: AsyncIOScheduler
         self._botCfg: dict = cfg
         self._db: asyncpg.Pool
+        self._redis: redis.Redis = redisInst
         # list of workers
         self._workers: list[DefaultA2S] = []
         # metrics class to be used
