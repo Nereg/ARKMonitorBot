@@ -108,9 +108,11 @@ class DefaultA2S():
             logger.info(server)
             verdict = self.evaluateServer(server)
             if (verdict == ServerVerdict.OK):
+                logger.info(type(server.players))
                 # some checks so type checker can shut up
                 assert type(server.info) == a2s.SourceInfo
-                assert type(server.rules) == a2sPlayers
+                # IDK why it won't work with a2sPlayers type
+                assert type(server.players) == list
                 assert type(server.rules) == dict
                 # extact some values
                 isPVE = bool(server.rules['SESSIONISPVE_i'])
@@ -123,10 +125,12 @@ class DefaultA2S():
                     server.info.max_players, server.info.steam_id, ping,
                     server.info.password_protected, modded, isPVE, server.id))
             if (verdict == ServerVerdict.ERROR):
-                parametersErrorQueries.append(server.id)
+                parametersErrorQueries.append((server.id,))
             if (verdict == ServerVerdict.CRITICAL):
-                parametersCriticalQueries.append(server.id)
+                parametersCriticalQueries.append((server.id,))
         logger.info(parametersOkQueries)
+        logger.info(parametersErrorQueries)
+        logger.info(parametersCriticalQueries)
         # execute them all
         await asyncio.gather(*[self._db.executemany(okQuery, parametersOkQueries),
                                self._db.executemany(errorQuery, parametersErrorQueries),

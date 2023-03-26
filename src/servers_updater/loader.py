@@ -47,7 +47,7 @@ class ServerUpdater:
         # create configurable ammount of workers
         for _ in range(0, self._botCfg['updater']['workers']):
             # append each to the list of workers
-            self._workers.append(DefaultA2S(self._db))
+            self._workers.append(DefaultA2S(self._db, self._redis))
         # DEBUG
         await self.updateAll()
         # create main updater task loop
@@ -123,16 +123,17 @@ class ServerUpdater:
 
 
     @classmethod
-    async def build(cls, cfg: dict, metrics: PromMetrics) -> typing.Self:
+    async def build(cls, cfg: dict, metrics: PromMetrics, redisInst: redis.Redis) -> typing.Self:
         '''Correctly builds the class'''
-        inited = cls(cfg, metrics)
+        inited = cls(cfg, metrics, redisInst)
         await inited.init()
         return inited
         
 
 @component.with_client_callback(tanjun.ClientCallbackNames.STARTED)
-async def start(client: alluka.Injected[tanjun.Client], cfg: alluka.Injected[dict], metrics: alluka.Injected[PromMetrics]) -> None:
-    updater = await ServerUpdater.build(cfg, metrics)
+async def start(client: alluka.Injected[tanjun.Client], cfg: alluka.Injected[dict],
+                metrics: alluka.Injected[PromMetrics], redisInst: alluka.Injected[redis.Redis]) -> None:
+    updater = await ServerUpdater.build(cfg, metrics, redisInst)
     client.set_type_dependency(ServerUpdater, updater)
     logger.info("Inited and injected server updater!")
 
