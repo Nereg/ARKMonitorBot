@@ -4,3 +4,4 @@ pyvenv.cfg
 */__pycache__
 .git
 .vscode
+.mypy_cache

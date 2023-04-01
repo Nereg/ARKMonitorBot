@@ -1,7 +1,7 @@
 import logging
 import typing
 import asyncio
-import time 
+import time
 
 import tanjun
 import alluka
@@ -15,6 +15,7 @@ from components.dependencies.metrics import PromMetrics
 
 component = tanjun.Component(name=__name__)
 logger = logging.getLogger(__name__)
+
 
 class ServerUpdater:
     def __init__(self, cfg: dict, metrics: PromMetrics, redisInst: redis.Redis) -> None:
@@ -31,11 +32,11 @@ class ServerUpdater:
 
     async def init(self) -> None:
         # get needed DB config values an constuct connect URL
-        user = self._botCfg['db']['user']
-        host = self._botCfg['db']['host']
-        db_name = self._botCfg['db']['dbName']
-        port = self._botCfg['db']['dbPort']
-        password = self._botCfg['db']['password']
+        user = self._botCfg["db"]["user"]
+        host = self._botCfg["db"]["host"]
+        db_name = self._botCfg["db"]["dbName"]
+        port = self._botCfg["db"]["dbPort"]
+        password = self._botCfg["db"]["password"]
         dsn = f"postgres://{user}:{password}@{host}:{port}/{db_name}"
         try:
             # create a pool of connection to the DB
@@ -45,21 +46,21 @@ class ServerUpdater:
             logger.exception("Can't setup DB!", exc_info=True)
             exit(1)
         # create configurable ammount of workers
-        for _ in range(0, self._botCfg['updater']['workers']):
+        for _ in range(0, self._botCfg["updater"]["workers"]):
             # append each to the list of workers
             self._workers.append(DefaultA2S(self._db, self._redis))
         # DEBUG
         await self.updateAll()
         # create main updater task loop
         self._setupUpdaterTask()
-        logger.info('Started server updater!')
+        logger.info("Started server updater!")
 
     def divide(self, n: int, iterable: typing.Iterable):
         """Divide the elements from iterable into n parts, maintaining order.
         Stolen + modified from https://github.com/more-itertools/more-itertools
         """
         if n < 1:
-            raise ValueError('n must be at least 1')
+            raise ValueError("n must be at least 1")
 
         try:
             iterable[:0]
@@ -81,14 +82,17 @@ class ServerUpdater:
 
     def _setupUpdaterTask(self) -> None:
         # create a job with single instance which fires in a loop in configurable ammount of seconds
-        self._scheduler.add_job(self.updateAll, 'interval', seconds=self._botCfg['updater']['period'],
-                                max_instances=1, replace_existing=True)
+        self._scheduler.add_job(
+            self.updateAll,
+            "interval",
+            seconds=self._botCfg["updater"]["period"],
+            max_instances=1,
+            replace_existing=True,
+        )
 
     def _setupScheduler(self) -> None:
         # create one and only asyncio executor
-        executors = {
-            'default': AsyncIOExecutor()
-        }
+        executors = {"default": AsyncIOExecutor()}
         # create scheduler
         scheduler = AsyncIOScheduler(executors=executors)
         # start and assign it to the class
@@ -96,14 +100,14 @@ class ServerUpdater:
         self._scheduler = scheduler
 
     async def updateAll(self) -> None:
-        '''
+        """
         Updates all the server found in DB
-        '''
-        logger.info('Started updater task')
+        """
+        logger.info("Started updater task")
         # start performance timer
         startTime = time.perf_counter()
         # get needed info about every server
-        servers = await self._db.fetch("SELECT id, ip FROM public.servers")
+        servers = await self._db.fetch("SELECT id, ip, online FROM public.servers")
         # set server count metric
         self._metrics.updater_servers_count.set(len(servers))
         # create chunks for every worker
@@ -121,21 +125,26 @@ class ServerUpdater:
         # set performance metric
         self._metrics.updater_iteration_timing.set(endTime - startTime)
 
-
     @classmethod
-    async def build(cls, cfg: dict, metrics: PromMetrics, redisInst: redis.Redis) -> typing.Self:
-        '''Correctly builds the class'''
+    async def build(
+        cls, cfg: dict, metrics: PromMetrics, redisInst: redis.Redis
+    ) -> typing.Self:
+        """Correctly builds the class"""
         inited = cls(cfg, metrics, redisInst)
         await inited.init()
         return inited
-        
+
 
 @component.with_client_callback(tanjun.ClientCallbackNames.STARTED)
-async def start(client: alluka.Injected[tanjun.Client], cfg: alluka.Injected[dict],
-                metrics: alluka.Injected[PromMetrics], redisInst: alluka.Injected[redis.Redis]) -> None:
+async def start(
+    client: alluka.Injected[tanjun.Client],
+    cfg: alluka.Injected[dict],
+    metrics: alluka.Injected[PromMetrics],
+    redisInst: alluka.Injected[redis.Redis],
+) -> None:
     updater = await ServerUpdater.build(cfg, metrics, redisInst)
     client.set_type_dependency(ServerUpdater, updater)
     logger.info("Inited and injected server updater!")
 
-loader = component.make_loader()
 
+loader = component.make_loader()

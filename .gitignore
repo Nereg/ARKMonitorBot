@@ -11,5 +11,5 @@ storage
 configs/*.*
 # except for .example files
 !configs/*.example
-
+.mypy_cache
 
