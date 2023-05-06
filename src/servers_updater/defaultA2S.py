@@ -10,7 +10,7 @@ import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
-a2sPlayers = list[a2s.Player]
+a2s_players = list[a2s.Player]
 
 
 class ServerVerdict(Enum):
@@ -19,7 +19,9 @@ class ServerVerdict(Enum):
     OK = 0  # proceed with parsing
     "Server is working correctly"
     ERROR = 1  # server is offline
-    "Server is offfline or misbehaving"
+    "Server is offline or misbehaving"
+    PARTIAL = 2  # some data isn't present
+    "Server returned partial data"
 
 
 @dataclass(slots=True)
@@ -28,7 +30,7 @@ class ServerInfo:
     "Server ID in the DB"
     info: a2s.SourceInfo | Exception
     "SourceInfo class about the server or exception"
-    players: a2sPlayers | Exception
+    players: a2s_players | Exception
     "A list of Player objects or exception"
     rules: dict | Exception
     "A dict of rules on the server or exception"
@@ -40,42 +42,65 @@ class ServerInfo:
 
 
 class DefaultA2S:
-    def __init__(self, db: asyncpg.Pool, redisInst: redis.Redis) -> None:
+    def __init__(self, db: asyncpg.Pool, redis_inst: redis.Redis) -> None:
         self._db = db
-        self._redis = redisInst
+        """Instance of the DB"""
+        self._redis = redis_inst
+        """Instance of redis"""
+        self._redis_executor = redis_inst.pipeline()
+        """A redis pipeline for buffering many changes"""
+        self._channel_name = "server_watch"
+        """Name of a redis channel for server notifications"""
 
-    async def collect(self, serverList: list[asyncpg.Record]) -> list[ServerInfo]:
+    async def collect(self, server_list: list[asyncpg.Record]) -> list[ServerInfo]:
         """
         Gathers info about a range of servers
         """
         results: list[ServerInfo] = []  # list of results in defined format
         corutines: list[typing.Coroutine] = []  # list of corutines to be .gather'ed
         # for each server in supplied range
-        for server in serverList:
+        for server in server_list:
             # format it for a2s lib
             ip = tuple(server["ip"].split(":"))
-            logger.info(ip)
+            # logger.info(ip)
             # append info and players corutine to be .gather'ed
-            corutines.append(a2s.ainfo(ip))
-            corutines.append(a2s.aplayers(ip))
-            corutines.append(a2s.arules(ip))
+            corutines.append(a2s.ainfo(ip, timeout=6.0))
+            corutines.append(a2s.aplayers(ip, timeout=6.0))
+            corutines.append(a2s.arules(ip, timeout=6.0))
         # gather all the generate corutines and n (executes them in parallel)
         info = await asyncio.gather(*corutines, return_exceptions=True)
-        logger.info(serverList)
-        logger.info(info)
+        # logger.info(serverList)
+        # logger.info(info)
         # form results with dataclasses
-        for id, tmpInfo, players, rules, last_online in zip(
-            [i["id"] for i in serverList],
+        for id, tmp_info, players, rules, last_online in zip(
+            [i["id"] for i in server_list],
             info[::3],
             info[1::3],
             info[2::3],
-            [i["online"] for i in serverList],
+            [i["online"] for i in server_list],
         ):
-            results.append(ServerInfo(id, tmpInfo, players, rules, last_online))
-        logger.info("Results: " + str(results))
+            results.append(ServerInfo(id, tmp_info, players, rules, last_online))
+        # logger.info("Results: " + str(results))
         return results
 
     def evaluateServer(self, server: ServerInfo) -> ServerVerdict:
+        """
+        Judges which case we have with a server
+        OK - all data is present and is from ARK server
+        PARTIAL - some data isn't present, no checks should be performed
+        ERROR - no data is present, server is down
+        CRITICAL - the server probably isn't an ARK one, or other critical errors
+        """
+        # if all exceptions
+        if (
+            isinstance(server.info, Exception)
+            and isinstance(server.players, Exception)
+            and isinstance(server.rules, Exception)
+        ):
+            # TODO: add metrcis on which errors it is
+            # logger.info(server)
+            return ServerVerdict.ERROR
+
         # if any exceptions
         if (
             isinstance(server.info, Exception)
@@ -83,8 +108,9 @@ class DefaultA2S:
             or isinstance(server.rules, Exception)
         ):
             # TODO: add metrcis on which errors it is
-            logger.info(server)
-            return ServerVerdict.ERROR
+            # logger.info(server)
+            return ServerVerdict.PARTIAL
+
         # check if it is ARK server
         # see https://developer.valvesoftware.com/wiki/Server_queries#Response_Format for EDF 0x01
         try:
@@ -94,43 +120,59 @@ class DefaultA2S:
         # info.game_id may not be present
         except AttributeError:
             return ServerVerdict.CRITICAL
+
         # if all checks pass return OK
         return ServerVerdict.OK
 
-    async def write(self, serverData: list[ServerInfo]) -> None:
+    def declare_up(self, up_array: list[int]) -> None:
+        """
+        Declares all IDs in up_array as up in proper redis channel
+        """
+        for id in up_array:
+            self._redis_executor.publish(self._channel_name, "UP;" + str(id))
+
+    def declare_down(self, down_array: list[int]) -> None:
+        """
+        Declares all IDs in down_array as down in proper redis channel
+        """
+        for id in down_array:
+            self._redis_executor.publish(self._channel_name, "DOWN;" + str(id))
+
+    async def write(self, server_data: list[ServerInfo]) -> None:
         """
         Parses and writes info into the DB
         Also responsible for publishing up/down notifications to redis
         """
         # task of cleaning up servers with more then X ammount of errors is left for the bot
         # SQL query with placeholders for OK results
-        okQuery: str = """UPDATE public.servers
+        ok_query: str = """UPDATE public.servers
                         SET name = $1, map_name = $2, current_players = $3, max_players = $4,
                         steam_id = $5, ping = $6, password_protected = $7, modded = $8,
                         is_pve = $9, last_updated=TIMESTAMP 'now', online = true, error_count = 0
                         WHERE id = $10;"""
         # SQL query with placeholders for ERROR results
-        errorQuery: str = """UPDATE public.servers
+        error_query: str = """UPDATE public.servers
                         SET last_updated=TIMESTAMP 'now', online = false, error_count = error_count + 1
                         WHERE id = $1;"""
         # SQL query with placeholders for CRITICAL results
-        criticalQuery: str = """UPDATE public.servers
+        critical_query: str = """UPDATE public.servers
                         SET last_updated=TIMESTAMP 'now', online = false, error_count = error_count + 5
                         WHERE id = $1;"""
         # list of sets of parameters for the OK query
-        parametersOkQueries: list = []
+        parameters_ok_oueries: list = []
         # list of sets of parameters for the ERROR query
-        parametersErrorQueries: list = []
+        parameters_error_queries: list = []
         # list of sets of parameters for the CRITICAL query
-        parametersCriticalQueries: list = []
-        # buffered redis executor
-        redis_executor = self._redis.pipeline()
+        parameters_critical_queries: list = []
+        # array of ids of servers that went down
+        went_down: list[int] = []
+        # array of ids of servers that went up
+        went_up: list[int] = []
         # for each collected server
-        for server in serverData:
-            logger.info(server)
+        for server in server_data:
+            # logger.info(server)
             verdict = self.evaluateServer(server)
             if verdict == ServerVerdict.OK:
-                logger.info(type(server.players))
                 # some checks so type checker can shut up
                 assert type(server.info) == a2s.SourceInfo
                 # IDK why it won't work with a2sPlayers type
@@ -142,7 +184,7 @@ class DefaultA2S:
                 # convert ping to ms
                 ping = int(server.info.ping * 1000)
                 # constuct a set of arguments to the query
-                parametersOkQueries.append(
+                parameters_ok_oueries.append(
                     (
                         server.info.server_name,
                         server.info.map_name,
@@ -156,43 +198,78 @@ class DefaultA2S:
                         server.id,
                     )
                 )
-                logger.info("server.last_online: " + str(server.last_online))
+                # logger.info("server.last_online: " + str(server.last_online))
                 # if server was offline
                 if server.last_online == False:
-                    # publish a message that it went up
-                    redis_executor.publish("server_watch", "UP;" + str(server.id))
+                    # add it to went up list
+                    went_up.append(server.id)
                     logger.info(str(server.id) + " went up!")
+            # if server returned partial data
+            elif verdict == ServerVerdict.PARTIAL:
+                self._redis_executor.publish("server_watch", "part")
+                # if needed notify that it went up
+                # don't count partial data as went down
+                if server.last_online == False:
+                    # add it to went up list
+                    went_up.append(server.id)
             elif verdict == ServerVerdict.ERROR:
-                parametersErrorQueries.append((server.id,))
+                parameters_error_queries.append((server.id,))
                 # if server was online
                 if server.last_online == True:
-                    # publish a message that it went down
-                    redis_executor.publish("server_watch", "DOWN;" + str(server.id))
-                    logger.info(str(server.id) + " went down!")
+                    # add it to went down list
+                    went_down.append(server.id)
+                    logger.info(
+                        str(server.id)
+                        + " went down "
+                        + str([server.info, server.players, server.rules])
+                    )
             elif verdict == ServerVerdict.CRITICAL:
-                parametersCriticalQueries.append((server.id,))
+                parameters_critical_queries.append((server.id,))
                 # if server was online
                 if server.last_online == True:
-                    # publish a message that it went down
-                    redis_executor.publish("server_watch", "DOWN;" + str(server.id))
-                    logger.info(str(server.id) + " went down!")
-        logger.info(parametersOkQueries)
-        logger.info(parametersErrorQueries)
-        logger.info(parametersCriticalQueries)
+                    # add it to went down list
+                    went_down.append(server.id)
+                    logger.info(
+                        str(server.id)
+                        + " went down! "
+                        + str([server.info, server.players, server.rules])
+                    )
+        # logger.info(parametersOkQueries)
+        logger.info(parameters_error_queries)
+        logger.info(parameters_critical_queries)
         # execute them all
-        await asyncio.gather(
-            *[
-                self._db.executemany(okQuery, parametersOkQueries),
-                self._db.executemany(errorQuery, parametersErrorQueries),
-                self._db.executemany(criticalQuery, parametersCriticalQueries),
-                redis_executor.execute(),
-            ]
-        )
+        # TODO: maybe if more then 1/2 of all servers went down then it is a problem on our end and we shoudln't alert anyone ?
+        # half or more servers went down
+        # it is probably a problem on our side
+        if len(went_down) >= len(server_data) / 2:
+            logger.warning(
+                "More then hald of the servers went down in one go! Applying special case."
+            )
+            # declare any server that went up
+            self.declare_up(went_up)
+            # process OK servers and went up notifications
+            await asyncio.gather(
+                self._db.executemany(ok_query, parameters_ok_oueries),
+                self._redis_executor.execute(),
+            )
+        else:
+            # declare any servers
+            self.declare_up(went_up)
+            self.declare_down(went_down)
+            # process everything
+            await asyncio.gather(
+                *[
+                    self._db.executemany(ok_query, parameters_ok_oueries),
+                    self._db.executemany(error_query, parameters_error_queries),
+                    self._db.executemany(critical_query, parameters_critical_queries),
+                    self._redis_executor.execute(),
+                ]
+            )
 
-    async def refresh(self, serverList: list[asyncpg.Record]) -> None:
+    async def refresh(self, server_list: list[asyncpg.Record]) -> None:
         """
         Gathers info about a list of servers and write the updated info back
         """
-        logger.info(serverList)
-        serverData = await self.collect(serverList)
-        await self.write(serverData)
+        logger.info(server_list)
+        server_data = await self.collect(server_list)
+        await self.write(server_data)

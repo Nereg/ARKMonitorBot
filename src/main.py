@@ -1,16 +1,12 @@
-import asyncio
 import logging
 import os
-import traceback
 from logging.handlers import RotatingFileHandler
 
 import aiohttp
-import alluka
 import hikari
 import tanjun
 
 import config
-from db.db import Database
 
 logger = logging.getLogger(__name__)
 
