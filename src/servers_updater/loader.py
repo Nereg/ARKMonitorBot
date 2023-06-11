@@ -53,8 +53,9 @@ class ServerUpdater:
         self._setupUpdaterTask()
         logger.info("Started server updater!")
 
-    def divide(self, n: int, iterable: typing.Iterable):
-        """Divide the elements from iterable into n parts, maintaining order.
+    def divide(self, n: int, iterable: typing.Iterable) -> list:
+        """
+        Divide the elements from iterable into n parts, maintaining order.
         Stolen + modified from https://github.com/more-itertools/more-itertools
         """
         if n < 1:
@@ -79,7 +80,7 @@ class ServerUpdater:
         return ret
 
     def _setupUpdaterTask(self) -> None:
-        # create a job with single instance which fires in a loop in configurable ammount of seconds
+        # create a job with single instance which fires in a loop in configurable amount of seconds
         self._scheduler.add_job(
             self.updateAll,
             "interval",
@@ -111,7 +112,7 @@ class ServerUpdater:
         # create chunks for every worker
         chunks = self.divide(len(self._workers), servers)
         # DEBUG
-        logger.info(chunks)
+        # logger.info(chunks)
         # generate corutine for each worker with it's chunk to do
         corutines = []
         for worker, chunk in zip(self._workers, chunks):

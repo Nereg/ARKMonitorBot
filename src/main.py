@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 def setupLogging() -> None:
+    """
+    Sets up global logging
+    """
     # get root logger
     rootLogger = logging.getLogger("")
     # create a rotating file handler with 1 backup file and 1 megabyte size
@@ -33,6 +36,10 @@ def setupLogging() -> None:
 
 
 def loadComponents(client: tanjun.Client) -> None:
+    """
+    Loads components in order
+    """
+    # load dependencies (DB, redis, etc)
     client.load_directory(
         "./src/components/dependencies/", namespace="components.dependencies"
     )
@@ -45,7 +52,7 @@ def loadComponents(client: tanjun.Client) -> None:
 
 def main() -> None:
     """
-    Sets up the bot object to be ran
+    Main function
     """
     # read config and setup logging
     cfg: dict = config.Config().c

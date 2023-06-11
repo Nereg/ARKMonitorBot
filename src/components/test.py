@@ -36,7 +36,7 @@ async def slash_command(
         debug_redis_handler,
         "interval",
         args=[queue, ctx],
-        seconds=20,
+        seconds=10,
         max_instances=1,
     )
     await ctx.respond(
