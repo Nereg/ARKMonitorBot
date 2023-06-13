@@ -8,6 +8,8 @@ import a2s
 import asyncpg
 import redis.asyncio as redis
 
+from components.dependencies.metrics import PromMetrics
+
 logger = logging.getLogger(__name__)
 
 # define players type
@@ -51,7 +53,9 @@ class DefaultA2S:
     Default implementation of server updater
     """
 
-    def __init__(self, db: asyncpg.Pool, redis_inst: redis.Redis) -> None:
+    def __init__(
+        self, db: asyncpg.Pool, redis_inst: redis.Redis, metrics: PromMetrics
+    ) -> None:
         self._db = db
         """Instance of the DB"""
         self._redis = redis_inst
@@ -62,6 +66,8 @@ class DefaultA2S:
         """Name of a redis channel for server notifications"""
         self._timeout = 6.0
         """Timeout for server requests"""
+        self._metrics = metrics
+        """Metrics class to write to"""
 
     async def collect(self, server_list: list[asyncpg.Record]) -> list[ServerInfo]:
         """
@@ -156,6 +162,19 @@ class DefaultA2S:
             logger.info(f"DOWN: {id}")
             self._redis_executor.publish(self._channel_name, "DOWN;" + str(id))
 
+    def exception_metrics_write(
+        self, verdict: ServerVerdict, server: ServerInfo
+    ) -> None:
+        # maybe add a way to know which of the requests failed?
+        if isinstance(server.info, Exception):
+            self._metrics.updater_errors.labels(name=str(type(server.info))).inc()
+        if isinstance(server.players, Exception):
+            self._metrics.updater_errors.labels(name=str(type(server.players))).inc()
+        if isinstance(server.rules, Exception):
+            self._metrics.updater_errors.labels(name=str(type(server.rules))).inc()
+        # add the name of the verdict to our metrics
+        self._metrics.updater_verdicts.labels(name=verdict.name.lower()).inc()
+
     async def write(self, server_data: list[ServerInfo]) -> None:
         """
         Parses and writes info into the DB
@@ -198,6 +217,8 @@ class DefaultA2S:
             # logger.info(server)
             # judge the server result
             verdict = self.evaluateServer(server)
+            # record the metrics
+            self.exception_metrics_write(verdict, server)
             # if full data is present
             if verdict == ServerVerdict.OK:
                 # some checks so type checker can shut up

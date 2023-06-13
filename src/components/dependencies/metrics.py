@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
-import typing
 
 import prometheus_client
 import psutil
@@ -16,6 +14,7 @@ from components.dependencies.serverCounter import ServerCounter
 
 logger = logging.getLogger(__name__)
 component = tanjun.Component(name=__name__).load_from_scope()
+
 
 class PromMetrics:
     __slots__ = (
@@ -31,6 +30,8 @@ class PromMetrics:
         "guilds",
         "updater_iteration_timing",
         "updater_servers_count",
+        "updater_errors",
+        "updater_verdicts",
     )
 
     def __init__(self, client: tanjun.Client) -> None:
@@ -39,19 +40,51 @@ class PromMetrics:
         self._client = client
         self._registry = prometheus_client.CollectorRegistry()
         self.heartbeat_latency = prometheus_client.Gauge(
-            "bot_heartbeat_latency", "Bots heartbeat latency", unit="ms", registry=self._registry
+            "bot_heartbeat_latency",
+            "Bots heartbeat latency",
+            unit="ms",
+            registry=self._registry,
         )
         self.events_received = prometheus_client.Counter(
-            "bot_events_received", "Events received", labelnames=("name",), registry=self._registry
+            "bot_events_received",
+            "Events received",
+            labelnames=("name",),
+            registry=self._registry,
         )
         self.asyncio_tasks = prometheus_client.Gauge(
             "bot_asyncio_tasks", "Active asyncio tasks", registry=self._registry
         )
-        self.cpu_usage = prometheus_client.Gauge("bot_cpu_usage", "CPU usage", registry=self._registry)
-        self.ram_usage = prometheus_client.Gauge("bot_ram_usage", "RAM usage", registry=self._registry)
-        self.guilds = prometheus_client.Gauge("bot_guild_count", "Guilds", registry=self._registry)
-        self.updater_iteration_timing = prometheus_client.Gauge("updater_iteration_timing", "Duration of last updater iteration", registry=self._registry)
-        self.updater_servers_count = prometheus_client.Gauge("updater_servers_count", "Ammount of servers updated", registry=self._registry)
+        self.cpu_usage = prometheus_client.Gauge(
+            "bot_cpu_usage", "CPU usage", registry=self._registry
+        )
+        self.ram_usage = prometheus_client.Gauge(
+            "bot_ram_usage", "RAM usage", registry=self._registry
+        )
+        self.guilds = prometheus_client.Gauge(
+            "bot_guild_count", "Guilds", registry=self._registry
+        )
+        self.updater_iteration_timing = prometheus_client.Gauge(
+            "updater_iteration_timing",
+            "Duration of last updater iteration",
+            registry=self._registry,
+        )
+        self.updater_servers_count = prometheus_client.Gauge(
+            "updater_servers_count",
+            "Ammount of servers updated",
+            registry=self._registry,
+        )
+        self.updater_errors = prometheus_client.Counter(
+            "updater_errors",
+            "Errors encountered in updater",
+            labelnames=("name",),
+            registry=self._registry,
+        )
+        self.updater_verdicts = prometheus_client.Counter(
+            "updater_verdicts",
+            "Types of verdicts encountered by the updater",
+            labelnames=("name",),
+            registry=self._registry,
+        )
         client.set_type_dependency(PromMetrics, self)
 
     async def gather_metrics(self) -> str:
@@ -69,7 +102,12 @@ class PromMetrics:
 
         return web.Response(text=metrics, content_type="text/plain")
 
-    async def start(self, host: str = "0.0.0.0", port: int = 9000, disable_access_logger: bool = True) -> None:
+    async def start(
+        self,
+        host: str = "0.0.0.0",
+        port: int = 9000,
+        disable_access_logger: bool = True,
+    ) -> None:
         if disable_access_logger:
             access_logger = logging.getLogger("aiohttp.access")
             access_logger.disabled = True
@@ -87,19 +125,27 @@ class PromMetrics:
     async def stop(self) -> None:
         await self._site.stop()
 
+
 @component.with_listener()
-async def start_metrics(_: hikari.StartedEvent, metrics: alluka.Injected[PromMetrics]) -> None:
+async def start_metrics(
+    _: hikari.StartedEvent, metrics: alluka.Injected[PromMetrics]
+) -> None:
     await metrics.start()
 
 
 @component.with_listener()
-async def stop_metrics_collection(_: hikari.StoppingEvent, metrics: alluka.Injected[PromMetrics]) -> None:
+async def stop_metrics_collection(
+    _: hikari.StoppingEvent, metrics: alluka.Injected[PromMetrics]
+) -> None:
     await metrics.stop()
 
 
 @component.with_listener()
-async def raw_event(event: hikari.ShardPayloadEvent, metrics: alluka.Injected[PromMetrics]) -> None:
+async def raw_event(
+    event: hikari.ShardPayloadEvent, metrics: alluka.Injected[PromMetrics]
+) -> None:
     metrics.events_received.labels(name=event.name).inc()
+
 
 @tanjun.as_loader
 def load(client: tanjun.Client):

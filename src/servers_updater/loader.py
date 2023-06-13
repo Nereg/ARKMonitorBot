@@ -48,7 +48,7 @@ class ServerUpdater:
         # create configurable ammount of workers
         for _ in range(0, self._botCfg["updater"]["workers"]):
             # append each to the list of workers
-            self._workers.append(DefaultA2S(self._db, self._redis))
+            self._workers.append(DefaultA2S(self._db, self._redis, self._metrics))
         # create main updater task loop
         self._setupUpdaterTask()
         logger.info("Started server updater!")
