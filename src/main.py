@@ -1,21 +1,28 @@
 # from charcoal import Charcoal
 # import cogs.utils.classes as c  # our classes
-from cogs.utils.helpers import *  # our helpers
-import config  # config
-import discord  # main discord library
-from discord.ext import commands  # import commands extension
-from discord.ext.commands import HybridCommand
-
 # from server_cmd import *  # !server command
 import json  # json module
-import traceback  # traceback
 import time  # time
+import traceback  # traceback
+import typing
 from datetime import datetime
-from discord import permissions
-from discord.ext.commands import has_permissions, CheckFailure, Greedy, Context
 from pathlib import Path
 from typing import Optional
-import typing
+
+import config  # config
+import discord  # main discord library
+from discord import MemberCacheFlags, permissions
+from discord.ext import commands  # import commands extension
+from discord.ext.commands import (
+    CheckFailure,
+    Context,
+    Greedy,
+    HybridCommand,
+    has_permissions,
+)
+
+from cogs.utils.helpers import *  # our helpers
+
 # classes.py - just classes for data shareing and processing
 # config.py - main bot config
 # commands.py - all commands live here
@@ -33,10 +40,12 @@ bot = commands.AutoShardedBot(
     help_command=None,
     activity=game,
     strip_after_prefix=True,
+    member_cache_flags=MemberCacheFlags.none(),
 )
 bot.cfg = conf
 debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
+
 
 # setup function
 async def setup():
@@ -45,7 +54,7 @@ async def setup():
     cogs = [p.stem for p in Path(".").glob("./src/cogs/*_cog.py")]
     print(cogs)
     for cog in cogs:
-        #print(f"cogs.{cog}")
+        # print(f"cogs.{cog}")
         await bot.load_extension(f"cogs.{cog}")
         print(f"{cog} cog loaded")
     # load jishaku
@@ -61,7 +70,11 @@ async def setup():
 @bot.command()
 @commands.guild_only()
 @commands.is_owner()
-async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: Optional[typing.Literal["~", "*", "^"]] = None) -> None:
+async def sync(
+    ctx: Context,
+    guilds: Greedy[discord.Object],
+    spec: Optional[typing.Literal["~", "*", "^"]] = None,
+) -> None:
     if not guilds:
         if spec == "~":
             synced = await ctx.bot.tree.sync(guild=ctx.guild)
@@ -90,6 +103,7 @@ async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: Optional[typi
             ret += 1
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
+
 
 @bot.hybrid_command(description="Need help with the bot? This is the right command!")
 async def help(ctx):
@@ -126,21 +140,23 @@ async def help(ctx):
     # define misc sections value
     miscValue = f"**`{prefix}info`- Get info about this bot (e.g. support server, GitHub etc.)**"
     # add misc section to the embed
-    message.add_field(name=f'**Miscellaneous Commands:**', value=miscValue,
-                      inline=False)
-    # and send it  
-    await ctx.send(embed=message)  
+    message.add_field(
+        name=f"**Miscellaneous Commands:**", value=miscValue, inline=False
+    )
+    # and send it
+    await ctx.send(embed=message)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~
 #        EVENTS
 # ~~~~~~~~~~~~~~~~~~~~~
 
+
 # will respond for ping of the bot
 @bot.event
 async def on_message(msg):  # on every message
-    #await bot.process_commands(msg)
-    #return
+    # await bot.process_commands(msg)
+    # return
     # if we in DMs  AND it isn't our message
     if msg.guild == None and msg.author != bot.user:
         try:
@@ -279,6 +295,7 @@ async def channelNotFound(ctx, error):
     # send embed
     await ctx.send(embed=embed)
 
+
 @bot.event
 async def on_command_error(ctx, error):
     # get original error from d.py error
@@ -396,7 +413,7 @@ async def on_command_error(ctx, error):
     # # get it's id
     # Id = data[0][0]
     # send error embed with this id
-    #await sendErrorEmbed(ctx, Id, error)
+    # await sendErrorEmbed(ctx, Id, error)
     # add each error together
     errors_str = "".join(errors)
     # format time
@@ -433,16 +450,16 @@ Error : {e}""",
         await sendToMe(message, bot, True)
 
 
-
 async def main():
     async with bot:
         await setup()
-        #await bot.tree.sync(guild=discord.Object(id=349178138258833418))
+        # await bot.tree.sync(guild=discord.Object(id=349178138258833418))
         # if conf.debug is True asyncio will output additional debug info into logs
         bot.loop.set_debug(conf.debug)
         await bot.start(conf.token)
 
+
 # was causing problems and was using python implementation of asyncio instead of C one (which is faster)
 # nest_asyncio.apply() # patch loop https://pypi.org/project/nest-asyncio/
-#bot.run(conf.token)  # get our discord token and FIRE IT UP !
+# bot.run(conf.token)  # get our discord token and FIRE IT UP !
 asyncio.run(main())
