@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import config  # config
 import discord  # main discord library
 from discord import MemberCacheFlags, permissions
 from discord.ext import commands  # import commands extension
@@ -21,6 +20,7 @@ from discord.ext.commands import (
     has_permissions,
 )
 
+import config  # config
 from cogs.utils.helpers import *  # our helpers
 
 # classes.py - just classes for data shareing and processing
@@ -45,6 +45,11 @@ bot = commands.AutoShardedBot(
 bot.cfg = conf
 debug.debug("Inited DB and Bot!")  # debug into console !
 t = c.Translation()  # load default english translation
+
+
+@bot.before_invoke
+async def before_invoke(ctx):
+    await ctx.defer()
 
 
 # setup function
