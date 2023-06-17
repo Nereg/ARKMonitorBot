@@ -158,7 +158,7 @@ async def AddServer(ip, ctx):
     Checks for common error and, if possible, fixes them or notifies user
     If successful returns id of added server else returns None
     """
-    await ctx.defer()
+    #await ctx.defer()
     if IpCheck(ip) != True:  # check IP address
         if ">" in ip or "<" in ip:  # if we have < or > in string
             # tell the user that they aren't needed
