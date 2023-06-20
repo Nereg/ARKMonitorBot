@@ -92,9 +92,9 @@ class DefaultA2S:
         # form results with dataclasses
         for id, tmp_info, tmp_players, tmp_rules, last_online in zip(
             [i["id"] for i in server_list],
-            info[::3],
-            info[1::3],
-            info[2::3],
+            info[::3],  # info
+            info[1::3],  # players
+            info[2::3],  # rules
             [i["online"] for i in server_list],
         ):
             results.append(
@@ -199,6 +199,12 @@ class DefaultA2S:
         critical_query: str = """UPDATE public.servers
                         SET last_updated=TIMESTAMP 'now', online = false, error_count = error_count + 10
                         WHERE id = $1;"""
+        # SQL query to delete player list for a server from DB
+        players_delete_query: str = "DELETE FROM public.players WHERE server_id = $1;"
+        # SQL query to add player list for a server to DB
+        players_add_query: str = """INSERT INTO public.players (server_id, name, duration)
+                                    VALUES ($1, $2, $3);"""
+
         # list of sets of parameters for the OK query
         parameters_ok_oueries: list = []
         # list of sets of parameters for the ERROR query
@@ -211,6 +217,8 @@ class DefaultA2S:
         went_down: list[int] = []
         # array of ids of servers that went up
         went_up: list[int] = []
+        # array of parameters for player info
+        players: list[tuple[int, str, float]] = []
 
         # for each collected server
         for server in server_data:
@@ -247,6 +255,13 @@ class DefaultA2S:
                         server.id,
                     )
                 )
+                # for each player on the server
+                for player in server.players:
+                    # skip blank players. Probably Epic Games players
+                    if player.name == "":
+                        continue
+                    # construct a set of arguments to the player data query
+                    players.append((server.id, player.name, player.duration))
                 # logger.info("server.last_online: " + str(server.last_online))
                 # if server was offline
                 if server.last_online == False:
@@ -312,7 +327,7 @@ class DefaultA2S:
             # proccess notifications
             self.declare_up(went_up)
             self.declare_down(went_down)
-            # process IO in parallel
+            # process server info and notifications in parallel
             await asyncio.gather(
                 *[
                     self._db.executemany(ok_query, parameters_ok_oueries),
@@ -322,6 +337,22 @@ class DefaultA2S:
                     self._redis_executor.execute(),
                 ]
             )
+            # handling player data
+            # construct parameters for delete query (converted to set to de-dupe the ids)
+            delete_parameters = list(set([(p[0],) for p in players]))
+            # acquire a DB connection
+            async with self._db.acquire() as con:
+                # open a transaction for player info (I don't want player data to disappear)
+                async with con.transaction():
+                    # delete player lists
+                    await con.executemany(players_delete_query, delete_parameters)
+                    # add new onces
+                    await con.executemany(players_add_query, players)
+            # a query for future me)
+            # SELECT server_id, servers.name, servers.ip, servers.current_players, players.name, duration FROM public.players
+            # INNER JOIN public.servers
+            # ON servers.id = players.server_id
+            # WHERE server_id = 10
 
     async def refresh(self, server_list: list[asyncpg.Record]) -> None:
         """

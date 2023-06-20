@@ -17,6 +17,10 @@ component = tanjun.Component(name=__name__).load_from_scope()
 
 
 class PromMetrics:
+    """
+    Prometheus based metrics class
+    """
+
     __slots__ = (
         "_site",
         "_registry",
@@ -88,8 +92,12 @@ class PromMetrics:
         client.set_type_dependency(PromMetrics, self)
 
     async def gather_metrics(self) -> str:
+        """
+        Gathers metrics and generates text response
+        """
         loop = asyncio.get_running_loop()
         server_counter = self._client.get_type_dependency(ServerCounter)
+        # set bot latency in ms
         self.heartbeat_latency.set(self._bot.heartbeat_latency * 1_000)
         self.asyncio_tasks.set(len(asyncio.all_tasks(loop)))
         self.cpu_usage.set(psutil.cpu_percent())
@@ -98,8 +106,10 @@ class PromMetrics:
         return prometheus_client.generate_latest(self._registry).decode("utf-8")
 
     async def serve_metrics(self, _: web.Request) -> web.Response:
+        """
+        Responds to a request by the agent
+        """
         metrics = await self.gather_metrics()
-
         return web.Response(text=metrics, content_type="text/plain")
 
     async def start(
@@ -108,6 +118,9 @@ class PromMetrics:
         port: int = 9000,
         disable_access_logger: bool = True,
     ) -> None:
+        """
+        Starts aiohttp server for agent's requests
+        """
         if disable_access_logger:
             access_logger = logging.getLogger("aiohttp.access")
             access_logger.disabled = True
