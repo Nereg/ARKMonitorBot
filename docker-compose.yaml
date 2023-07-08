@@ -19,18 +19,18 @@ services:
     volumes:
       - ./storage/db:/var/lib/postgresql/data # data storage
       - ./configs/:/configs/ # for configurations
-  
+
   # grafana agent for metrics
   agent:
     image: grafana/agent:latest
     restart: always
     entrypoint:
-      - /bin/agent
+      - /bin/grafana-agent
       - -config.file=/configs/grafanaAgent.yaml
     volumes:
       - ./configs/:/configs/
       - ./storage/logs/:/logs/
-  
+
   # redis for queues
   redis:
     image: redis:alpine

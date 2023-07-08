@@ -1,7 +1,10 @@
-Lib
-Scripts
-pyvenv.cfg
+# development venv
+.venv
+# caches
 */__pycache__
+.mypy_cache
+# development configs
 .git
 .vscode
-.mypy_cache
+# vscode configs
+.vscode

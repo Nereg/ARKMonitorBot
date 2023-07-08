@@ -1,15 +1,15 @@
 # venv
-Lib
-Scripts
-pyvenv.cfg
-# python cache
+.venv
+# python and mypy cache
 */__pycache__
 */*/__pycache__
+.mypy_cache
 # persistent storage folder 
 storage
 # all the configs
 configs/*.*
 # except for .example files
 !configs/*.example
-.mypy_cache
+# vscode configs
+.vscode
 
