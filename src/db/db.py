@@ -1,20 +1,23 @@
-import tanjun
+import typing as t
+from contextlib import asynccontextmanager
+
 import alluka
 import asyncpg
-import typing as t
+import tanjun
+
 from errors import DatabaseStateConflictError
-from contextlib import asynccontextmanager
+
 
 class Database:
     """A database object that wraps an asyncpg pool and provides additional methods for convenience. Thanks hyper!"""
 
     def __init__(self, app: tanjun.Client, cfg: alluka.Injected[dict]) -> None:
         self._app: tanjun.Client = app
-        self._user = cfg['db']['user']
-        self._host = cfg['db']['host']
-        self._db_name = cfg['db']['dbName']
-        self._port = cfg['db']['dbPort']
-        self._password = cfg['db']['password']
+        self._user = cfg["db"]["user"]
+        self._host = cfg["db"]["host"]
+        self._db_name = cfg["db"]["dbName"]
+        self._port = cfg["db"]["dbPort"]
+        self._password = cfg["db"]["password"]
         self._pool: t.Optional[asyncpg.Pool] = None
         self._schema_version: t.Optional[int] = None
         self._is_closed: bool = False
@@ -72,9 +75,14 @@ class Database:
         """Start a new connection and create a connection pool."""
         if self._is_closed:
             raise DatabaseStateConflictError("The database is closed.")
-        self._pool = await asyncpg.create_pool(dsn=self.dsn)
-        #await self.build_schema()  # Always check and add missing tables on startup
-        #self._schema_version = await self.pool.fetchval("""SELECT schema_version FROM schema_info""", column=0)
+        self._pool = await asyncpg.create_pool(
+            dsn=self.dsn,
+            server_settings={
+                "application_name": "ARK Bot main",
+            },
+        )
+        # await self.build_schema()  # Always check and add missing tables on startup
+        # self._schema_version = await self.pool.fetchval("""SELECT schema_version FROM schema_info""", column=0)
 
     async def close(self) -> None:
         """Close the connection pool."""
@@ -101,7 +109,9 @@ class Database:
         finally:
             await self.pool.release(con)
 
-    async def execute(self, query: str, *args, timeout: t.Optional[float] = None) -> str:
+    async def execute(
+        self, query: str, *args, timeout: t.Optional[float] = None
+    ) -> str:
         """Execute an SQL command.
         Parameters
         ----------
@@ -120,7 +130,9 @@ class Database:
         """
         return await self.pool.execute(query, *args, timeout=timeout)  # type: ignore
 
-    async def fetch(self, query: str, *args, timeout: t.Optional[float] = None) -> t.List[asyncpg.Record]:
+    async def fetch(
+        self, query: str, *args, timeout: t.Optional[float] = None
+    ) -> t.List[asyncpg.Record]:
         """Run a query and return the results as a list of `Record`.
         Parameters
         ----------
@@ -139,7 +151,9 @@ class Database:
         """
         return await self.pool.fetch(query, *args, timeout=timeout)
 
-    async def executemany(self, command: str, args: t.Tuple[t.Any], *, timeout: t.Optional[float] = None) -> str:
+    async def executemany(
+        self, command: str, args: t.Tuple[t.Any], *, timeout: t.Optional[float] = None
+    ) -> str:
         """Execute an SQL command for each sequence of arguments in `args`.
         Parameters
         ----------
@@ -160,7 +174,9 @@ class Database:
         """
         return await self.pool.executemany(command, args, timeout=timeout)  # type: ignore
 
-    async def fetchrow(self, query: str, *args, timeout: t.Optional[float] = None) -> asyncpg.Record:
+    async def fetchrow(
+        self, query: str, *args, timeout: t.Optional[float] = None
+    ) -> asyncpg.Record:
         """Run a query and return the first row that matched query parameters.
         Parameters
         ----------
@@ -179,7 +195,9 @@ class Database:
         """
         return await self.pool.fetchrow(query, *args, timeout=timeout)
 
-    async def fetchval(self, query: str, *args, column: int = 0, timeout: t.Optional[float] = None) -> t.Any:
+    async def fetchval(
+        self, query: str, *args, column: int = 0, timeout: t.Optional[float] = None
+    ) -> t.Any:
         """Run a query and return a value in the first row that matched query parameters.
         Parameters
         ----------

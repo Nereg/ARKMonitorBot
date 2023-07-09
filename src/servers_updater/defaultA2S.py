@@ -118,7 +118,7 @@ class DefaultA2S:
             and isinstance(server.rules, Exception)
         ):
             # TODO: add metrcis on which errors it is
-            logger.info("all exceptions: " + str(server))
+            # logger.info("all exceptions: " + str(server))
             return ServerVerdict.ERROR
 
         # if any exceptions
@@ -128,7 +128,7 @@ class DefaultA2S:
             or isinstance(server.rules, Exception)
         ):
             # TODO: add metrcis on which errors it is
-            logger.info("some exceptions: " + str(server))
+            # logger.info("some exceptions: " + str(server))
             return ServerVerdict.PARTIAL
 
         # check if it is ARK server
@@ -151,7 +151,7 @@ class DefaultA2S:
         Declares all IDs in up_array as up in proper redis channel
         """
         for id in up_array:
-            logger.info(f"UP: {id}")
+            # logger.info(f"UP: {id}")
             self._redis_executor.publish(self._channel_name, "UP;" + str(id))
 
     def declare_down(self, down_array: list[int]) -> None:
@@ -159,7 +159,7 @@ class DefaultA2S:
         Declares all IDs in down_array as down in proper redis channel
         """
         for id in down_array:
-            logger.info(f"DOWN: {id}")
+            # logger.info(f"DOWN: {id}")
             self._redis_executor.publish(self._channel_name, "DOWN;" + str(id))
 
     def exception_metrics_write(
@@ -267,7 +267,7 @@ class DefaultA2S:
                 if server.last_online == False:
                     # add it to went up list
                     went_up.append(server.id)
-                    logger.info(str(server.id) + " went up!")
+                    # logger.info(str(server.id) + " went up!")
             # if server returned partial data
             elif verdict == ServerVerdict.PARTIAL:
                 # DEBUG
@@ -287,11 +287,11 @@ class DefaultA2S:
                 if server.last_online == True:
                     # add it to went down list
                     went_down.append(server.id)
-                    logger.info(
-                        str(server.id)
-                        + " went down "
-                        + str([server.info, server.players, server.rules])
-                    )
+                    # logger.info(
+                    #     str(server.id)
+                    #     + " went down "
+                    #     + str([server.info, server.players, server.rules])
+                    # )
             # if the server isn't ARK server or other critical error
             elif verdict == ServerVerdict.CRITICAL:
                 # write to DB
@@ -302,10 +302,12 @@ class DefaultA2S:
                     went_down.append(server.id)
                     logger.info(
                         str(server.id)
-                        + " went down! "
+                        + " went down (critical)! "
                         + str([server.info, server.players, server.rules])
                     )
         # logger.info(parametersOkQueries)
+        logger.info(f"Went up: {went_up}")
+        logger.info(f"Went down: {went_down}")
         logger.info(f"Error parameters: {parameters_error_queries}")
         logger.info(f"Critical parameters: {parameters_critical_queries}")
         logger.info(f"Partial parameters: {parameters_partial_queries}")

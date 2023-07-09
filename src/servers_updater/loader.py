@@ -1,17 +1,17 @@
-import logging
-import typing
 import asyncio
+import logging
 import time
+import typing
 
-import tanjun
 import alluka
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.executors.asyncio import AsyncIOExecutor
 import asyncpg
 import redis.asyncio as redis
+import tanjun
+from apscheduler.executors.asyncio import AsyncIOExecutor
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from servers_updater.defaultA2S import DefaultA2S
 from components.dependencies.metrics import PromMetrics
+from servers_updater.defaultA2S import DefaultA2S
 
 component = tanjun.Component(name=__name__)
 logger = logging.getLogger(__name__)
@@ -40,7 +40,12 @@ class ServerUpdater:
         dsn = f"postgres://{user}:{password}@{host}:{port}/{db_name}"
         try:
             # create a pool of connection to the DB
-            self._db = await asyncpg.create_pool(dsn=dsn)
+            self._db = await asyncpg.create_pool(
+                dsn=dsn,
+                server_settings={
+                    "application_name": "ARK Bot updater",
+                },
+            )
         except Exception:
             # if we can't log and exit
             logger.exception("Can't setup DB!", exc_info=True)
@@ -49,6 +54,7 @@ class ServerUpdater:
         for _ in range(0, self._botCfg["updater"]["workers"]):
             # append each to the list of workers
             self._workers.append(DefaultA2S(self._db, self._redis, self._metrics))
+        logger.info(f"Created {len(self._workers)} workers: {self._workers}")
         # create main updater task loop
         self._setupUpdaterTask()
         logger.info("Started server updater!")
@@ -122,6 +128,7 @@ class ServerUpdater:
         # end performance timer
         endTime = time.perf_counter()
         # set performance metric
+        logger.info(f"Updater took: {endTime - startTime}")
         self._metrics.updater_iteration_timing.set(endTime - startTime)
 
     @classmethod
